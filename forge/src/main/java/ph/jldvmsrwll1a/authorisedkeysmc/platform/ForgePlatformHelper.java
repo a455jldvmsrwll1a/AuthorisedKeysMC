@@ -1,6 +1,5 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.platform;
 
-import ph.jldvmsrwll1a.authorisedkeysmc.platform.services.IPlatformHelper;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
 

@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import net.fabricmc.api.ModInitializer;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.FabricPlatformHelper;
 
 public class AuthorisedKeysMC implements ModInitializer {
     
@@ -13,6 +14,6 @@ public class AuthorisedKeysMC implements ModInitializer {
 
         // Use Fabric to bootstrap the Common mod.
         Constants.LOG.info("Hello Fabric world!");
-        CommonClass.init();
+        CommonClass.init(new FabricPlatformHelper());
     }
 }

@@ -3,4 +3,27 @@ plugins {
     id 'fabric-loom' version '1.13-SNAPSHOT' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.123' apply false
+
+    id "io.github.pacifistmc.forgix" version "2.0.0-SNAPSHOT.5.1"
+}
+
+forgix {
+    evaluationDependsOn(":forge")
+
+    destinationDirectory = layout.projectDirectory.dir("build/libs")
+    archiveClassifier.set("all")
+    autoRun = true
+
+    // needed because Forgix keeps picking up the javadoc JAR for some reason
+    forge {
+        var forgeActualJar = project(":forge").tasks.named("jar").get().outputs.files.filter { file ->
+            !file.name.endsWith("-javadoc.jar")
+        }.singleFile
+
+        inputJar.set(forgeActualJar)
+    }
+
+    fabric()
+
+    neoforge()
 }

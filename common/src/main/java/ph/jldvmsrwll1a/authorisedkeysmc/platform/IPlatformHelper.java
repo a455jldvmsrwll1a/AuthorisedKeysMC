@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.platform.services;
+package ph.jldvmsrwll1a.authorisedkeysmc.platform;
 
 public interface IPlatformHelper {
 

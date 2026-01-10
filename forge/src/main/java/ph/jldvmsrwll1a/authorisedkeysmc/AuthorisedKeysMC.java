@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import net.minecraftforge.fml.common.Mod;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.ForgePlatformHelper;
 
 @Mod(Constants.MOD_ID)
 public class AuthorisedKeysMC {
@@ -13,7 +14,7 @@ public class AuthorisedKeysMC {
 
         // Use Forge to bootstrap the Common mod.
         Constants.LOG.info("Hello Forge world!");
-        CommonClass.init();
+        CommonClass.init(new ForgePlatformHelper());
 
     }
 }
