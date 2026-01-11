@@ -1,0 +1,39 @@
+package ph.jldvmsrwll1a.authorisedkeysmc;
+
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
+
+import java.nio.file.Path;
+
+import static ph.jldvmsrwll1a.authorisedkeysmc.Constants.MOD_DIR_NAME;
+
+public class FilePaths {
+    public final Path MOD_DIR;
+    public final Path CONFIG_DIR;
+
+    public final Path CLIENT_CONFIG_PATH;
+    public final Path SERVER_CONFIG_PATH;
+
+    public final Path KEY_PAIRS_DIR;
+
+    public final Path AUTHORISED_KEYS_PATH;
+    public final Path BYPASS_LIST_PATH;
+    public final Path UUID_REMAPS_PATH;
+    public final Path HISTORY_PATH;
+    public final Path SERVER_KEY_PAIR_PATH;
+
+    public FilePaths(IPlatformHelper platform) {
+        MOD_DIR = platform.getGameDirectory().resolve(MOD_DIR_NAME);
+        CONFIG_DIR = platform.getConfigDirectory().resolve(MOD_DIR_NAME);
+
+        CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.toml");
+        SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.toml");
+
+        KEY_PAIRS_DIR = MOD_DIR.resolve("keypairs");
+
+        AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised-keys.json");
+        BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
+        UUID_REMAPS_PATH = MOD_DIR.resolve("uuid_remaps.json");
+        HISTORY_PATH = MOD_DIR.resolve("history.json");
+        SERVER_KEY_PAIR_PATH = MOD_DIR.resolve("server-secret.der");
+    }
+}
