@@ -16,6 +16,9 @@
     "entrypoints": {
         "main": [
           "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMC"
+        ],
+        "client": [
+          "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMCClient"
         ]
     },
     "mixins": [
@@ -28,6 +31,7 @@
         "minecraft": "~${minecraft_version}",
         "java": ">=${java_version}"
     },
+    "accessWidener": "${mod_id}.accesswidener",
     "suggests": {
         "another-mod": "*"
     }
