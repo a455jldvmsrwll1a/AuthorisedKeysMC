@@ -5,7 +5,7 @@ import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.math.ec.rfc8032.Ed25519;
 
-public class ClientKeyPayload extends BaseQueryAnswerPayload {
+public final class ClientKeyPayload extends BaseQueryAnswerPayload {
     private static final int KEY_BYTES_LENGTH = Ed25519.PUBLIC_KEY_SIZE;
 
     public final Ed25519PublicKeyParameters key;

@@ -1,0 +1,159 @@
+package ph.jldvmsrwll1a.authorisedkeysmc.net;
+
+import com.mojang.authlib.GameProfile;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.Connection;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
+import net.minecraft.network.protocol.login.custom.CustomQueryAnswerPayload;
+import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
+import org.apache.commons.lang3.Validate;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
+
+public final class ServerLoginHandler {
+    private final ServerLoginPacketListenerImpl listener;
+    private final Connection connection;
+    private final GameProfile profile;
+
+    private final Ed25519PrivateKeyParameters signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
+    private final Ed25519PublicKeyParameters serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
+
+    private int txId = 0;
+    private Phase phase = Phase.SEND_SERVER_KEY;
+    private int ticksLeft = 300;
+    private int triesLeft = 15; // TODO: should be however many keys can be registered at maximum
+
+    private Ed25519PublicKeyParameters currentKey;
+    private byte[] nonce;
+
+    public ServerLoginHandler(ServerLoginPacketListenerImpl listener, Connection connection, GameProfile profile) {
+        this.listener = listener;
+        this.connection = connection;
+        this.profile = profile;
+    }
+
+    public static ServerLoginHandler bypassedLogin() {
+        Constants.LOG.info("Skipped verifying identity!");
+
+        ServerLoginHandler handler = new ServerLoginHandler(null, null, null);
+        handler.transition(Phase.SUCCESSFUL);
+        return handler;
+    }
+
+    public boolean finished() {
+        return phase == Phase.SUCCESSFUL;
+    }
+
+    public boolean hasClientEverResponded() {
+        return phase != Phase.SEND_SERVER_KEY && phase != Phase.WAIT_FOR_CLIENT_CHALLENGE;
+    }
+
+    public void tick(int tick) {
+        Constants.LOG.info("auth tick {}, phase = {}", tick, phase);
+
+        switch (phase) {
+            case WAIT_FOR_CLIENT_CHALLENGE, WAIT_FOR_CLIENT_KEY, WAIT_FOR_CLIENT_SIGNATURE -> {
+                ticksLeft--;
+
+                if (ticksLeft <= 0) {
+                    listener.disconnect(Component.literal("Took too long to authenticate!"));
+                }
+            }
+            case SEND_SERVER_KEY -> {
+                send(new ServerPublicKeyPayload(serverKey));
+                transition(Phase.WAIT_FOR_CLIENT_CHALLENGE);
+            }
+            case SUCCESSFUL -> {
+                // Do nothing. We are done.
+            }
+        }
+    }
+
+    public void handleMessage(BaseQueryAnswerPayload payload) {
+        switch (payload) {
+            case ClientChallengePayload challengePayload -> {
+                Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
+
+                send(ServerSignaturePayload.fromSigningChallenge(signingKey, challengePayload));
+                transition(Phase.WAIT_FOR_CLIENT_KEY);
+            }
+            case ClientKeyPayload keyPayload -> {
+                Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_KEY), "Received client public key but wasn't expecting one!");
+
+                currentKey = keyPayload.key;
+
+                ServerChallengePayload challenge = new ServerChallengePayload();
+                nonce = challenge.getNonce();
+                send(challenge);
+                transition(Phase.WAIT_FOR_CLIENT_SIGNATURE);
+            }
+            case ClientSignaturePayload signaturePayload -> {
+                Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_SIGNATURE), "Received client signature but wasn't expecting one!");
+
+                if (signaturePayload.verify(currentKey, nonce)) {
+                    Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
+                    transition(Phase.SUCCESSFUL);
+                } else {
+                    send(new KeyRejectedPayload());
+                    transition(Phase.WAIT_FOR_CLIENT_KEY);
+
+                    triesLeft--;
+                    if (triesLeft <= 0) {
+                        listener.disconnect(Component.literal("Too many attempts to authenticate!"));
+                    }
+                }
+            }
+            default -> throw new IllegalArgumentException("Unknown base query answer payload type of %s!".formatted(payload.getClass().getName()));
+        }
+    }
+
+    public void handleRawMessage(FriendlyByteBuf buf) {
+        QueryAnswerPayloadType kind = BaseQueryAnswerPayload.peekPayloadType(buf);
+        BaseQueryAnswerPayload base = switch (kind) {
+            case CLIENT_CHALLENGE -> new ClientChallengePayload(buf);
+            case CLIENT_KEY -> new ClientKeyPayload(buf);
+            case SERVER_CHALLENGE_RESPONSE -> new ClientSignaturePayload(buf);
+        };
+
+        handleMessage(base);
+    }
+
+    public void handleRawMessage(CustomQueryAnswerPayload payload) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        payload.write(buf);
+
+        handleRawMessage(buf);
+    }
+
+    private void send(CustomQueryPayload payload) {
+        connection.send(new ClientboundCustomQueryPacket(txId, payload));
+        txId++;
+    }
+
+    private VanillaLoginHandlerState getState() {
+        return AuthorisedKeysModCore.PLATFORM.getLoginState(listener);
+    }
+
+    private void setState(VanillaLoginHandlerState state) {
+        AuthorisedKeysModCore.PLATFORM.setLoginState(listener, state);
+    }
+
+    private void transition(Phase phase) {
+        Constants.LOG.info("{}: {} --> {}", profile.name(), this.phase, phase);
+        this.phase = phase;
+    }
+
+    private enum Phase {
+        SEND_SERVER_KEY,
+        WAIT_FOR_CLIENT_CHALLENGE,
+        WAIT_FOR_CLIENT_KEY,
+        WAIT_FOR_CLIENT_SIGNATURE,
+        SUCCESSFUL,
+    }
+}
