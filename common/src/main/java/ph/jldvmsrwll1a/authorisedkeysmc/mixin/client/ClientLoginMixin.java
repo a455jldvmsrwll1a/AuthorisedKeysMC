@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
 
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
@@ -47,22 +48,14 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
     @Inject(method = "handleCustomQuery", at = @At("HEAD"), cancellable = true)
     public void handleQuery(ClientboundCustomQueryPacket packet, CallbackInfo ci) {
-        Constants.LOG.info("CUSTOM QUERY! TRANSACTION {} on {}", packet.transactionId(), packet.payload().id());
-
         if (!packet.payload().id().equals(Constants.LOGIN_CHANNEL_ID)) {
-            return;
-        }
-
-        if (!(packet.payload() instanceof RetainedQueryPayload payload)) {
-            Constants.LOG.warn("AKMC: received custom query with ID {} belonging to us but not carrying a RetainedQueryPayload!", packet.transactionId());
             return;
         }
 
         ci.cancel();
 
-        FriendlyByteBuf buf = payload.buf();
-
-        Constants.LOG.info("HANDLE AKMC QUERY, ID = {}", packet.transactionId());
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.payload().write(buf);
 
         Constants.LOG.info(ByteBufUtil.prettyHexDump(buf));
 
