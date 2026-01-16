@@ -1,17 +1,17 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 
 public class AuthorisedKeysModCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
+    public static ServerKeypair SERVER_KEYPAIR;
 
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
+        SERVER_KEYPAIR = new ServerKeypair();
 
         Constants.LOG.info("MOD_DIR: {}", FILE_PATHS.MOD_DIR);
         Constants.LOG.info("CONFIG_DIR: {}", FILE_PATHS.CONFIG_DIR);
@@ -22,6 +22,6 @@ public class AuthorisedKeysModCore {
         Constants.LOG.info("BYPASS_LIST_PATH: {}", FILE_PATHS.BYPASS_LIST_PATH);
         Constants.LOG.info("UUID_REMAPS_PATH: {}", FILE_PATHS.UUID_REMAPS_PATH);
         Constants.LOG.info("HISTORY_PATH: {}", FILE_PATHS.HISTORY_PATH);
-        Constants.LOG.info("SERVER_KEY_PAIR_PATH: {}", FILE_PATHS.SERVER_KEY_PAIR_PATH);
+        Constants.LOG.info("SERVER_SECRET_PATH: {}", FILE_PATHS.SERVER_SECRET_PATH);
     }
 }

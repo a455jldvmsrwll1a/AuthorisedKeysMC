@@ -13,8 +13,5 @@ public class Constants {
 
     public static final Identifier LOGIN_CHANNEL_ID = Identifier.fromNamespaceAndPath("authorised_keys_mc", "login");
 
-    public static final int PUBKEY_SIZE = 44;
-    public static final String ALGORITHM = "Ed25519";
-
     public static final Logger LOG = LoggerFactory.getLogger(MOD_NAME);
 }

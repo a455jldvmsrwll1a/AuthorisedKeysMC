@@ -1,5 +1,8 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.platform;
 
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
+
 import java.nio.file.Path;
 
 public interface IPlatformHelper {
@@ -39,4 +42,8 @@ public interface IPlatformHelper {
     Path getGameDirectory();
 
     Path getConfigDirectory();
+
+    VanillaLoginHandlerState getLoginState(ServerLoginPacketListenerImpl listener);
+
+    void setLoginState(ServerLoginPacketListenerImpl listener, VanillaLoginHandlerState state);
 }

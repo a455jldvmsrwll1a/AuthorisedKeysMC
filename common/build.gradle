@@ -21,6 +21,11 @@ dependencies {
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
+
+    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+    compileOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
+    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
+    compileOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
 }
 
 configurations {

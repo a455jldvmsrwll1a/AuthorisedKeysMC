@@ -4,9 +4,7 @@
   "package": "ph.jldvmsrwll1a.authorisedkeysmc.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
-  "client": [
-    "MixinTitleScreen"
-  ],
+  "client": [],
   "server": [],
   "injectors": {
     "defaultRequire": 1

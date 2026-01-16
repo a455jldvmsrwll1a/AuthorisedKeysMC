@@ -1,0 +1,8 @@
+package ph.jldvmsrwll1a.authorisedkeysmc.net.payload;
+
+public enum QueryPayloadType {
+    SERVER_KEY,
+    CLIENT_CHALLENGE_RESPONSE,
+    SERVER_CHALLENGE,
+    SERVER_KEY_REJECTION
+}

@@ -19,7 +19,8 @@ public class FilePaths {
     public final Path BYPASS_LIST_PATH;
     public final Path UUID_REMAPS_PATH;
     public final Path HISTORY_PATH;
-    public final Path SERVER_KEY_PAIR_PATH;
+    public final Path SERVER_SECRET_PATH;
+    public final Path SERVER_SECRET_BACKUP_PATH;
 
     public FilePaths(IPlatformHelper platform) {
         MOD_DIR = platform.getGameDirectory().resolve(MOD_DIR_NAME);
@@ -34,6 +35,7 @@ public class FilePaths {
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
         UUID_REMAPS_PATH = MOD_DIR.resolve("uuid_remaps.json");
         HISTORY_PATH = MOD_DIR.resolve("history.json");
-        SERVER_KEY_PAIR_PATH = MOD_DIR.resolve("server-secret.der");
+        SERVER_SECRET_PATH = MOD_DIR.resolve("server-secret.der");
+        SERVER_SECRET_BACKUP_PATH = MOD_DIR.resolve("server-secret.der.BACKUP");
     }
 }

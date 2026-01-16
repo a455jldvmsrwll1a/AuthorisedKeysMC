@@ -4,9 +4,15 @@
   "package": "ph.jldvmsrwll1a.authorisedkeysmc.mixin",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_18",
-  "mixins": [],
+  "mixins": [
+    "AuthHandlerThreadMixin",
+    "CustomQueryAnswerPacketMixin",
+    "ServerLoginMixin"
+  ],
   "client": [
-    "MixinMinecraft"
+    "client.ClientLoginMixin",
+    "client.CustomQueryPacketMixin",
+    "client.TitleScreenMixin"
   ],
   "server": [],
   "injectors": {
