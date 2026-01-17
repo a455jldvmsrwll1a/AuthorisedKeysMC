@@ -29,7 +29,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 @Mixin(value = ServerLoginPacketListenerImpl.class, priority = 500)
 public abstract class ServerLoginMixin implements ServerLoginPacketListener, TickablePacketListener {
     @Unique @Nullable
-    private ServerLoginHandler authorisedKeysMC$loginHandler = null;
+    private volatile ServerLoginHandler authorisedKeysMC$loginHandler = null;
 
     @Shadow
     @Final
@@ -114,28 +114,29 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
     }
 
-    @Inject(method = "startClientVerification", at = @At("RETURN"))
+    @Inject(method = "startClientVerification", at = @At("HEAD"))
     private void detourFromVerification(GameProfile authenticatedProfile, CallbackInfo ci) {
-        // We let the original function run first.
-        // This fills in authenticatedProfile and sets the state to verifying.
-
-        if (authorisedKeysMC$loginHandler == null || authorisedKeysMC$loginHandler.finished()) {
-            // Start the custom authentication.
-            Constants.LOG.info("begin custom auth");
-            authorisedKeysMC$loginHandler = new ServerLoginHandler((ServerLoginPacketListenerImpl) (Object) this, connection, authenticatedProfile);
+        if (authorisedKeysMC$loginHandler != null) {
+            return;
         }
+
+        // Start the custom authentication.
+        Constants.LOG.info("begin custom auth");
+        authorisedKeysMC$loginHandler = new ServerLoginHandler((ServerLoginPacketListenerImpl) (Object) this, connection, authenticatedProfile);
     }
 
     @Inject(method = "handleCustomQueryPacket", at = @At("HEAD"), cancellable = true)
     private void handleResponse(ServerboundCustomQueryAnswerPacket packet, CallbackInfo ci) {
-        if (authorisedKeysMC$loginHandler == null) {
+        ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
+
+        if (loginHandler == null) {
             // Custom authentication hasn't started yet. We are not expecting a response at this time.
             return;
         }
 
         // Payload is null if client did not understand our custom query.
         if (packet.payload() == null) {
-            if (!authorisedKeysMC$loginHandler.hasClientEverResponded()) {
+            if (!loginHandler.hasClientEverResponded()) {
                 // Did not understand the very first query we sent. Client most likely does not have the mod installed.
                 ci.cancel();
                 disconnect(Component.literal("Access denied!!! D:"));
@@ -147,12 +148,14 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
         ci.cancel();
 
-        authorisedKeysMC$loginHandler.handleRawMessage(packet.payload());
+        loginHandler.handleRawMessage(packet.payload());
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void tick(CallbackInfo ci) {
-        if (authorisedKeysMC$loginHandler == null || authorisedKeysMC$loginHandler.finished()) {
+        ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
+
+        if (loginHandler == null || loginHandler.finished()) {
             Constants.LOG.info("normal tick {}, state = {}", tick, AuthorisedKeysModCore.PLATFORM.getLoginState((ServerLoginPacketListenerImpl) (Object) this));
             return;
         }
@@ -163,9 +166,9 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return;
         }
 
-        authorisedKeysMC$loginHandler.tick(tick);
+        loginHandler.tick(tick);
 
-        if (authorisedKeysMC$loginHandler.finished()) {
+        if (loginHandler.finished()) {
             serverActivityMonitor.reportLoginActivity();
             startClientVerification(authenticatedProfile);
         }

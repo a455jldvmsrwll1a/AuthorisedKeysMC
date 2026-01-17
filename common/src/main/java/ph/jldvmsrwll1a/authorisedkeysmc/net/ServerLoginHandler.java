@@ -24,8 +24,8 @@ public final class ServerLoginHandler {
     private final Ed25519PrivateKeyParameters signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
     private final Ed25519PublicKeyParameters serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
 
-    private int txId = 0;
-    private Phase phase = Phase.SEND_SERVER_KEY;
+    private volatile int txId = 0;
+    private volatile Phase phase = Phase.SEND_SERVER_KEY;
     private int ticksLeft = 300;
     private int triesLeft = 15; // TODO: should be however many keys can be registered at maximum
 
@@ -33,6 +33,8 @@ public final class ServerLoginHandler {
     private byte[] nonce;
 
     public ServerLoginHandler(ServerLoginPacketListenerImpl listener, Connection connection, GameProfile profile) {
+        Validate.isTrue(connection == null || connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
+
         this.listener = listener;
         this.connection = connection;
         this.profile = profile;
@@ -131,9 +133,11 @@ public final class ServerLoginHandler {
         handleRawMessage(buf);
     }
 
-    private void send(CustomQueryPayload payload) {
-        connection.send(new ClientboundCustomQueryPacket(txId, payload));
-        txId++;
+    private synchronized void send(CustomQueryPayload payload) {
+        if (connection != null) {
+            connection.send(new ClientboundCustomQueryPacket(txId, payload));
+            txId++;
+        }
     }
 
     private VanillaLoginHandlerState getState() {
