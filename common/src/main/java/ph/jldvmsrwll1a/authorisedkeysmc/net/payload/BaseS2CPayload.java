@@ -7,15 +7,15 @@ import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
-public abstract class BaseQueryPayload implements CustomQueryPayload {
+public abstract class BaseS2CPayload implements CustomQueryPayload {
     public static final int MAGIC = 0x414B4D43;
     private final QueryPayloadType payloadType;
 
-    protected BaseQueryPayload(QueryPayloadType payloadType) {
+    protected BaseS2CPayload(QueryPayloadType payloadType) {
         this.payloadType = payloadType;
     }
 
-    protected BaseQueryPayload(FriendlyByteBuf buf, QueryPayloadType expected) {
+    protected BaseS2CPayload(FriendlyByteBuf buf, QueryPayloadType expected) {
         payloadType = readPayloadType(buf);
         Validate.validState(payloadType.equals(expected), "Wrong query payload type! Expected a %s but got a %s!", expected, payloadType);
     }

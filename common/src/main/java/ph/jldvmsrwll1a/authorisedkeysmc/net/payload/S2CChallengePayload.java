@@ -5,21 +5,21 @@ import org.apache.commons.lang3.Validate;
 
 import java.security.SecureRandom;
 
-public final class ClientChallengePayload extends BaseQueryAnswerPayload {
+public final class S2CChallengePayload extends BaseS2CPayload {
     public static final int NONCE_LENGTH = 256;
+
     private final byte[] nonce;
 
-    public ClientChallengePayload() {
-        super(QueryAnswerPayloadType.CLIENT_CHALLENGE);
+    public S2CChallengePayload() {
+        super(QueryPayloadType.SERVER_CHALLENGE);
 
         SecureRandom rng = new SecureRandom();
-
         nonce = new byte[NONCE_LENGTH];
         rng.nextBytes(nonce);
     }
 
-    public ClientChallengePayload(FriendlyByteBuf buf) {
-        super(buf, QueryAnswerPayloadType.CLIENT_CHALLENGE);
+    public S2CChallengePayload(FriendlyByteBuf buf) {
+        super(buf, QueryPayloadType.SERVER_CHALLENGE);
 
         Validate.validState(buf.readableBytes() == NONCE_LENGTH, "Incorrect size of nonce.");
         nonce = new byte[NONCE_LENGTH];

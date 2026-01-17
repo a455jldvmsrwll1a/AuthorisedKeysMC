@@ -5,18 +5,18 @@ import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.math.ec.rfc8032.Ed25519;
 
-public final class ServerPublicKeyPayload extends BaseQueryPayload {
+public final class C2SPublicKeyPayload extends BaseC2SPayload {
     private static final int KEY_BYTES_LENGTH = Ed25519.PUBLIC_KEY_SIZE;
 
     public final Ed25519PublicKeyParameters key;
 
-    public ServerPublicKeyPayload(Ed25519PublicKeyParameters key) {
-        super(QueryPayloadType.SERVER_KEY);
+    public C2SPublicKeyPayload(Ed25519PublicKeyParameters key) {
+        super(QueryAnswerPayloadType.CLIENT_KEY);
         this.key = key;
     }
 
-    public ServerPublicKeyPayload(FriendlyByteBuf buf) {
-        super(buf, QueryPayloadType.SERVER_KEY);
+    public C2SPublicKeyPayload(FriendlyByteBuf buf) {
+        super(buf, QueryAnswerPayloadType.CLIENT_KEY);
 
         byte[] bytes = new byte[KEY_BYTES_LENGTH];
         Validate.validState(buf.readableBytes() == KEY_BYTES_LENGTH, "Encoded public key is not %s bytes long!", KEY_BYTES_LENGTH);
@@ -25,7 +25,7 @@ public final class ServerPublicKeyPayload extends BaseQueryPayload {
     }
 
     @Override
-    public void writeData(FriendlyByteBuf buf) {
+    protected void writeData(FriendlyByteBuf buf) {
         byte[] bytes = key.getEncoded();
         buf.writeBytes(bytes);
     }

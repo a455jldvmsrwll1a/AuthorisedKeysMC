@@ -68,7 +68,7 @@ public final class ServerLoginHandler {
                 }
             }
             case SEND_SERVER_KEY -> {
-                send(new ServerPublicKeyPayload(serverKey));
+                send(new S2CPublicKeyPayload(serverKey));
                 transition(Phase.WAIT_FOR_CLIENT_CHALLENGE);
             }
             case SUCCESSFUL -> {
@@ -77,32 +77,32 @@ public final class ServerLoginHandler {
         }
     }
 
-    public void handleMessage(BaseQueryAnswerPayload payload) {
+    public void handleMessage(BaseC2SPayload payload) {
         switch (payload) {
-            case ClientChallengePayload challengePayload -> {
+            case C2SChallengePayload challengePayload -> {
                 Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
 
-                send(ServerSignaturePayload.fromSigningChallenge(signingKey, challengePayload));
+                send(S2CSignaturePayload.fromSigningChallenge(signingKey, challengePayload));
                 transition(Phase.WAIT_FOR_CLIENT_KEY);
             }
-            case ClientKeyPayload keyPayload -> {
+            case C2SPublicKeyPayload keyPayload -> {
                 Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_KEY), "Received client public key but wasn't expecting one!");
 
                 currentKey = keyPayload.key;
 
-                ServerChallengePayload challenge = new ServerChallengePayload();
+                S2CChallengePayload challenge = new S2CChallengePayload();
                 nonce = challenge.getNonce();
                 send(challenge);
                 transition(Phase.WAIT_FOR_CLIENT_SIGNATURE);
             }
-            case ClientSignaturePayload signaturePayload -> {
+            case C2SSignaturePayload signaturePayload -> {
                 Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_SIGNATURE), "Received client signature but wasn't expecting one!");
 
                 if (signaturePayload.verify(currentKey, nonce)) {
                     Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
                     transition(Phase.SUCCESSFUL);
                 } else {
-                    send(new KeyRejectedPayload());
+                    send(new S2CKeyRejectedPayload());
                     transition(Phase.WAIT_FOR_CLIENT_KEY);
 
                     triesLeft--;
@@ -116,11 +116,11 @@ public final class ServerLoginHandler {
     }
 
     public void handleRawMessage(FriendlyByteBuf buf) {
-        QueryAnswerPayloadType kind = BaseQueryAnswerPayload.peekPayloadType(buf);
-        BaseQueryAnswerPayload base = switch (kind) {
-            case CLIENT_CHALLENGE -> new ClientChallengePayload(buf);
-            case CLIENT_KEY -> new ClientKeyPayload(buf);
-            case SERVER_CHALLENGE_RESPONSE -> new ClientSignaturePayload(buf);
+        QueryAnswerPayloadType kind = BaseC2SPayload.peekPayloadType(buf);
+        BaseC2SPayload base = switch (kind) {
+            case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
+            case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
+            case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
         };
 
         handleMessage(base);

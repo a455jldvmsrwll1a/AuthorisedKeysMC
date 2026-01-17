@@ -4,15 +4,15 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.login.custom.CustomQueryAnswerPayload;
 import org.apache.commons.lang3.Validate;
 
-public abstract class BaseQueryAnswerPayload implements CustomQueryAnswerPayload {
+public abstract class BaseC2SPayload implements CustomQueryAnswerPayload {
     public static final int MAGIC = 0x414B4D43;
     private final QueryAnswerPayloadType payloadType;
 
-    protected BaseQueryAnswerPayload(QueryAnswerPayloadType payloadType) {
+    protected BaseC2SPayload(QueryAnswerPayloadType payloadType) {
         this.payloadType = payloadType;
     }
 
-    protected BaseQueryAnswerPayload(FriendlyByteBuf buf, QueryAnswerPayloadType expected) {
+    protected BaseC2SPayload(FriendlyByteBuf buf, QueryAnswerPayloadType expected) {
         payloadType = readPayloadType(buf);
         Validate.validState(payloadType.equals(expected), "Wrong query anwer payload type! Expected a %s but got a %s!", expected, payloadType);
     }

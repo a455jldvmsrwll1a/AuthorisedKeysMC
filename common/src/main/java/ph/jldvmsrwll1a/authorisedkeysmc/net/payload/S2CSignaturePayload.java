@@ -6,28 +6,28 @@ import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.signers.Ed25519Signer;
 
-public final class ClientSignaturePayload extends BaseQueryAnswerPayload {
-    private static final int SIGNATURE_LENGTH = Ed25519PrivateKeyParameters.SIGNATURE_SIZE;
+public final class S2CSignaturePayload extends BaseS2CPayload {
+    public static final int SIGNATURE_LENGTH = Ed25519PrivateKeyParameters.SIGNATURE_SIZE;
 
     public final byte[] signature;
 
-    public static ClientSignaturePayload fromSigningChallenge(Ed25519PrivateKeyParameters signingKey, ServerChallengePayload challenge) {
+    public static S2CSignaturePayload fromSigningChallenge(Ed25519PrivateKeyParameters signingKey, C2SChallengePayload challenge) {
         Ed25519Signer signer = new Ed25519Signer();
         signer.init(true, signingKey);
-        signer.update(challenge.getNonce(), 0, ClientChallengePayload.NONCE_LENGTH);
+        signer.update(challenge.getNonce(), 0, C2SChallengePayload.NONCE_LENGTH);
 
-        return new ClientSignaturePayload(signer.generateSignature());
+        return new S2CSignaturePayload(signer.generateSignature());
     }
 
-    public ClientSignaturePayload(byte[] signature) {
-        super(QueryAnswerPayloadType.SERVER_CHALLENGE_RESPONSE);
+    public S2CSignaturePayload(byte[] signature) {
+        super(QueryPayloadType.CLIENT_CHALLENGE_RESPONSE);
 
         Validate.isTrue(signature.length == SIGNATURE_LENGTH);
         this.signature = signature;
     }
 
-    public ClientSignaturePayload(FriendlyByteBuf buf) {
-        super(buf, QueryAnswerPayloadType.SERVER_CHALLENGE_RESPONSE);
+    public S2CSignaturePayload(FriendlyByteBuf buf) {
+        super(buf, QueryPayloadType.CLIENT_CHALLENGE_RESPONSE);
 
         Validate.isTrue(buf.readableBytes() == SIGNATURE_LENGTH, "Signatures must be exactly %s bytes.", SIGNATURE_LENGTH);
         signature = new byte[SIGNATURE_LENGTH];
@@ -35,17 +35,17 @@ public final class ClientSignaturePayload extends BaseQueryAnswerPayload {
     }
 
     public boolean verify(Ed25519PublicKeyParameters verifyingKey, byte[] nonce) {
-        Validate.isTrue(nonce.length == ClientChallengePayload.NONCE_LENGTH, "Nonce must be %s bytes.", ClientChallengePayload.NONCE_LENGTH);
+        Validate.isTrue(nonce.length == S2CChallengePayload.NONCE_LENGTH, "Nonce must be %s bytes.", S2CChallengePayload.NONCE_LENGTH);
 
         Ed25519Signer signer = new Ed25519Signer();
         signer.init(false, verifyingKey);
-        signer.update(nonce, 0, ClientChallengePayload.NONCE_LENGTH);
+        signer.update(nonce, 0, S2CChallengePayload.NONCE_LENGTH);
 
         return signer.verifySignature(signature);
     }
 
     @Override
-    protected void writeData(FriendlyByteBuf buf) {
+    public void writeData(FriendlyByteBuf buf) {
         buf.writeBytes(signature);
     }
 }

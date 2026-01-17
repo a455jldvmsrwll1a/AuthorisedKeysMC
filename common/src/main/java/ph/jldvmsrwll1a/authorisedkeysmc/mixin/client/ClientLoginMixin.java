@@ -2,7 +2,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
@@ -59,21 +58,21 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
         Constants.LOG.info(ByteBufUtil.prettyHexDump(buf));
 
-        QueryPayloadType qpType = BaseQueryPayload.peekPayloadType(buf);
+        QueryPayloadType qpType = BaseS2CPayload.peekPayloadType(buf);
         switch (qpType) {
             case SERVER_KEY -> {
-                ServerPublicKeyPayload keyPayload = new ServerPublicKeyPayload(buf);
+                S2CPublicKeyPayload keyPayload = new S2CPublicKeyPayload(buf);
                 authorisedKeysMC$serverKey = keyPayload.key;
                 Constants.LOG.info("GOT SERVER'S PUBLIC KEY: {}", Base64Util.encode(keyPayload.key.getEncoded()));
 
-                ClientChallengePayload challengePayload = new ClientChallengePayload();
+                C2SChallengePayload challengePayload = new C2SChallengePayload();
                 authorisedKeysMC$nonce = challengePayload.getNonce();
 
                 this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), challengePayload));
                 this.updateStatus.accept(Component.literal("Verifying server's identity..."));
             }
             case CLIENT_CHALLENGE_RESPONSE -> {
-                ServerSignaturePayload signaturePayload = new ServerSignaturePayload(buf);
+                S2CSignaturePayload signaturePayload = new S2CSignaturePayload(buf);
                 Constants.LOG.info("GOT SERVER'S SIGNATURE: {}", Base64Util.encode(signaturePayload.signature));
 
                 if (authorisedKeysMC$serverKey == null) {
@@ -107,15 +106,15 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
                 Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
                 Constants.LOG.info("SIG OK! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new ClientKeyPayload(pub)));
+                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new C2SPublicKeyPayload(pub)));
 
                 this.updateStatus.accept(Component.literal("Waiting for signature challenge from the server..."));
             }
             case SERVER_CHALLENGE -> {
-                ServerChallengePayload challengePayload = new ServerChallengePayload(buf);
+                S2CChallengePayload challengePayload = new S2CChallengePayload(buf);
                 Constants.LOG.info("SERVER WANTS US TO SIGN THIS: {}", Base64Util.encode(challengePayload.getNonce()));
 
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), ClientSignaturePayload.fromSigningChallenge(authorisedKeysMC$secret, challengePayload)));
+                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), C2SSignaturePayload.fromSigningChallenge(authorisedKeysMC$secret, challengePayload)));
                 this.updateStatus.accept(Component.literal("Waiting for authentication verdict..."));
             }
             case SERVER_KEY_REJECTION -> {
@@ -127,7 +126,7 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
                 Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
                 Constants.LOG.info("KEY REJECTED! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new ClientKeyPayload(pub)));
+                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new C2SPublicKeyPayload(pub)));
                 this.updateStatus.accept(Component.literal("Key rejected! Trying next key..."));
             }
         }
