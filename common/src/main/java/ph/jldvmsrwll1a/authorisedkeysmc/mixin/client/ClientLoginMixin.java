@@ -2,6 +2,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
@@ -11,7 +12,6 @@ import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
 import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.bouncycastle.crypto.signers.Ed25519Signer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,12 +19,12 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.io.IOException;
 import java.util.function.Consumer;
 
 @Mixin(ClientHandshakePacketListenerImpl.class)
@@ -100,13 +100,14 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
                 }
 
                 try {
-                    authorisedKeysMC$secret = new Ed25519PrivateKeyParameters(SecureRandom.getInstanceStrong());
-                    Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
-                    Constants.LOG.info("SIG OK! Sending random pubkey: {}", Base64Util.encode(pub.getEncoded()));
-                    this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new ClientKeyPayload(pub)));
-                } catch (NoSuchAlgorithmException e) {
+                    authorisedKeysMC$secret = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+
+                Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
+                Constants.LOG.info("SIG OK! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
+                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new ClientKeyPayload(pub)));
 
                 this.updateStatus.accept(Component.literal("Waiting for signature challenge from the server..."));
             }
@@ -119,12 +120,13 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
             }
             case SERVER_KEY_REJECTION -> {
                 try {
-                    authorisedKeysMC$secret = new Ed25519PrivateKeyParameters(SecureRandom.getInstanceStrong());
-                } catch (NoSuchAlgorithmException e) {
+                    authorisedKeysMC$secret = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+
                 Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
-                Constants.LOG.info("KEY REJECTED! Sending random pubkey: {}", Base64Util.encode(pub.getEncoded()));
+                Constants.LOG.info("KEY REJECTED! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
                 this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new ClientKeyPayload(pub)));
                 this.updateStatus.accept(Component.literal("Key rejected! Trying next key..."));
             }
