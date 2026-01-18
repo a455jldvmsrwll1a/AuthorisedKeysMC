@@ -15,11 +15,13 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.LoginRegistrationScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.UnknownServerKeyWarningScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.WrongServerKeyWarningScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.client.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -84,10 +86,21 @@ public final class ClientLoginHandler {
                 serverKey = serverKeyPayload.key;
                 Constants.LOG.info("GOT SERVER'S PUBLIC KEY: {}", Base64Util.encode(serverKeyPayload.key.getEncoded()));
 
-                minecraft.execute(() -> {
-                    Screen screen = UnknownServerKeyWarningScreen.create(this, serverKey);
-                    minecraft.setScreen(screen);
-                });
+                Ed25519PublicKeyParameters knownKey = getServerName().map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerkey(name)).orElse(null);
+
+                if (knownKey == null) {
+                    minecraft.execute(() -> {
+                        Screen screen = UnknownServerKeyWarningScreen.create(this, serverKey);
+                        minecraft.setScreen(screen);
+                    });
+                } else if (!Arrays.equals(knownKey.getEncoded(), serverKey.getEncoded())) {
+                    minecraft.execute(() -> {
+                        Screen screen = WrongServerKeyWarningScreen.create(this, knownKey, serverKey);
+                        minecraft.setScreen(screen);
+                    });
+                } else {
+                    sendServerChallenge();
+                }
             }
             case S2CSignaturePayload serverSignaturePayload -> {
                 Constants.LOG.info("GOT SERVER'S SIGNATURE: {}", Base64Util.encode(serverSignaturePayload.signature));

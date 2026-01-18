@@ -14,6 +14,7 @@ public class FilePaths {
     public final Path SERVER_CONFIG_PATH;
 
     public final Path KEY_PAIRS_DIR;
+    public final Path KNOWN_SERVERS_PATH;
 
     public final Path AUTHORISED_KEYS_PATH;
     public final Path BYPASS_LIST_PATH;
@@ -30,6 +31,7 @@ public class FilePaths {
         SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.toml");
 
         KEY_PAIRS_DIR = MOD_DIR.resolve("keypairs");
+        KNOWN_SERVERS_PATH = MOD_DIR.resolve("known-servers.json");
 
         AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised-keys.json");
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
