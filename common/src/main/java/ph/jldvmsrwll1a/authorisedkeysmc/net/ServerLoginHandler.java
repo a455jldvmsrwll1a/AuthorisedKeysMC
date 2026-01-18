@@ -12,6 +12,7 @@ import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
@@ -37,20 +38,12 @@ public final class ServerLoginHandler {
     private Ed25519PublicKeyParameters currentRegistrationKey;
     private byte[] nonce;
 
-    public ServerLoginHandler(ServerLoginPacketListenerImpl listener, Connection connection, GameProfile profile) {
-        Validate.isTrue(connection == null || connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
+    public ServerLoginHandler(@NotNull ServerLoginPacketListenerImpl listener, @NotNull Connection connection, @NotNull GameProfile profile) {
+        Validate.isTrue(connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
 
         this.listener = listener;
         this.connection = connection;
         this.profile = profile;
-    }
-
-    public static ServerLoginHandler bypassedLogin() {
-        Constants.LOG.info("Skipped verifying identity!");
-
-        ServerLoginHandler handler = new ServerLoginHandler(null, null, null);
-        handler.transition(Phase.SUCCESSFUL);
-        return handler;
     }
 
     public boolean finished() {

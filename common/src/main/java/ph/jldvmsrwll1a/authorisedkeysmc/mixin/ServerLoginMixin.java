@@ -62,11 +62,16 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Shadow
     private @Nullable GameProfile authenticatedProfile;
 
+    @Unique
+    private boolean authorisedKeysMC$skipped = false;
+
     @Inject(method = "handleHello", at = @At("HEAD"), cancellable = true)
     private void handleIncoming(ServerboundHelloPacket packet, CallbackInfo ci) {
+        requestedUsername = packet.name();
+
         if (server.isSingleplayer()) {
             // Mark as finished so that verification actually happens.
-            authorisedKeysMC$loginHandler = ServerLoginHandler.bypassedLogin();
+            authorisedKeysMC$skipLogin();
             return;
         }
         ci.cancel();
@@ -77,17 +82,15 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         Validate.validState(platform.getLoginState(self).equals(VanillaLoginHandlerState.STARTING), "Received an unexpected hello packet");
         Validate.validState(StringUtil.isValidPlayerName(packet.name()), "Invalid username");
 
-        requestedUsername = packet.name();
-
         GameProfile spProfile = server.getSingleplayerProfile();
         if (spProfile != null && requestedUsername.equalsIgnoreCase(spProfile.name())) {
-            authorisedKeysMC$loginHandler = ServerLoginHandler.bypassedLogin();
+            authorisedKeysMC$skipLogin();
             startClientVerification(spProfile);
             return;
         }
 
         if (connection.isMemoryConnection()) {
-            authorisedKeysMC$loginHandler = ServerLoginHandler.bypassedLogin();
+            authorisedKeysMC$skipLogin();
             startClientVerification(UUIDUtil.createOfflineProfile(requestedUsername));
             return;
         }
@@ -116,7 +119,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
     @Inject(method = "startClientVerification", at = @At("HEAD"))
     private void detourFromVerification(GameProfile authenticatedProfile, CallbackInfo ci) {
-        if (authorisedKeysMC$loginHandler != null) {
+        if (authorisedKeysMC$skipped || authorisedKeysMC$loginHandler != null) {
             return;
         }
 
@@ -129,7 +132,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     private void handleResponse(ServerboundCustomQueryAnswerPacket packet, CallbackInfo ci) {
         ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
 
-        if (loginHandler == null) {
+        if (authorisedKeysMC$skipped || loginHandler == null) {
             // Custom authentication hasn't started yet. We are not expecting a response at this time.
             return;
         }
@@ -155,7 +158,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     private void tick(CallbackInfo ci) {
         ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
 
-        if (loginHandler == null || loginHandler.finished()) {
+        if (authorisedKeysMC$skipped || loginHandler == null || loginHandler.finished()) {
             Constants.LOG.info("normal tick {}, state = {}", tick, AuthorisedKeysModCore.PLATFORM.getLoginState((ServerLoginPacketListenerImpl) (Object) this));
             return;
         }
@@ -167,5 +170,11 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             serverActivityMonitor.reportLoginActivity();
             startClientVerification(authenticatedProfile);
         }
+    }
+
+    @Unique
+    private void authorisedKeysMC$skipLogin() {
+        Constants.LOG.info("Skipped verifying {}'s identity!", requestedUsername);
+        authorisedKeysMC$skipped = true;
     }
 }
