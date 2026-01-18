@@ -30,14 +30,14 @@ public class FilePaths {
         CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.toml");
         SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.toml");
 
-        KEY_PAIRS_DIR = MOD_DIR.resolve("keypairs");
-        KNOWN_SERVERS_PATH = MOD_DIR.resolve("known-servers.json");
+        KEY_PAIRS_DIR = MOD_DIR.resolve("secrets");
+        KNOWN_SERVERS_PATH = MOD_DIR.resolve("known_servers.json");
 
-        AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised-keys.json");
+        AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised_keys.json");
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
         UUID_REMAPS_PATH = MOD_DIR.resolve("uuid_remaps.json");
         HISTORY_PATH = MOD_DIR.resolve("history.json");
-        SERVER_SECRET_PATH = MOD_DIR.resolve("server-secret.der");
-        SERVER_SECRET_BACKUP_PATH = MOD_DIR.resolve("server-secret.der.BACKUP");
+        SERVER_SECRET_PATH = MOD_DIR.resolve("server_secret.der");
+        SERVER_SECRET_BACKUP_PATH = MOD_DIR.resolve("server_secret.der.BACKUP");
     }
 }
