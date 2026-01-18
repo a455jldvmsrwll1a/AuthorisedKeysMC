@@ -21,8 +21,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 public final class ClientLoginHandler {
@@ -31,10 +30,13 @@ public final class ClientLoginHandler {
     private final Connection connection;
     private final Consumer<Component> updateStatus;
 
+
     private Ed25519PublicKeyParameters serverKey;
     private byte[] nonce;
 
     private Ed25519PrivateKeyParameters secretKey;
+    private String secretKeyName;
+    private Queue<String> remainingSecretKeys;
 
     boolean registering;
 
@@ -84,9 +86,8 @@ public final class ClientLoginHandler {
         switch (payload) {
             case S2CPublicKeyPayload serverKeyPayload -> {
                 serverKey = serverKeyPayload.key;
-                Constants.LOG.info("GOT SERVER'S PUBLIC KEY: {}", Base64Util.encode(serverKeyPayload.key.getEncoded()));
 
-                Ed25519PublicKeyParameters knownKey = getServerName().map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerkey(name)).orElse(null);
+                Ed25519PublicKeyParameters knownKey = getServerName().map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerKey(name)).orElse(null);
 
                 if (knownKey == null) {
                     minecraft.execute(() -> {
@@ -103,8 +104,6 @@ public final class ClientLoginHandler {
                 }
             }
             case S2CSignaturePayload serverSignaturePayload -> {
-                Constants.LOG.info("GOT SERVER'S SIGNATURE: {}", Base64Util.encode(serverSignaturePayload.signature));
-
                 if (serverKey == null) {
                     var err = "Got a challenge response signature from the server before its key could be known!";
                     Constants.LOG.error(err);
@@ -128,33 +127,25 @@ public final class ClientLoginHandler {
                     return;
                 }
 
+                tryAcquireNextSecretKey();
                 sendPublicKeyForAuthentication();
             }
             case S2CChallengePayload challengePayload -> {
-                Constants.LOG.info("SERVER WANTS US TO SIGN THIS: {}", Base64Util.encode(challengePayload.getNonce()));
-
                 this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload)));
                 this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
             }
             case S2CKeyRejectedPayload ignored -> {
-                try {
-                    secretKey = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                tryAcquireNextSecretKey();
 
                 Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
-                Constants.LOG.info("KEY REJECTED! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
                 this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));
                 this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.key-rejected"));
             }
             case S2CRegistrationRequestPayload ignored -> {
                 registering = true;
 
-                Constants.LOG.info("SERVER WANTS US TO REGISTER!");
-
                 minecraft.execute(() -> {
-                    LoginRegistrationScreen screen = new LoginRegistrationScreen(this);
+                    LoginRegistrationScreen screen = LoginRegistrationScreen.create(this, secretKeyName, secretKey.generatePublicKey());
                     minecraft.setScreen(screen);
                 });
             }
@@ -171,12 +162,6 @@ public final class ClientLoginHandler {
     }
 
     public void sendPublicKeyForAuthentication() {
-        try {
-            secretKey = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
         Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
         Constants.LOG.info("Sending pubkey for authentication: {}", Base64Util.encode(pub.getEncoded()));
         this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));
@@ -185,11 +170,9 @@ public final class ClientLoginHandler {
     }
 
     public void confirmRegistration() {
-        try {
-            secretKey = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        getServerName().ifPresent(name -> {
+            AuthorisedKeysModClient.KNOWN_SERVERS.addKeyForServer(name, secretKeyName);
+        });
 
         Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
         Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
@@ -207,5 +190,45 @@ public final class ClientLoginHandler {
     public void cancelLogin() {
         Constants.LOG.info("Cancelled log-in!");
         connection.disconnect(Component.translatable("connect.aborted"));
+    }
+
+    private void tryAcquireNextSecretKey() {
+        if (acquireNextSecretKey()) {
+            return;
+        }
+
+        Constants.LOG.warn("No keys available to authenticate.");
+        connection.disconnect(Component.translatable("authorisedkeysmc.error.no-keys-left"));
+    }
+
+    private boolean acquireNextSecretKey() {
+        secretKey = null;
+        secretKeyName = null;
+
+        if (remainingSecretKeys == null) {
+            List<String> keyNames = AuthorisedKeysModClient.KNOWN_SERVERS.getKeysForServer(getServerName().orElse(null));
+            if (keyNames.isEmpty()) {
+                return false;
+            }
+
+            remainingSecretKeys = new ArrayDeque<>(keyNames);
+        }
+
+        while (secretKey == null) {
+            secretKeyName = remainingSecretKeys.poll();
+            if (secretKeyName == null) {
+                // Queue was emptied.
+                return false;
+            }
+
+            try {
+                secretKey = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
+            } catch (IOException e) {
+                Constants.LOG.error("Could not load the \"{}\" key: {}", secretKeyName, e);
+            }
+        }
+
+        Constants.LOG.info("Trying the \"{}\" key.", secretKeyName);
+        return true;
     }
 }

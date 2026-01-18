@@ -19,17 +19,13 @@ public class ClientKeyPairs {
         ensureWarningFileExists();
 
         try {
-            Ed25519PrivateKeyParameters ignored = getDefaultKey();
+            Ed25519PrivateKeyParameters ignored = loadFromFile("default");
         } catch (IOException ignored) {
             generate("default");
         }
     }
 
-    public Ed25519PrivateKeyParameters getDefaultKey() throws IOException {
-        return loadFromFile("default");
-    }
-
-    private Ed25519PrivateKeyParameters loadFromFile(String name) throws IOException {
+    public Ed25519PrivateKeyParameters loadFromFile(String name) throws IOException {
         Path path = fromKeyName(name);
         byte[] keyBytes = Files.readAllBytes(path);
         PrivateKeyInfo pkcs = PrivateKeyInfo.getInstance(keyBytes);
@@ -66,7 +62,9 @@ public class ClientKeyPairs {
 
     private void ensureWarningFileExists() {
         final Path path = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("_SECRET_KEYS_DO_NOT_SHARE");
+
         try {
+            Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR);
             Files.createFile(path);
         } catch (FileAlreadyExistsException ignored) {
             // Do nothing.

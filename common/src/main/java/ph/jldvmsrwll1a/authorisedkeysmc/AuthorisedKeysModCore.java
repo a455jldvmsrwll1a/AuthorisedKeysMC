@@ -7,11 +7,13 @@ public class AuthorisedKeysModCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
     public static ServerKeypair SERVER_KEYPAIR;
+    public static UserKeys USER_KEYS;
 
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
         SERVER_KEYPAIR = new ServerKeypair();
+        USER_KEYS = new UserKeys();
 
         Constants.LOG.info("MOD_DIR: {}", FILE_PATHS.MOD_DIR);
         Constants.LOG.info("CONFIG_DIR: {}", FILE_PATHS.CONFIG_DIR);

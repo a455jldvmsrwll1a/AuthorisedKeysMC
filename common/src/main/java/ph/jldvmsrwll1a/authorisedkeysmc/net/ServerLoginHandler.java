@@ -31,6 +31,7 @@ public final class ServerLoginHandler {
     private int ticksLeft = 300;
     private int loginAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
     private int registerAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
+    private boolean alreadyRegistered = false;
 
     private Ed25519PublicKeyParameters currentLoginKey;
     private Ed25519PublicKeyParameters currentRegistrationKey;
@@ -97,15 +98,30 @@ public final class ServerLoginHandler {
                 if (phase.equals(Phase.WAIT_FOR_CLIENT_KEY)) {
                     currentLoginKey = keyPayload.key;
 
-                    S2CChallengePayload challenge = new S2CChallengePayload();
-                    nonce = challenge.getNonce();
-                    send(challenge);
-                    transition(Phase.WAIT_FOR_CLIENT_SIGNATURE);
+                    if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(profile.id())) {
+                        alreadyRegistered = true;
+
+                        if (AuthorisedKeysModCore.USER_KEYS.userHasKey(profile.id(), currentLoginKey)) {
+                            createAndSendChallenge();
+                        } else {
+                            loginAttemptsLeft--;
+                            if (loginAttemptsLeft <= 0) {
+                                listener.disconnect(Component.translatable("authorisedkeysmc.error.too-many-authentication-attempts"));
+                            }
+
+                            send(new S2CKeyRejectedPayload());
+                            transition(Phase.WAIT_FOR_CLIENT_KEY);
+                        }
+                    } else {
+                        // TODO: add config to disallow users without keys.
+                        createAndSendChallenge();
+                    }
                 } else if (phase.equals(Phase.WAIT_FOR_REGISTRATION)) {
                     currentRegistrationKey = keyPayload.key;
 
                     if (Arrays.equals(currentRegistrationKey.getEncoded(), currentLoginKey.getEncoded())) {
                         // We already know that the client has possession of this key.
+                        AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), currentRegistrationKey);
                         Constants.LOG.info("Successfully registered {}'s key!", profile.name());
                         transition(Phase.SUCCESSFUL);
                     } else {
@@ -121,7 +137,7 @@ public final class ServerLoginHandler {
             case C2SSignaturePayload signaturePayload -> {
                 if (phase.equals(Phase.WAIT_FOR_CLIENT_SIGNATURE)) {
                     if (signaturePayload.verify(currentLoginKey, nonce)) {
-                        if (false /* check if already registered */) {
+                        if (alreadyRegistered) {
                             Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
                             transition(Phase.SUCCESSFUL);
                         } else {
@@ -141,7 +157,7 @@ public final class ServerLoginHandler {
                     }
                 } else if (phase.equals(Phase.WAIT_FOR_REGISTRATION_SIGNATURE)) {
                     if (signaturePayload.verify(currentRegistrationKey, nonce)) {
-                        // TODO: actually register the key
+                        AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), currentRegistrationKey);
                         Constants.LOG.info("Successfully registered {}'s key!", profile.name());
                         transition(Phase.SUCCESSFUL);
                     } else {
@@ -191,6 +207,13 @@ public final class ServerLoginHandler {
         payload.write(buf);
 
         handleRawMessage(buf);
+    }
+
+    private void createAndSendChallenge() {
+        S2CChallengePayload challenge = new S2CChallengePayload();
+        nonce = challenge.getNonce();
+        send(challenge);
+        transition(Phase.WAIT_FOR_CLIENT_SIGNATURE);
     }
 
     private synchronized void send(CustomQueryPayload payload) {

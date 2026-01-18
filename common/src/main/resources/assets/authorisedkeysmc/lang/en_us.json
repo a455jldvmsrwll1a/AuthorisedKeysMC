@@ -1,10 +1,11 @@
 {
+    "authorisedkeysmc.error.no-keys-left": "Could not authenticate with any of the keys!\nContact a server admin for more help.",
     "authorisedkeysmc.error.too-many-authentication-attempts": "Too many attempts to authenticate!",
     "authorisedkeysmc.error.too-many-registration-attempts": "Too many attempts to register!",
     "authorisedkeysmc.error.registration-mandatory": "Registration is mandatory!",
     "authorisedkeysmc.error.server-auth-fail": "The server could not prove its identity! (incorrect signature)",
     "authorisedkeysmc.screen.registration.title": "Confirm Registration",
-    "authorisedkeysmc.screen.registration.prompt": "Would you like to register your public key with the server?\n\nOnce you register, you can only join as this player if you possess the same public key.\n\nIf you do not register, this player UUID will remain open for anyone to log in as.",
+    "authorisedkeysmc.screen.registration.prompt": "Would you like to register your \"%1$s\" key with the server?\n\nKey \"%1$s\": %2$s\n\nOnce you register, you can only join as this player if you possess the same public key.\n\nIf you do not register, this player UUID will remain open for anyone to log in as.",
     "authorisedkeysmc.screen.unknown-server-key.title": "Unknown Server",
     "authorisedkeysmc.screen.unknown-server-key.prompt": "The authenticity of the server %1$s can't be established.\n\nIt has the key: %2$s\n\nMost likely, this happened because you are joining this server for the first time.\n\nDo you wish to continue connecting?\nThis key will be remembered for future log-ins.",
     "authorisedkeysmc.screen.wrong-server-key.title": "Server's key has changed!",

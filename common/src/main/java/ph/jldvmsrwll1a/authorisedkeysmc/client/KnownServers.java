@@ -4,10 +4,12 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -18,13 +20,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KnownServers {
+    private static final List<String> DEFAULT_KEY_LIST = List.of("default");
+
     private final ConcurrentHashMap<String, ServerInfo> knownServers = new ConcurrentHashMap<>();
 
     public KnownServers() {
         read();
     }
 
-    public @Nullable Ed25519PublicKeyParameters getServerkey(String server) {
+    public @Nullable Ed25519PublicKeyParameters getServerKey(String server) {
         ServerInfo info = knownServers.get(server);
 
         return info == null ? null : info.hostKey;
@@ -36,7 +40,7 @@ public class KnownServers {
         knownServers.compute(server, (name, info) -> {
             ServerInfo newInfo = info != null ? info : new ServerInfo();
 
-            if (!areNullableKeysEqual(newInfo.hostKey, key)) {
+            if (!KeyUtil.areNullableKeysEqual(newInfo.hostKey, key)) {
                 dirty[0] = true;
             }
 
@@ -49,6 +53,38 @@ public class KnownServers {
         }
     }
 
+    public @NotNull List<String> getKeysForServer(@Nullable String server) {
+        if (server == null) {
+            return DEFAULT_KEY_LIST;
+        }
+
+        ServerInfo info = knownServers.get(server);
+        return (info == null || info.keysToUse.isEmpty()) ? DEFAULT_KEY_LIST : info.keysToUse;
+    }
+
+    public boolean addKeyForServer(String server, String keyName) {
+        final Boolean[] dirty = {false};
+
+        knownServers.compute(server, (name, info) -> {
+            if (info == null) {
+                info = new ServerInfo();
+            }
+
+            if (info.keysToUse.stream().noneMatch(key -> key.equals(keyName))) {
+                dirty[0] = true;
+            }
+
+            info.keysToUse.add(keyName);
+            return info;
+        });
+
+        if (dirty[0]) {
+            write();
+        }
+
+        return dirty[0];
+    }
+
     public void read() {
         try {
             String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_SERVERS_PATH);
@@ -59,7 +95,7 @@ public class KnownServers {
             entries.forEach(entry -> {
                 ServerInfo info = new ServerInfo();
                 info.hostKey = new Ed25519PublicKeyParameters(Base64Util.decode(entry.host_key));
-                info.keysToUse = entry.use_keys;
+                info.keysToUse = entry.use_keys != null ? Arrays.stream(entry.use_keys).toList() : new ArrayList<>();
 
                 knownServers.put(entry.name, info);
             });
@@ -93,24 +129,12 @@ public class KnownServers {
 
     private static class ServerInfo {
         private @Nullable Ed25519PublicKeyParameters hostKey;
-        private String[] keysToUse;
+        private @NotNull List<String> keysToUse = new ArrayList<>();
     }
 
-    private record ServerJsonEntry(String name, @Nullable String host_key, String[] use_keys) {
-        private ServerJsonEntry(String name, @Nullable Ed25519PublicKeyParameters host_key, String[] use_keys) {
-            this(name, host_key == null ? null : Base64Util.encode(host_key.getEncoded()), use_keys);
+    private record ServerJsonEntry(String name, @Nullable String host_key, @Nullable String[] use_keys) {
+        private ServerJsonEntry(String name, @Nullable Ed25519PublicKeyParameters host_key, List<String> use_keys) {
+            this(name, host_key == null ? null : Base64Util.encode(host_key.getEncoded()), use_keys.toArray(new String[0]));
         }
-    }
-
-    private static boolean areNullableKeysEqual(@Nullable Ed25519PublicKeyParameters a, @Nullable Ed25519PublicKeyParameters b) {
-        if (a == b) {
-            return true;
-        }
-
-        if (a == null || b == null) {
-            return false;
-        }
-
-        return Arrays.equals(a.getEncoded(), b.getEncoded());
     }
 }
