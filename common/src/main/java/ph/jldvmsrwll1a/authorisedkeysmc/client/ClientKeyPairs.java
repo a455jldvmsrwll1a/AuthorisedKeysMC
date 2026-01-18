@@ -8,6 +8,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -15,6 +16,8 @@ import java.security.SecureRandom;
 
 public class ClientKeyPairs {
     public ClientKeyPairs() {
+        ensureWarningFileExists();
+
         try {
             Ed25519PrivateKeyParameters ignored = getDefaultKey();
         } catch (IOException ignored) {
@@ -59,6 +62,17 @@ public class ClientKeyPairs {
         }
 
         Constants.LOG.info("Generated new keypair \"{}\".", name);
+    }
+
+    private void ensureWarningFileExists() {
+        final Path path = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("_SECRET_KEYS_DO_NOT_SHARE");
+        try {
+            Files.createFile(path);
+        } catch (FileAlreadyExistsException ignored) {
+            // Do nothing.
+        } catch (IOException e) {
+            Constants.LOG.warn("Could not create warning file: {}", e.toString());
+        }
     }
 
     private Path fromKeyName(String name) {

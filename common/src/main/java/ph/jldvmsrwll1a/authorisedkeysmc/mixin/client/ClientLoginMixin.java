@@ -1,49 +1,35 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
 
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
+import net.minecraft.client.multiplayer.LevelLoadTracker;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.TransferState;
 import net.minecraft.network.Connection;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-import java.io.IOException;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 @Mixin(ClientHandshakePacketListenerImpl.class)
 public abstract class ClientLoginMixin implements ClientLoginPacketListener {
-    @Shadow
-    @Final
-    private Consumer<Component> updateStatus;
-
-    @Shadow
-    @Final
-    private Connection connection;
-
     @Unique
-    private Ed25519PublicKeyParameters authorisedKeysMC$serverKey;
+    private volatile ClientLoginHandler authorisedKeysMC$loginHandler;
 
-    @Unique
-    private byte[] authorisedKeysMC$nonce;
-
-    @Unique
-    private Ed25519PrivateKeyParameters authorisedKeysMC$secret;
+    @Inject(method = "<init>", at = @At("RETURN"))
+    public void init(Connection connection, Minecraft minecraft, ServerData serverData, Screen parent, boolean newWorld, Duration worldLoadDuration, Consumer updateStatus, LevelLoadTracker levelLoadTracker, TransferState transferState, CallbackInfo ci) {
+        authorisedKeysMC$loginHandler = new ClientLoginHandler(minecraft, (ClientHandshakePacketListenerImpl) (Object) this, connection, updateStatus);
+    }
 
     @Inject(method = "handleCustomQuery", at = @At("HEAD"), cancellable = true)
     public void handleQuery(ClientboundCustomQueryPacket packet, CallbackInfo ci) {
@@ -53,82 +39,12 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
         ci.cancel();
 
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        packet.payload().write(buf);
+        ClientLoginHandler handler = authorisedKeysMC$loginHandler;
 
-        Constants.LOG.info(ByteBufUtil.prettyHexDump(buf));
-
-        QueryPayloadType qpType = BaseS2CPayload.peekPayloadType(buf);
-        switch (qpType) {
-            case SERVER_KEY -> {
-                S2CPublicKeyPayload keyPayload = new S2CPublicKeyPayload(buf);
-                authorisedKeysMC$serverKey = keyPayload.key;
-                Constants.LOG.info("GOT SERVER'S PUBLIC KEY: {}", Base64Util.encode(keyPayload.key.getEncoded()));
-
-                C2SChallengePayload challengePayload = new C2SChallengePayload();
-                authorisedKeysMC$nonce = challengePayload.getNonce();
-
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), challengePayload));
-                this.updateStatus.accept(Component.literal("Verifying server's identity..."));
-            }
-            case CLIENT_CHALLENGE_RESPONSE -> {
-                S2CSignaturePayload signaturePayload = new S2CSignaturePayload(buf);
-                Constants.LOG.info("GOT SERVER'S SIGNATURE: {}", Base64Util.encode(signaturePayload.signature));
-
-                if (authorisedKeysMC$serverKey == null) {
-                    var err = "Got a challenge response signature from the server before its key could be known!";
-                    Constants.LOG.error(err);
-                    this.connection.disconnect(Component.literal(err));
-
-                    return;
-                }
-
-                if (authorisedKeysMC$nonce == null) {
-                    var err = "Got a bogus challenge response from the server!";
-                    Constants.LOG.error(err);
-                    this.connection.disconnect(Component.literal(err));
-
-                    return;
-                }
-
-                if (!signaturePayload.verify(authorisedKeysMC$serverKey, authorisedKeysMC$nonce)) {
-                    Constants.LOG.warn("Failed to verify signature from server!");
-                    this.connection.disconnect(Component.literal("The server could not prove its identity! (incorrect signature)"));
-
-                    return;
-                }
-
-                try {
-                    authorisedKeysMC$secret = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
-                Constants.LOG.info("SIG OK! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new C2SPublicKeyPayload(pub)));
-
-                this.updateStatus.accept(Component.literal("Waiting for signature challenge from the server..."));
-            }
-            case SERVER_CHALLENGE -> {
-                S2CChallengePayload challengePayload = new S2CChallengePayload(buf);
-                Constants.LOG.info("SERVER WANTS US TO SIGN THIS: {}", Base64Util.encode(challengePayload.getNonce()));
-
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), C2SSignaturePayload.fromSigningChallenge(authorisedKeysMC$secret, challengePayload)));
-                this.updateStatus.accept(Component.literal("Waiting for authentication verdict..."));
-            }
-            case SERVER_KEY_REJECTION -> {
-                try {
-                    authorisedKeysMC$secret = AuthorisedKeysModClient.KEY_PAIRS.getDefaultKey();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                Ed25519PublicKeyParameters pub = authorisedKeysMC$secret.generatePublicKey();
-                Constants.LOG.info("KEY REJECTED! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(packet.transactionId(), new C2SPublicKeyPayload(pub)));
-                this.updateStatus.accept(Component.literal("Key rejected! Trying next key..."));
-            }
+        if (handler == null) {
+            throw new IllegalStateException("ClientLoginHandler is null but should have been instantiated!");
         }
+
+        handler.handleRawMessage(packet.payload(), packet.transactionId());
     }
 }

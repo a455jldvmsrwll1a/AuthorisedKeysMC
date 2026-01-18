@@ -10,6 +10,7 @@
     "ServerLoginMixin"
   ],
   "client": [
+    "client.ClientHandshakePacketListenerAccessorMixin",
     "client.ClientLoginMixin",
     "client.CustomQueryPacketMixin",
     "client.TitleScreenMixin"

@@ -161,11 +161,6 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
         ci.cancel();
 
-        if (tick++ >= 600) {
-            disconnect(Component.translatable("multiplayer.disconnect.slow_login"));
-            return;
-        }
-
         loginHandler.tick(tick);
 
         if (loginHandler.finished()) {
@@ -174,4 +169,3 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
     }
 }
-
