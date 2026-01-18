@@ -55,6 +55,7 @@ public class ServerKeypair {
             }
 
             secretKey = new Ed25519PrivateKeyParameters(SecureRandom.getInstanceStrong());
+            publicKey = secretKey.generatePublicKey();
             PrivateKeyInfo pkcs = PrivateKeyInfoFactory.createPrivateKeyInfo(secretKey);
 
             Files.write(secret_path, pkcs.getEncoded());
