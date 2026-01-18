@@ -10,6 +10,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -25,7 +26,7 @@ public class ClientKeyPairs {
         }
     }
 
-    public Ed25519PrivateKeyParameters loadFromFile(String name) throws IOException {
+    public Ed25519PrivateKeyParameters loadFromFile(String name) throws IOException, InvalidPathException {
         Path path = fromKeyName(name);
         byte[] keyBytes = Files.readAllBytes(path);
         PrivateKeyInfo pkcs = PrivateKeyInfo.getInstance(keyBytes);
@@ -33,7 +34,7 @@ public class ClientKeyPairs {
         return (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(pkcs);
     }
 
-    private void generate(String name) {
+    private void generate(String name) throws InvalidPathException {
         Path path = fromKeyName(name);
         Path backupPath = Path.of("%s.BACKUP".formatted(path));
 
@@ -73,7 +74,7 @@ public class ClientKeyPairs {
         }
     }
 
-    private Path fromKeyName(String name) {
+    private Path fromKeyName(String name) throws InvalidPathException {
         return AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("%s.der".formatted(name));
     }
 }

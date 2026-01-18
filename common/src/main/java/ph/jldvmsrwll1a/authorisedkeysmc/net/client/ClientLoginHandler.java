@@ -22,6 +22,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -234,7 +235,7 @@ public final class ClientLoginHandler {
 
             try {
                 secretKey = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
-            } catch (IOException e) {
+            } catch (InvalidPathException | IOException e) {
                 Constants.LOG.error("Could not load the \"{}\" key: {}", secretKeyName, e);
             }
         }
