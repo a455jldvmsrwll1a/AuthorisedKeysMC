@@ -14,6 +14,7 @@ import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.LoginRegistrationScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.NoKeysLeftErrorScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.UnknownServerKeyWarningScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.WrongServerKeyWarningScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.client.ClientHandshakePacketListenerAccessorMixin;
@@ -37,6 +38,7 @@ public final class ClientLoginHandler {
     private Ed25519PrivateKeyParameters secretKey;
     private String secretKeyName;
     private Queue<String> remainingSecretKeys;
+    private String[] allSecretKeyNames;
 
     boolean registering;
 
@@ -198,7 +200,15 @@ public final class ClientLoginHandler {
         }
 
         Constants.LOG.warn("No keys available to authenticate.");
-        connection.disconnect(Component.translatable("authorisedkeysmc.error.no-keys-left"));
+        connection.disconnect(Component.translatable("connect.aborted"));
+
+        minecraft.execute(() -> {
+            if (allSecretKeyNames == null) {
+                allSecretKeyNames = new String[0];
+            }
+            NoKeysLeftErrorScreen screen = NoKeysLeftErrorScreen.create(allSecretKeyNames);
+            minecraft.setScreen(screen);
+        });
     }
 
     private boolean acquireNextSecretKey() {
@@ -212,6 +222,7 @@ public final class ClientLoginHandler {
             }
 
             remainingSecretKeys = new ArrayDeque<>(keyNames);
+            allSecretKeyNames = keyNames.toArray(new String[0]);
         }
 
         while (secretKey == null) {

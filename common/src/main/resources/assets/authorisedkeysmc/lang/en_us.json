@@ -1,9 +1,12 @@
 {
-    "authorisedkeysmc.error.no-keys-left": "Could not authenticate with any of the keys!\nContact a server admin for more help.",
+    "authorisedkeysmc.button.goto-server-config": "Server Configuration",
     "authorisedkeysmc.error.too-many-authentication-attempts": "Too many attempts to authenticate!",
     "authorisedkeysmc.error.too-many-registration-attempts": "Too many attempts to register!",
     "authorisedkeysmc.error.registration-mandatory": "Registration is mandatory!",
     "authorisedkeysmc.error.server-auth-fail": "The server could not prove its identity! (incorrect signature)",
+    "authorisedkeysmc.screen.no-keys-left.title": "Authentication Failure",
+    "authorisedkeysmc.screen.no-keys-left.body": "None of the %1$s key(s) used were authorized by the server!\nThe keys used were, in order:",
+    "authorisedkeysmc.screen.no-keys-left.footer": "If you have other keys available, add them to this server via the configuration screen accessible below or in the Multiplayer screen.\n\nIf not, contact a server administrator to either get unregistered or have them manually register a public key of your choosing.",
     "authorisedkeysmc.screen.registration.title": "Confirm Registration",
     "authorisedkeysmc.screen.registration.prompt": "Would you like to register your \"%1$s\" key with the server?\n\nKey \"%1$s\": %2$s\n\nOnce you register, you can only join as this player if you possess the same public key.\n\nIf you do not register, this player UUID will remain open for anyone to log in as.",
     "authorisedkeysmc.screen.unknown-server-key.title": "Unknown Server",
