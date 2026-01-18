@@ -7,6 +7,7 @@ import net.minecraft.client.multiplayer.LevelLoadTracker;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.TransferState;
 import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +28,7 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
     private volatile ClientLoginHandler authorisedKeysMC$loginHandler;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    public void init(Connection connection, Minecraft minecraft, ServerData serverData, Screen parent, boolean newWorld, Duration worldLoadDuration, Consumer updateStatus, LevelLoadTracker levelLoadTracker, TransferState transferState, CallbackInfo ci) {
+    public void init(Connection connection, Minecraft minecraft, ServerData serverData, Screen parent, boolean newWorld, Duration worldLoadDuration, Consumer<Component> updateStatus, LevelLoadTracker levelLoadTracker, TransferState transferState, CallbackInfo ci) {
         authorisedKeysMC$loginHandler = new ClientLoginHandler(minecraft, (ClientHandshakePacketListenerImpl) (Object) this, connection, updateStatus);
     }
 
