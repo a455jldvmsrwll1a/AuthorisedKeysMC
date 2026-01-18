@@ -8,7 +8,7 @@ import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-public final class LoginRegistrationScreen extends BaseScreen {
+public final class LoginRegistrationScreen extends SimpleYesNoCancelScreen {
     private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.registration.title").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.GREEN);
 
     public LoginRegistrationScreen(ClientLoginHandler loginHandler, Component prompt) {

@@ -9,7 +9,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-public class UnknownServerKeyWarningScreen extends BaseScreen {
+public class UnknownServerKeyWarningScreen extends SimpleYesNoCancelScreen {
     private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.unknown-server-key.title").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.GOLD);
 
     private final Ed25519PublicKeyParameters serverKey;
