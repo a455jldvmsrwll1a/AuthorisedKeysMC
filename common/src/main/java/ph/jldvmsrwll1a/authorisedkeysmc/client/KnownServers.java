@@ -36,8 +36,6 @@ public class KnownServers {
         knownServers.compute(server, (name, info) -> {
             ServerInfo newInfo = info != null ? info : new ServerInfo();
 
-            Constants.LOG.info("HMMMMMMMMM {} AND {} ARE EQUAL????    {} !", newInfo.hostKey, key, areNullableKeysEqual(newInfo.hostKey, key));
-
             if (!areNullableKeysEqual(newInfo.hostKey, key)) {
                 dirty[0] = true;
             }
