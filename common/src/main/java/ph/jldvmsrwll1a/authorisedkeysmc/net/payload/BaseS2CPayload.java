@@ -8,7 +8,6 @@ import org.jspecify.annotations.NonNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public abstract class BaseS2CPayload implements CustomQueryPayload {
-    public static final int MAGIC = 0x414B4D43;
     private final QueryPayloadType payloadType;
 
     protected BaseS2CPayload(QueryPayloadType payloadType) {
@@ -27,7 +26,8 @@ public abstract class BaseS2CPayload implements CustomQueryPayload {
 
     @Override
     public final void write(FriendlyByteBuf buf) {
-        buf.writeInt(MAGIC);
+        buf.writeInt(Constants.PAYLOAD_HEADER);
+        buf.writeVarInt(Constants.PROTOCOL_VERSION);
         buf.writeEnum(payloadType);
         writeData(buf);
     }
@@ -44,7 +44,9 @@ public abstract class BaseS2CPayload implements CustomQueryPayload {
 
     private static QueryPayloadType readPayloadType(FriendlyByteBuf buf) {
         int magic = buf.readInt();
-        Validate.validState(magic == MAGIC, "Not a valid AKMC query payload.");
+        Validate.validState(magic == Constants.PAYLOAD_HEADER, "Not a valid AKMC query payload.");
+        int version = buf.readVarInt();
+        Validate.validState(version == Constants.PROTOCOL_VERSION, "Unsupported AKMC query payload version.");
         return buf.readEnum(QueryPayloadType.class);
     }
 }
