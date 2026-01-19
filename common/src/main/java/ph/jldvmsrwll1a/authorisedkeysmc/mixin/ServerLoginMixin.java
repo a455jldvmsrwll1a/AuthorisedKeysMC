@@ -1,5 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.Connection;
@@ -24,6 +26,9 @@ import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ServerLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
+
+import javax.crypto.SecretKey;
+import java.security.PublicKey;
 
 // Use lower priority so that we run before any mod-loader-loaded mixin runs.
 @Mixin(value = ServerLoginPacketListenerImpl.class, priority = 500)
@@ -64,6 +69,9 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
     @Unique
     private boolean authorisedKeysMC$skipped = false;
+
+    @Unique
+    private byte @Nullable [] authorisedKeysMC$sessionHash;
 
     @Inject(method = "handleHello", at = @At("HEAD"), cancellable = true)
     private void handleIncoming(ServerboundHelloPacket packet, CallbackInfo ci) {
@@ -117,15 +125,26 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
     }
 
+    @WrapOperation(method = "handleKey", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
+    private byte[] extractSessionHash(String serverId, PublicKey publicKey, SecretKey secretKey, Operation<byte[]> original) {
+        byte[] hash = original.call(serverId, publicKey, secretKey);
+
+        authorisedKeysMC$sessionHash = hash;
+
+        return hash;
+    }
+
     @Inject(method = "startClientVerification", at = @At("HEAD"))
     private void detourFromVerification(GameProfile authenticatedProfile, CallbackInfo ci) {
         if (authorisedKeysMC$skipped || authorisedKeysMC$loginHandler != null) {
             return;
         }
 
+        Validate.notNull(authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
+
         // Start the custom authentication.
         Constants.LOG.info("begin custom auth");
-        authorisedKeysMC$loginHandler = new ServerLoginHandler((ServerLoginPacketListenerImpl) (Object) this, connection, authenticatedProfile);
+        authorisedKeysMC$loginHandler = new ServerLoginHandler((ServerLoginPacketListenerImpl) (Object) this, connection, authenticatedProfile, authorisedKeysMC$sessionHash);
     }
 
     @Inject(method = "handleCustomQueryPacket", at = @At("HEAD"), cancellable = true)

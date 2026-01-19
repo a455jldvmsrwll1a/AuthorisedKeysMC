@@ -11,6 +11,8 @@ import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.LoginRegistrationScreen;
@@ -32,6 +34,7 @@ public final class ClientLoginHandler {
     private final Connection connection;
     private final Consumer<Component> updateStatus;
 
+    private byte @Nullable [] sessionHash;
 
     private Ed25519PublicKeyParameters serverKey;
     private byte[] nonce;
@@ -62,6 +65,10 @@ public final class ClientLoginHandler {
 
     public Optional<String> getServerName() {
         return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData()).map(data -> data.name);
+    }
+
+    public void setSessionHash(byte @NotNull [] hash) {
+        sessionHash = hash;
     }
 
     public void handleRawMessage(CustomQueryPayload payload, int txId) {
@@ -123,7 +130,7 @@ public final class ClientLoginHandler {
                     return;
                 }
 
-                if (!serverSignaturePayload.verify(serverKey, nonce)) {
+                if (!serverSignaturePayload.verify(serverKey, nonce, sessionHash)) {
                     Constants.LOG.warn("Failed to verify signature from server!");
                     this.connection.disconnect(Component.translatable("authorisedkeysmc.error.server-auth-fail"));
 
@@ -134,7 +141,12 @@ public final class ClientLoginHandler {
                 sendPublicKeyForAuthentication();
             }
             case S2CChallengePayload challengePayload -> {
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload)));
+                if (sessionHash == null) {
+                    throw new IllegalStateException("Session hash is null. This is impossible as encryption is required.");
+                }
+
+                var c2s = C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload, sessionHash, registering);
+                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
                 this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
             }
             case S2CKeyRejectedPayload ignored -> {
@@ -165,6 +177,10 @@ public final class ClientLoginHandler {
     }
 
     public void sendPublicKeyForAuthentication() {
+        if (!connection.isEncrypted()) {
+            throw new IllegalStateException("Encryption must be enabled.");
+        }
+
         Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
         Constants.LOG.info("Sending pubkey for authentication: {}", Base64Util.encode(pub.getEncoded()));
         this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));

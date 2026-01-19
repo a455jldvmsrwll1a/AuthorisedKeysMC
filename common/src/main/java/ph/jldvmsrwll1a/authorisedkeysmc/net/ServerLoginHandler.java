@@ -23,6 +23,7 @@ public final class ServerLoginHandler {
     private final ServerLoginPacketListenerImpl listener;
     private final Connection connection;
     private final GameProfile profile;
+    private final byte[] sessionHash;
 
     private final Ed25519PrivateKeyParameters signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
     private final Ed25519PublicKeyParameters serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
@@ -38,12 +39,13 @@ public final class ServerLoginHandler {
     private Ed25519PublicKeyParameters currentRegistrationKey;
     private byte[] nonce;
 
-    public ServerLoginHandler(@NotNull ServerLoginPacketListenerImpl listener, @NotNull Connection connection, @NotNull GameProfile profile) {
+    public ServerLoginHandler(@NotNull ServerLoginPacketListenerImpl listener, @NotNull Connection connection, @NotNull GameProfile profile, @NotNull byte[] sessionHash) {
         Validate.isTrue(connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
 
         this.listener = listener;
         this.connection = connection;
         this.profile = profile;
+        this.sessionHash = sessionHash;
     }
 
     public boolean finished() {
@@ -84,7 +86,7 @@ public final class ServerLoginHandler {
             case C2SChallengePayload challengePayload -> {
                 Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
 
-                send(S2CSignaturePayload.fromSigningChallenge(signingKey, challengePayload));
+                send(S2CSignaturePayload.fromSigningChallenge(signingKey, challengePayload, sessionHash));
                 transition(Phase.WAIT_FOR_CLIENT_KEY);
             }
             case C2SPublicKeyPayload keyPayload -> {
@@ -129,7 +131,7 @@ public final class ServerLoginHandler {
             }
             case C2SSignaturePayload signaturePayload -> {
                 if (phase.equals(Phase.WAIT_FOR_CLIENT_SIGNATURE)) {
-                    if (signaturePayload.verify(currentLoginKey, nonce)) {
+                    if (signaturePayload.verify(currentLoginKey, nonce, sessionHash, false)) {
                         if (alreadyRegistered) {
                             Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
                             transition(Phase.SUCCESSFUL);
@@ -149,7 +151,7 @@ public final class ServerLoginHandler {
                         transition(Phase.WAIT_FOR_CLIENT_KEY);
                     }
                 } else if (phase.equals(Phase.WAIT_FOR_REGISTRATION_SIGNATURE)) {
-                    if (signaturePayload.verify(currentRegistrationKey, nonce)) {
+                    if (signaturePayload.verify(currentRegistrationKey, nonce, sessionHash, true)) {
                         AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), currentRegistrationKey);
                         Constants.LOG.info("Successfully registered {}'s key!", profile.name());
                         transition(Phase.SUCCESSFUL);

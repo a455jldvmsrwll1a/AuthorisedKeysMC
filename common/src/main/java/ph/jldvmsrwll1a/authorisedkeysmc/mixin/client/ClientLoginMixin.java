@@ -1,5 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
@@ -17,8 +19,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 
+import javax.crypto.SecretKey;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.util.function.Consumer;
 
@@ -47,5 +50,14 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
         }
 
         handler.handleRawMessage(packet.payload(), packet.transactionId());
+    }
+
+    @WrapOperation(method = "handleHello", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
+    private byte[] extractSessionHash(String serverId, PublicKey publicKey, SecretKey secretKey, Operation<byte[]> original) {
+        byte[] hash = original.call(serverId, publicKey, secretKey);
+
+        authorisedKeysMC$loginHandler.setSessionHash(hash);
+
+        return hash;
     }
 }
