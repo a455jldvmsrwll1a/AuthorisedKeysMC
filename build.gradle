@@ -2,7 +2,6 @@ plugins {
     id 'fabric-loom' version '1.13-SNAPSHOT' apply false
     id 'net.neoforged.moddev' version '2.0.123' apply false
     id 'com.gradleup.shadow' version "9.3.1"
-    id "io.github.pacifistmc.forgix" version "2.0.0-SNAPSHOT.5.1"
 }
 
 allprojects {
@@ -10,45 +9,3 @@ allprojects {
         mavenCentral()
     }
 }
-
-forgix {
-    evaluationDependsOn(":fabric")
-    evaluationDependsOn(":forge")
-    evaluationDependsOn(":neoforge")
-
-    destinationDirectory = layout.projectDirectory.dir("build/libs")
-    archiveClassifier.set("all")
-    autoRun = true
-
-    // needed because Forgix keeps picking up the javadoc JAR for some reason
-    fabric {
-        var actualJar = project(":fabric").tasks.named("jar").get().outputs.files.filter { file ->
-            !file.name.endsWith("-javadoc.jar")
-        }.singleFile
-
-        inputJar.set(actualJar)
-    }
-
-    // needed because Forgix keeps picking up the javadoc JAR for some reason
-    forge {
-        var actualJar = project(":forge").tasks.named("jar").get().outputs.files.filter { file ->
-            !file.name.endsWith("-javadoc.jar")
-        }.singleFile
-
-        inputJar.set(actualJar)
-    }
-
-    // needed because Forgix keeps picking up the javadoc JAR for some reason
-    neoforge {
-        var actualJar = project(":neoforge").tasks.named("jar").get().outputs.files.filter { file ->
-            !file.name.endsWith("-javadoc.jar")
-        }.singleFile
-
-        inputJar.set(actualJar)
-    }
-}
-
-//tasks.shadowJar {
-//    archiveClassifier.set('')
-//    relocate 'org.bouncycastle', 'ph.jldvmsrwll1a.authorisedkeysmc.vendor.bouncycastle'
-//}
