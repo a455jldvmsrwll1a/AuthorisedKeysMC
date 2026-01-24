@@ -15,6 +15,6 @@ public abstract class BaseScreen extends Screen {
     public void render(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
         super.render(gui, mouseX, mouseY, partialTick);
 
-        gui.drawString(font, Constants.MOD_NAME, 4, height - font.lineHeight - 4, 0xFFFFFFFF, true);
+        gui.drawString(font, Constants.MOD_NAME, 2, height - font.lineHeight - 1, 0xFF00FFFF, true);
     }
 }

@@ -8,12 +8,12 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientKeyPairs {
     public ClientKeyPairs() {
@@ -24,6 +24,29 @@ public class ClientKeyPairs {
         } catch (IOException ignored) {
             generate("default");
         }
+    }
+
+    public List<String> retrieveKeyNamesFromDisk() {
+        List<String> names = new ArrayList<>();
+
+        try (DirectoryStream<Path> dirEntries = Files.newDirectoryStream(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR)) {
+            for (Path path : dirEntries) {
+                String name = path.getFileName().toString();
+
+                if (name.endsWith(".der") && Files.isRegularFile(path)) {
+                    names.add(name.substring(0, name.length() - 4));
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return names;
+    }
+
+    public Instant getModificationTime(String name) throws IOException, InvalidPathException {
+        Path path = fromKeyName(name);
+        return Files.getLastModifiedTime(path).toInstant();
     }
 
     public Ed25519PrivateKeyParameters loadFromFile(String name) throws IOException, InvalidPathException {

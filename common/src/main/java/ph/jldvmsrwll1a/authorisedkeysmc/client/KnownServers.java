@@ -85,6 +85,18 @@ public class KnownServers {
         return dirty[0];
     }
 
+    public List<String> getAddressesUsingKey(String keyName) {
+        List<String> addresses = new ArrayList<>();
+
+        knownServers.forEach((address, info) -> {
+            if (info.keysToUse.contains(keyName)) {
+                addresses.add(address);
+            }
+        });
+
+        return addresses;
+    }
+
     public void read() {
         try {
             String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_SERVERS_PATH);

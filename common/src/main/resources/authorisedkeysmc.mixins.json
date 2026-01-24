@@ -12,7 +12,8 @@
   "client": [
     "client.ClientHandshakePacketListenerAccessorMixin",
     "client.ClientLoginMixin",
-    "client.CustomQueryPacketMixin"
+    "client.CustomQueryPacketMixin",
+    "client.JoinMultiplayerScreenMixin"
   ],
   "server": [],
   "injectors": {
