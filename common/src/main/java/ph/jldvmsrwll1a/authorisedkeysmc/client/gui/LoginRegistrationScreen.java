@@ -9,14 +9,18 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class LoginRegistrationScreen extends SimpleYesNoCancelScreen {
-    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.registration.title").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.GREEN);
+    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.registration.title")
+            .withStyle(ChatFormatting.BOLD)
+            .withStyle(ChatFormatting.GREEN);
 
     public LoginRegistrationScreen(ClientLoginHandler loginHandler, Component prompt) {
         super(loginHandler, TITLE, prompt);
     }
 
-    public static LoginRegistrationScreen create(ClientLoginHandler loginHandler, String keyName, Ed25519PublicKeyParameters key) {
-        Component prompt = Component.translatable("authorisedkeysmc.screen.registration.prompt", keyName, Base64Util.encode(key.getEncoded()));
+    public static LoginRegistrationScreen create(
+            ClientLoginHandler loginHandler, String keyName, Ed25519PublicKeyParameters key) {
+        Component prompt = Component.translatable(
+                "authorisedkeysmc.screen.registration.prompt", keyName, Base64Util.encode(key.getEncoded()));
 
         return new LoginRegistrationScreen(loginHandler, prompt);
     }

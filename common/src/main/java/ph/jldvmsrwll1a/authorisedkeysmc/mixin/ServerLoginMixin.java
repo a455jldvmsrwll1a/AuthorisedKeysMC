@@ -3,6 +3,8 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
+import java.security.PublicKey;
+import javax.crypto.SecretKey;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.Connection;
 import net.minecraft.network.TickablePacketListener;
@@ -27,13 +29,11 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.ServerLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 
-import javax.crypto.SecretKey;
-import java.security.PublicKey;
-
 // Use lower priority so that we run before any mod-loader-loaded mixin runs.
 @Mixin(value = ServerLoginPacketListenerImpl.class, priority = 500)
 public abstract class ServerLoginMixin implements ServerLoginPacketListener, TickablePacketListener {
-    @Unique @Nullable
+    @Unique
+    @Nullable
     private volatile ServerLoginHandler authorisedKeysMC$loginHandler = null;
 
     @Shadow
@@ -51,7 +51,8 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     private int tick;
 
     @Shadow
-    @Nullable String requestedUsername;
+    @Nullable
+    String requestedUsername;
 
     @Shadow
     abstract void startClientVerification(GameProfile authenticatedProfile);
@@ -87,7 +88,9 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         IPlatformHelper platform = AuthorisedKeysModCore.PLATFORM;
         ServerLoginPacketListenerImpl self = (ServerLoginPacketListenerImpl) (Object) this;
 
-        Validate.validState(platform.getLoginState(self).equals(VanillaLoginHandlerState.STARTING), "Received an unexpected hello packet");
+        Validate.validState(
+                platform.getLoginState(self).equals(VanillaLoginHandlerState.STARTING),
+                "Received an unexpected hello packet");
         Validate.validState(StringUtil.isValidPlayerName(packet.name()), "Invalid username");
 
         GameProfile spProfile = server.getSingleplayerProfile();
@@ -110,7 +113,8 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
 
         platform.setLoginState(self, VanillaLoginHandlerState.ENCRYPTING);
-        connection.send(new ClientboundHelloPacket("", server.getKeyPair().getPublic().getEncoded(), challenge, server.usesAuthentication()));
+        connection.send(new ClientboundHelloPacket(
+                "", server.getKeyPair().getPublic().getEncoded(), challenge, server.usesAuthentication()));
     }
 
     @Inject(method = "handleKey", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;start()V"), cancellable = true)
@@ -125,8 +129,15 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
     }
 
-    @WrapOperation(method = "handleKey", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
-    private byte[] extractSessionHash(String serverId, PublicKey publicKey, SecretKey secretKey, Operation<byte[]> original) {
+    @WrapOperation(
+            method = "handleKey",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
+    private byte[] extractSessionHash(
+            String serverId, PublicKey publicKey, SecretKey secretKey, Operation<byte[]> original) {
         byte[] hash = original.call(serverId, publicKey, secretKey);
 
         authorisedKeysMC$sessionHash = hash;
@@ -140,11 +151,16 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return;
         }
 
-        Validate.notNull(authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
+        Validate.notNull(
+                authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
 
         // Start the custom authentication.
         Constants.LOG.info("begin custom auth");
-        authorisedKeysMC$loginHandler = new ServerLoginHandler((ServerLoginPacketListenerImpl) (Object) this, connection, authenticatedProfile, authorisedKeysMC$sessionHash);
+        authorisedKeysMC$loginHandler = new ServerLoginHandler(
+                (ServerLoginPacketListenerImpl) (Object) this,
+                connection,
+                authenticatedProfile,
+                authorisedKeysMC$sessionHash);
     }
 
     @Inject(method = "handleCustomQueryPacket", at = @At("HEAD"), cancellable = true)
@@ -178,7 +194,10 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
 
         if (authorisedKeysMC$skipped || loginHandler == null || loginHandler.finished()) {
-            Constants.LOG.info("normal tick {}, state = {}", tick, AuthorisedKeysModCore.PLATFORM.getLoginState((ServerLoginPacketListenerImpl) (Object) this));
+            Constants.LOG.info(
+                    "normal tick {}, state = {}",
+                    tick,
+                    AuthorisedKeysModCore.PLATFORM.getLoginState((ServerLoginPacketListenerImpl) (Object) this));
             return;
         }
         ci.cancel();

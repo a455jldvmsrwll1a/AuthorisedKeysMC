@@ -1,10 +1,9 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.platform;
 
+import java.nio.file.Path;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
-
-import java.nio.file.Path;
 
 public class FabricPlatformHelper implements IPlatformHelper {
 

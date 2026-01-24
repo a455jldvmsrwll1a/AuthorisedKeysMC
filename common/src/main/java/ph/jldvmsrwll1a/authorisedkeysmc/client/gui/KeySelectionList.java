@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
 
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -9,8 +10,6 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import java.util.List;
 
 public final class KeySelectionList extends ObjectSelectionList<KeySelectionList.KeyListEntry> {
     private boolean listIsEmpty;
@@ -84,7 +83,12 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
         if (listIsEmpty) {
             int x = getX() + getWidth() / 2;
             int y = getY() + getHeight() / 2;
-            gui.drawCenteredString(minecraft.font, Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message"), x, y, 0xFFFFFFFF);
+            gui.drawCenteredString(
+                    minecraft.font,
+                    Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message"),
+                    x,
+                    y,
+                    0xFFFFFFFF);
         }
     }
 
@@ -107,8 +111,11 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
         }
 
         @Override
-        public void renderContent(@NonNull GuiGraphics gui, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            stringWidget.setPosition(getContentXMiddle() - stringWidget.getWidth() / 2, getContentYMiddle() - stringWidget.getHeight() / 2);
+        public void renderContent(
+                @NonNull GuiGraphics gui, int mouseX, int mouseY, boolean hovering, float partialTick) {
+            stringWidget.setPosition(
+                    getContentXMiddle() - stringWidget.getWidth() / 2,
+                    getContentYMiddle() - stringWidget.getHeight() / 2);
             stringWidget.render(gui, mouseX, mouseY, partialTick);
         }
     }

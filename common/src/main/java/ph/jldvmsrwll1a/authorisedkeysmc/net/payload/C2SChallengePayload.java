@@ -1,9 +1,8 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.net.payload;
 
+import java.security.SecureRandom;
 import net.minecraft.network.FriendlyByteBuf;
 import org.apache.commons.lang3.Validate;
-
-import java.security.SecureRandom;
 
 public final class C2SChallengePayload extends BaseC2SPayload {
     public static final int NONCE_LENGTH = 256;

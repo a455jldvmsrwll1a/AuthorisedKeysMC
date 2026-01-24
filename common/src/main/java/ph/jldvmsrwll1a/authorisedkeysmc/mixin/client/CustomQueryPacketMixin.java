@@ -14,7 +14,8 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.RetainedQueryPayload;
 @Mixin(ClientboundCustomQueryPacket.class)
 public abstract class CustomQueryPacketMixin {
     @Inject(method = "readPayload", at = @At("HEAD"), cancellable = true)
-    private static void preservePayloadBuffer(Identifier id, FriendlyByteBuf buffer, CallbackInfoReturnable<CustomQueryPayload> cir) {
+    private static void preservePayloadBuffer(
+            Identifier id, FriendlyByteBuf buffer, CallbackInfoReturnable<CustomQueryPayload> cir) {
         if (!id.equals(Constants.LOGIN_CHANNEL_ID)) {
             // We do not care about messages not meant for us.
             return;

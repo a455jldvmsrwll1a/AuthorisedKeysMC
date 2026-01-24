@@ -10,20 +10,27 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public class WrongServerKeyWarningScreen extends SimpleYesNoCancelScreen {
-    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.wrong-server-key.title").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.RED);
+    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.wrong-server-key.title")
+            .withStyle(ChatFormatting.BOLD)
+            .withStyle(ChatFormatting.RED);
 
     private final Ed25519PublicKeyParameters serverKey;
 
-    public WrongServerKeyWarningScreen(ClientLoginHandler loginHandler, Component prompt, Ed25519PublicKeyParameters serverKey) {
+    public WrongServerKeyWarningScreen(
+            ClientLoginHandler loginHandler, Component prompt, Ed25519PublicKeyParameters serverKey) {
         super(loginHandler, TITLE, prompt);
         this.serverKey = serverKey;
     }
 
-    public static WrongServerKeyWarningScreen create(ClientLoginHandler loginHandler, Ed25519PublicKeyParameters cachedKey, Ed25519PublicKeyParameters currentKey) {
+    public static WrongServerKeyWarningScreen create(
+            ClientLoginHandler loginHandler,
+            Ed25519PublicKeyParameters cachedKey,
+            Ed25519PublicKeyParameters currentKey) {
         String name = loginHandler.getServerName().orElse("<no name>");
         String cachedKeyStr = Base64Util.encode(cachedKey.getEncoded());
         String currentKeyStr = Base64Util.encode(currentKey.getEncoded());
-        Component prompt = Component.translatable("authorisedkeysmc.screen.wrong-server-key.prompt", name, cachedKeyStr, currentKeyStr);
+        Component prompt = Component.translatable(
+                "authorisedkeysmc.screen.wrong-server-key.prompt", name, cachedKeyStr, currentKeyStr);
 
         return new WrongServerKeyWarningScreen(loginHandler, prompt, currentKey);
     }
@@ -32,7 +39,9 @@ public class WrongServerKeyWarningScreen extends SimpleYesNoCancelScreen {
     protected void onYesClicked() {
         minecraft.setScreen(parent);
 
-        loginHandler.getServerName().ifPresent(name -> AuthorisedKeysModClient.KNOWN_SERVERS.setServerKey(name, serverKey));
+        loginHandler
+                .getServerName()
+                .ifPresent(name -> AuthorisedKeysModClient.KNOWN_SERVERS.setServerKey(name, serverKey));
 
         loginHandler.sendServerChallenge();
     }

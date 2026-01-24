@@ -3,7 +3,15 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
     id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
     id 'idea'
+    id 'com.diffplug.spotless' version '8.1.0'
 }
+
+spotless {
+    java {
+        palantirJavaFormat()
+    }
+}
+
 base {
     archivesName = "${mod_name}-forge-${minecraft_version}"
 }

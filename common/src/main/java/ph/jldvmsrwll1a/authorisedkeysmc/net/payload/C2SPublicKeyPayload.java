@@ -19,7 +19,8 @@ public final class C2SPublicKeyPayload extends BaseC2SPayload {
         super(buf, QueryAnswerPayloadType.CLIENT_KEY);
 
         byte[] bytes = new byte[KEY_BYTES_LENGTH];
-        Validate.validState(buf.readableBytes() == KEY_BYTES_LENGTH, "Encoded public key is not %s bytes long!", KEY_BYTES_LENGTH);
+        Validate.validState(
+                buf.readableBytes() == KEY_BYTES_LENGTH, "Encoded public key is not %s bytes long!", KEY_BYTES_LENGTH);
         buf.readBytes(KEY_BYTES_LENGTH).readBytes(bytes);
         key = new Ed25519PublicKeyParameters(bytes);
     }

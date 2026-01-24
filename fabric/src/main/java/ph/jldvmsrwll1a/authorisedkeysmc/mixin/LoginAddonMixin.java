@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
+import java.util.Map;
 import net.fabricmc.fabric.impl.networking.server.ServerLoginNetworkAddon;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Final;
@@ -9,8 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-
-import java.util.Map;
 
 @Mixin(ServerLoginNetworkAddon.class)
 public abstract class LoginAddonMixin {

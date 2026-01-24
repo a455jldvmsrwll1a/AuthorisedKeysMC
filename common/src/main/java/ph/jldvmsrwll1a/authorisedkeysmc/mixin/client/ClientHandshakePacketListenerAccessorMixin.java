@@ -9,5 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(ClientHandshakePacketListenerImpl.class)
 public interface ClientHandshakePacketListenerAccessorMixin {
     @Accessor("serverData")
-    @Nullable ServerData getServerData();
+    @Nullable
+    ServerData getServerData();
 }

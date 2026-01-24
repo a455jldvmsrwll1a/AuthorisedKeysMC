@@ -30,7 +30,9 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
     private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
     private NoKeysLeftErrorScreen(String[] keysUsed, Component prompt) {
-        super(Component.translatable("authorisedkeysmc.screen.no-keys-left.title").withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD));
+        super(Component.translatable("authorisedkeysmc.screen.no-keys-left.title")
+                .withStyle(ChatFormatting.RED)
+                .withStyle(ChatFormatting.BOLD));
 
         this.keysUsed = keysUsed;
         this.prompt = prompt;
@@ -38,7 +40,8 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
     }
 
     public static NoKeysLeftErrorScreen create(String[] keysUsed) {
-        return new NoKeysLeftErrorScreen(keysUsed, Component.translatable("authorisedkeysmc.screen.no-keys-left.body", keysUsed.length));
+        return new NoKeysLeftErrorScreen(
+                keysUsed, Component.translatable("authorisedkeysmc.screen.no-keys-left.body", keysUsed.length));
     }
 
     @Override
@@ -49,7 +52,8 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
 
         layout.defaultCellSetting().alignVerticallyTop().alignHorizontallyLeft();
         layout.addChild(new StringWidget(title, font));
-        bodyWidget = layout.addChild(new MultiLineTextWidget(prompt, font).setMaxWidth(width - 50).setMaxRows(15));
+        bodyWidget = layout.addChild(
+                new MultiLineTextWidget(prompt, font).setMaxWidth(width - 50).setMaxRows(15));
 
         LinearLayout listLayout = LinearLayout.vertical();
         listLayout.defaultCellSetting().alignHorizontallyLeft();
@@ -57,7 +61,8 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
 
         for (int i = 0; i < keysUsed.length; ++i) {
             ChatFormatting colour = i % 2 == 0 ? ChatFormatting.GRAY : ChatFormatting.WHITE;
-            listLayout.addChild(new StringWidget(Component.literal("%s. %s".formatted(i + 1, keysUsed[i])).withStyle(colour), font));
+            listLayout.addChild(new StringWidget(
+                    Component.literal("%s. %s".formatted(i + 1, keysUsed[i])).withStyle(colour), font));
         }
 
         listLayout.arrangeElements();
@@ -67,14 +72,22 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
         scrollLayout.setMinWidth(width - 50);
         layout.addChild(scrollLayout);
 
-        footerWidget = layout.addChild(new MultiLineTextWidget(Component.translatable("authorisedkeysmc.screen.no-keys-left.footer"), font).setMaxWidth(width - 50).setMaxRows(15));
+        footerWidget = layout.addChild(
+                new MultiLineTextWidget(Component.translatable("authorisedkeysmc.screen.no-keys-left.footer"), font)
+                        .setMaxWidth(width - 50)
+                        .setMaxRows(15));
 
         LinearLayout buttonLayout = layout.addChild(LinearLayout.horizontal().spacing(4));
         buttonLayout.defaultCellSetting().paddingTop(16);
 
-        buttonLayout.addChild(Button.builder(Component.translatable("authorisedkeysmc.button.goto-server-config"), button -> goToServerConfig()).width(74 * 2).build());
-        backBtn = buttonLayout.addChild(Button.builder(CommonComponents.GUI_BACK, button -> goBack()).width(BACK_BTN_WIDTH).build());
-
+        buttonLayout.addChild(Button.builder(
+                        Component.translatable("authorisedkeysmc.button.goto-server-config"),
+                        button -> goToServerConfig())
+                .width(74 * 2)
+                .build());
+        backBtn = buttonLayout.addChild(Button.builder(CommonComponents.GUI_BACK, button -> goBack())
+                .width(BACK_BTN_WIDTH)
+                .build());
 
         repositionElements();
 
@@ -113,6 +126,11 @@ public final class NoKeysLeftErrorScreen extends BaseScreen {
 
     private void goToServerConfig() {
         Minecraft.getInstance().setScreen(new TitleScreen());
-        Minecraft.getInstance().getToastManager().addToast(new SystemToast(new SystemToast.SystemToastId(), Component.literal("WORK IN PROGRESS"), Component.literal("Not yet implemented. Sorry.")));
+        Minecraft.getInstance()
+                .getToastManager()
+                .addToast(new SystemToast(
+                        new SystemToast.SystemToastId(),
+                        Component.literal("WORK IN PROGRESS"),
+                        Component.literal("Not yet implemented. Sorry.")));
     }
 }

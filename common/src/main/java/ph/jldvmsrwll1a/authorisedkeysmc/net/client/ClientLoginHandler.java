@@ -1,6 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.net.client;
 
 import io.netty.buffer.Unpooled;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.util.*;
+import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
@@ -23,11 +27,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.mixin.client.ClientHandshakePacketListen
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-import java.io.IOException;
-import java.nio.file.InvalidPathException;
-import java.util.*;
-import java.util.function.Consumer;
-
 public final class ClientLoginHandler {
     private final Minecraft minecraft;
     private final ClientHandshakePacketListenerImpl listener;
@@ -48,7 +47,11 @@ public final class ClientLoginHandler {
 
     private volatile int txId = -1;
 
-    public ClientLoginHandler(Minecraft minecraft, ClientHandshakePacketListenerImpl listener, Connection connection, Consumer<Component> updateStatus) {
+    public ClientLoginHandler(
+            Minecraft minecraft,
+            ClientHandshakePacketListenerImpl listener,
+            Connection connection,
+            Consumer<Component> updateStatus) {
         this.minecraft = minecraft;
         this.listener = listener;
         this.connection = connection;
@@ -64,7 +67,8 @@ public final class ClientLoginHandler {
     }
 
     public Optional<String> getServerName() {
-        return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData()).map(data -> data.name);
+        return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData())
+                .map(data -> data.name);
     }
 
     public void setSessionHash(byte @NotNull [] hash) {
@@ -79,13 +83,14 @@ public final class ClientLoginHandler {
 
     public void handleRawMessage(FriendlyByteBuf buf, int txId) {
         QueryPayloadType kind = BaseS2CPayload.peekPayloadType(buf);
-        BaseS2CPayload base = switch (kind) {
-            case SERVER_KEY -> new S2CPublicKeyPayload(buf);
-            case CLIENT_CHALLENGE_RESPONSE -> new S2CSignaturePayload(buf);
-            case SERVER_CHALLENGE -> new S2CChallengePayload(buf);
-            case SERVER_KEY_REJECTION -> new S2CKeyRejectedPayload();
-            case REGISTRATION_REQUEST -> new S2CRegistrationRequestPayload();
-        };
+        BaseS2CPayload base =
+                switch (kind) {
+                    case SERVER_KEY -> new S2CPublicKeyPayload(buf);
+                    case CLIENT_CHALLENGE_RESPONSE -> new S2CSignaturePayload(buf);
+                    case SERVER_CHALLENGE -> new S2CChallengePayload(buf);
+                    case SERVER_KEY_REJECTION -> new S2CKeyRejectedPayload();
+                    case REGISTRATION_REQUEST -> new S2CRegistrationRequestPayload();
+                };
 
         handleMessage(base, txId);
     }
@@ -97,7 +102,9 @@ public final class ClientLoginHandler {
             case S2CPublicKeyPayload serverKeyPayload -> {
                 serverKey = serverKeyPayload.key;
 
-                Ed25519PublicKeyParameters knownKey = getServerName().map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerKey(name)).orElse(null);
+                Ed25519PublicKeyParameters knownKey = getServerName()
+                        .map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerKey(name))
+                        .orElse(null);
 
                 if (knownKey == null) {
                     minecraft.execute(() -> {
@@ -142,10 +149,12 @@ public final class ClientLoginHandler {
             }
             case S2CChallengePayload challengePayload -> {
                 if (sessionHash == null) {
-                    throw new IllegalStateException("Session hash is null. This is impossible as encryption is required.");
+                    throw new IllegalStateException(
+                            "Session hash is null. This is impossible as encryption is required.");
                 }
 
-                var c2s = C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload, sessionHash, registering);
+                var c2s =
+                        C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload, sessionHash, registering);
                 this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
                 this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
             }
@@ -160,11 +169,14 @@ public final class ClientLoginHandler {
                 registering = true;
 
                 minecraft.execute(() -> {
-                    LoginRegistrationScreen screen = LoginRegistrationScreen.create(this, secretKeyName, secretKey.generatePublicKey());
+                    LoginRegistrationScreen screen =
+                            LoginRegistrationScreen.create(this, secretKeyName, secretKey.generatePublicKey());
                     minecraft.setScreen(screen);
                 });
             }
-            default -> throw new IllegalArgumentException("Unknown base query payload type of %s!".formatted(payload.getClass().getName()));
+            default ->
+                throw new IllegalArgumentException("Unknown base query payload type of %s!"
+                        .formatted(payload.getClass().getName()));
         }
     }
 
@@ -233,7 +245,8 @@ public final class ClientLoginHandler {
         secretKeyName = null;
 
         if (remainingSecretKeys == null) {
-            List<String> keyNames = AuthorisedKeysModClient.KNOWN_SERVERS.getKeysForServer(getServerName().orElse(null));
+            List<String> keyNames = AuthorisedKeysModClient.KNOWN_SERVERS.getKeysForServer(
+                    getServerName().orElse(null));
             if (keyNames.isEmpty()) {
                 return false;
             }

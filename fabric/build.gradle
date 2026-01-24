@@ -1,7 +1,15 @@
 plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
+    id 'com.diffplug.spotless' version '8.1.0'
 }
+
+spotless {
+    java {
+        palantirJavaFormat()
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered {

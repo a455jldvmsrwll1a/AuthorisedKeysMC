@@ -1,12 +1,5 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.client;
 
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.security.NoSuchAlgorithmException;
@@ -14,6 +7,12 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public class ClientKeyPairs {
     public ClientKeyPairs() {
@@ -29,7 +28,8 @@ public class ClientKeyPairs {
     public List<String> retrieveKeyNamesFromDisk() {
         List<String> names = new ArrayList<>();
 
-        try (DirectoryStream<Path> dirEntries = Files.newDirectoryStream(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR)) {
+        try (DirectoryStream<Path> dirEntries =
+                Files.newDirectoryStream(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR)) {
             for (Path path : dirEntries) {
                 String name = path.getFileName().toString();
 

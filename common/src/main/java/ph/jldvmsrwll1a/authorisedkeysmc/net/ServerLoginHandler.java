@@ -2,6 +2,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.net;
 
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
+import java.util.Arrays;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -16,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
-
-import java.util.Arrays;
 
 public final class ServerLoginHandler {
     private final ServerLoginPacketListenerImpl listener;
@@ -39,7 +38,11 @@ public final class ServerLoginHandler {
     private Ed25519PublicKeyParameters currentRegistrationKey;
     private byte[] nonce;
 
-    public ServerLoginHandler(@NotNull ServerLoginPacketListenerImpl listener, @NotNull Connection connection, @NotNull GameProfile profile, @NotNull byte[] sessionHash) {
+    public ServerLoginHandler(
+            @NotNull ServerLoginPacketListenerImpl listener,
+            @NotNull Connection connection,
+            @NotNull GameProfile profile,
+            @NotNull byte[] sessionHash) {
         Validate.isTrue(connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
 
         this.listener = listener;
@@ -84,7 +87,9 @@ public final class ServerLoginHandler {
     public void handleMessage(BaseC2SPayload payload) {
         switch (payload) {
             case C2SChallengePayload challengePayload -> {
-                Validate.validState(phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
+                Validate.validState(
+                        phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE),
+                        "Received client challenge but wasn't expecting one!");
 
                 send(S2CSignaturePayload.fromSigningChallenge(signingKey, challengePayload, sessionHash));
                 transition(Phase.WAIT_FOR_CLIENT_KEY);
@@ -101,7 +106,8 @@ public final class ServerLoginHandler {
                         } else {
                             loginAttemptsLeft--;
                             if (loginAttemptsLeft <= 0) {
-                                listener.disconnect(Component.translatable("authorisedkeysmc.error.too-many-authentication-attempts"));
+                                listener.disconnect(Component.translatable(
+                                        "authorisedkeysmc.error.too-many-authentication-attempts"));
                             }
 
                             send(new S2CKeyRejectedPayload());
@@ -144,7 +150,8 @@ public final class ServerLoginHandler {
                     } else {
                         loginAttemptsLeft--;
                         if (loginAttemptsLeft <= 0) {
-                            listener.disconnect(Component.translatable("authorisedkeysmc.error.too-many-authentication-attempts"));
+                            listener.disconnect(
+                                    Component.translatable("authorisedkeysmc.error.too-many-authentication-attempts"));
                         }
 
                         send(new S2CKeyRejectedPayload());
@@ -158,7 +165,8 @@ public final class ServerLoginHandler {
                     } else {
                         registerAttemptsLeft--;
                         if (registerAttemptsLeft <= 0) {
-                            listener.disconnect(Component.translatable("authorisedkeysmc.error.too-many-registration-attempts"));
+                            listener.disconnect(
+                                    Component.translatable("authorisedkeysmc.error.too-many-registration-attempts"));
                         }
 
                         send(new S2CKeyRejectedPayload());
@@ -181,18 +189,21 @@ public final class ServerLoginHandler {
                 Constants.LOG.warn("{} has successfully logged in but is unregistered!", profile.name());
                 transition(Phase.SUCCESSFUL);
             }
-            default -> throw new IllegalArgumentException("Unknown base query answer payload type of %s!".formatted(payload.getClass().getName()));
+            default ->
+                throw new IllegalArgumentException("Unknown base query answer payload type of %s!"
+                        .formatted(payload.getClass().getName()));
         }
     }
 
     public void handleRawMessage(FriendlyByteBuf buf) {
         QueryAnswerPayloadType kind = BaseC2SPayload.peekPayloadType(buf);
-        BaseC2SPayload base = switch (kind) {
-            case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
-            case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
-            case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
-            case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
-        };
+        BaseC2SPayload base =
+                switch (kind) {
+                    case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
+                    case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
+                    case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
+                    case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
+                };
 
         handleMessage(base);
     }

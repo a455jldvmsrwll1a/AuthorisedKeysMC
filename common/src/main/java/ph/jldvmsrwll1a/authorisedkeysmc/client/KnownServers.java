@@ -3,14 +3,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc.client;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +10,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public class KnownServers {
     private static final List<String> DEFAULT_KEY_LIST = List.of("default");
@@ -107,7 +106,8 @@ public class KnownServers {
             entries.forEach(entry -> {
                 ServerInfo info = new ServerInfo();
                 info.hostKey = new Ed25519PublicKeyParameters(Base64Util.decode(entry.host_key));
-                info.keysToUse = entry.use_keys != null ? Arrays.stream(entry.use_keys).toList() : new ArrayList<>();
+                info.keysToUse =
+                        entry.use_keys != null ? Arrays.stream(entry.use_keys).toList() : new ArrayList<>();
 
                 knownServers.put(entry.name, info);
             });
@@ -144,9 +144,15 @@ public class KnownServers {
         private @NotNull List<String> keysToUse = new ArrayList<>();
     }
 
-    private record ServerJsonEntry(String name, @Nullable String host_key, @Nullable String[] use_keys) {
+    private record ServerJsonEntry(
+            String name,
+            @Nullable String host_key,
+            @Nullable String[] use_keys) {
         private ServerJsonEntry(String name, @Nullable Ed25519PublicKeyParameters host_key, List<String> use_keys) {
-            this(name, host_key == null ? null : Base64Util.encode(host_key.getEncoded()), use_keys.toArray(new String[0]));
+            this(
+                    name,
+                    host_key == null ? null : Base64Util.encode(host_key.getEncoded()),
+                    use_keys.toArray(new String[0]));
         }
     }
 }

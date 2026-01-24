@@ -1,11 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.platform;
 
+import java.nio.file.Path;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
-
-import java.nio.file.Path;
 
 public class ForgePlatformHelper implements IPlatformHelper {
 

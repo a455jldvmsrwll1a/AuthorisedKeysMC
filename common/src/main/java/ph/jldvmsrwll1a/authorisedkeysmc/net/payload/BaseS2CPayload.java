@@ -16,7 +16,11 @@ public abstract class BaseS2CPayload implements CustomQueryPayload {
 
     protected BaseS2CPayload(FriendlyByteBuf buf, QueryPayloadType expected) {
         payloadType = readPayloadType(buf);
-        Validate.validState(payloadType.equals(expected), "Wrong query payload type! Expected a %s but got a %s!", expected, payloadType);
+        Validate.validState(
+                payloadType.equals(expected),
+                "Wrong query payload type! Expected a %s but got a %s!",
+                expected,
+                payloadType);
     }
 
     @Override

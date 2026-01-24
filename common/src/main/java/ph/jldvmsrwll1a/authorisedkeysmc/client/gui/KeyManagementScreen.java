@@ -1,5 +1,9 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
@@ -20,11 +24,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 public final class KeyManagementScreen extends BaseScreen {
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
@@ -44,11 +43,16 @@ public final class KeyManagementScreen extends BaseScreen {
 
     protected void init() {
         keyListTab = new KeyListTab();
-        tabNav = TabNavigationBar.builder(tabManager, width).addTabs(keyListTab, new ServerListTab()).build();
+        tabNav = TabNavigationBar.builder(tabManager, width)
+                .addTabs(keyListTab, new ServerListTab())
+                .build();
         addRenderableWidget(tabNav);
 
-        LinearLayout linearLayout = rootLayout.addToFooter(LinearLayout.horizontal().spacing(8));
-        linearLayout.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(74 * 2).build());
+        LinearLayout linearLayout =
+                rootLayout.addToFooter(LinearLayout.horizontal().spacing(8));
+        linearLayout.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
+                .width(74 * 2)
+                .build());
 
         rootLayout.visitWidgets(widget -> {
             widget.setTabOrderGroup(1);
@@ -97,7 +101,17 @@ public final class KeyManagementScreen extends BaseScreen {
 
         keyListTab.recalculateLayoutIfNeeded();
 
-        gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, this.height - this.rootLayout.getFooterHeight() - 2, .0f, .0f, width, 2, 32, 2);
+        gui.blit(
+                RenderPipelines.GUI_TEXTURED,
+                Screen.FOOTER_SEPARATOR,
+                0,
+                this.height - this.rootLayout.getFooterHeight() - 2,
+                .0f,
+                .0f,
+                width,
+                2,
+                32,
+                2);
     }
 
     class KeyListTab extends GridLayoutTab {
@@ -105,8 +119,14 @@ public final class KeyManagementScreen extends BaseScreen {
         private static final float WIDTH_RIGHT = 1.f - WIDTH_LEFT;
         private static final float MIN_TOTAL_WIDTH = 388.f;
         private static final float MAX_TOTAL_WIDTH = 800.f;
-        private static final Component LIST_HEADER = Component.translatable("authorisedkeysmc.screen.config.keys.list-header").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.AQUA);
-        private static final Component PROP_HEADER = Component.translatable("authorisedkeysmc.screen.config.keys.properties-header").withStyle(ChatFormatting.BOLD).withStyle(ChatFormatting.AQUA);
+        private static final Component LIST_HEADER = Component.translatable(
+                        "authorisedkeysmc.screen.config.keys.list-header")
+                .withStyle(ChatFormatting.BOLD)
+                .withStyle(ChatFormatting.AQUA);
+        private static final Component PROP_HEADER = Component.translatable(
+                        "authorisedkeysmc.screen.config.keys.properties-header")
+                .withStyle(ChatFormatting.BOLD)
+                .withStyle(ChatFormatting.AQUA);
         private static final SystemToast.SystemToastId KEY_COPIED_TOAST = new SystemToast.SystemToastId(2000);
 
         private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
@@ -127,16 +147,29 @@ public final class KeyManagementScreen extends BaseScreen {
 
             reloadKeys();
 
-            GridLayout.RowHelper rowHelper = layout.columnSpacing(8).rowSpacing(8).createRowHelper(2);
+            GridLayout.RowHelper rowHelper =
+                    layout.columnSpacing(8).rowSpacing(8).createRowHelper(2);
 
-            keySelectionList = new KeySelectionList(KeyManagementScreen.this, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
+            keySelectionList = new KeySelectionList(
+                    KeyManagementScreen.this, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
 
             LinearLayout listFooterLayout = LinearLayout.horizontal().spacing(4);
-            listFooterLayout.addChild(Button.builder(Component.translatable("authorisedkeysmc.button.reload-keys"), button -> reloadKeys()).size(90, 20).build());
-            listFooterLayout.addChild(Button.builder(Component.translatable("authorisedkeysmc.button.create-key"), button -> Constants.LOG.warn("Creating not implemented!")).size(74, 20).build());
+            listFooterLayout.addChild(Button.builder(
+                            Component.translatable("authorisedkeysmc.button.reload-keys"), button -> reloadKeys())
+                    .size(90, 20)
+                    .build());
+            listFooterLayout.addChild(Button.builder(
+                            Component.translatable("authorisedkeysmc.button.create-key"),
+                            button -> Constants.LOG.warn("Creating not implemented!"))
+                    .size(74, 20)
+                    .build());
 
-            LinearLayout inspectorLayout = new LinearLayout(getWidthRight(), getScrollListHeight(), LinearLayout.Orientation.VERTICAL);
-            inspectorText = new MultiLineTextWidget(Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"), minecraft.font).setMaxWidth(getWidthRight());
+            LinearLayout inspectorLayout =
+                    new LinearLayout(getWidthRight(), getScrollListHeight(), LinearLayout.Orientation.VERTICAL);
+            inspectorText = new MultiLineTextWidget(
+                            Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"),
+                            minecraft.font)
+                    .setMaxWidth(getWidthRight());
             inspectorLayout.addChild(inspectorText);
             inspectorLayout.arrangeElements();
 
@@ -144,13 +177,30 @@ public final class KeyManagementScreen extends BaseScreen {
             inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
 
             inspectorButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.copy-key"), button -> {
-                if (currentPubkey != null) {
-                    minecraft.keyboardHandler.setClipboard(Base64Util.encode(currentPubkey.getEncoded()));
-                    SystemToast.addOrUpdate(minecraft.getToastManager(), KEY_COPIED_TOAST, Component.translatable("authorisedkeysmc.toast.key-shared"), null);
-                }
-            }).tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.share-key"))).size(74, 20).build());
-            inspectorButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.export-key"), button -> Constants.LOG.warn("Backing up not implemented!")).tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.backup-key"))).size(74, 20).build());
-            inspectorButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.delete-key"), button -> Constants.LOG.warn("Deleting is not implemented!")).tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.delete-key"))).size(74, 20).build());
+                        if (currentPubkey != null) {
+                            minecraft.keyboardHandler.setClipboard(Base64Util.encode(currentPubkey.getEncoded()));
+                            SystemToast.addOrUpdate(
+                                    minecraft.getToastManager(),
+                                    KEY_COPIED_TOAST,
+                                    Component.translatable("authorisedkeysmc.toast.key-shared"),
+                                    null);
+                        }
+                    })
+                    .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.share-key")))
+                    .size(74, 20)
+                    .build());
+            inspectorButtons.add(Button.builder(
+                            Component.translatable("authorisedkeysmc.button.export-key"),
+                            button -> Constants.LOG.warn("Backing up not implemented!"))
+                    .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.backup-key")))
+                    .size(74, 20)
+                    .build());
+            inspectorButtons.add(Button.builder(
+                            Component.translatable("authorisedkeysmc.button.delete-key"),
+                            button -> Constants.LOG.warn("Deleting is not implemented!"))
+                    .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.delete-key")))
+                    .size(74, 20)
+                    .build());
 
             LinearLayout inspectorFooterLayout = LinearLayout.horizontal().spacing(4);
             inspectorButtons.forEach(button -> {
@@ -158,8 +208,12 @@ public final class KeyManagementScreen extends BaseScreen {
                 inspectorFooterLayout.addChild(button);
             });
 
-            rowHelper.addChild(new StringWidget(LIST_HEADER, font).setMaxWidth(getWidthLeft()), LayoutSettings.defaults().paddingTop(4));
-            rowHelper.addChild(new StringWidget(PROP_HEADER, font), LayoutSettings.defaults().paddingTop(4));
+            rowHelper.addChild(
+                    new StringWidget(LIST_HEADER, font).setMaxWidth(getWidthLeft()),
+                    LayoutSettings.defaults().paddingTop(4));
+            rowHelper.addChild(
+                    new StringWidget(PROP_HEADER, font),
+                    LayoutSettings.defaults().paddingTop(4));
             rowHelper.addChild(keySelectionList);
             rowHelper.addChild(inspectorScroller);
             rowHelper.addChild(listFooterLayout);
@@ -180,7 +234,8 @@ public final class KeyManagementScreen extends BaseScreen {
             inspectorButtons.forEach(button -> button.active = selected != null);
 
             if (selected == null) {
-                inspectorText.setMessage(Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"));
+                inspectorText.setMessage(
+                        Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"));
 
                 return;
             }
@@ -196,7 +251,8 @@ public final class KeyManagementScreen extends BaseScreen {
             } catch (IOException e) {
                 Constants.LOG.error("Could not load secret key \"{}\": {}", name, e);
 
-                inspectorText.setMessage(Component.translatable("authorisedkeysmc.error.key-props", name, e.toString()));
+                inspectorText.setMessage(
+                        Component.translatable("authorisedkeysmc.error.key-props", name, e.toString()));
 
                 return;
             }
@@ -204,7 +260,14 @@ public final class KeyManagementScreen extends BaseScreen {
             currentPubkey = secret.generatePublicKey();
             List<String> servers = AuthorisedKeysModClient.KNOWN_SERVERS.getAddressesUsingKey(name);
 
-            MutableComponent message = Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", name).append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-time", modificationTime.toString())).append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key")).append(Component.literal(Base64Util.encode(currentPubkey.getEncoded()))).append("\n\n").append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
+            MutableComponent message = Component.translatable(
+                            "authorisedkeysmc.screen.config.keys.properties-subtitle", name)
+                    .append(Component.translatable(
+                            "authorisedkeysmc.screen.config.keys.properties-time", modificationTime.toString()))
+                    .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
+                    .append(Component.literal(Base64Util.encode(currentPubkey.getEncoded())))
+                    .append("\n\n")
+                    .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
             servers.forEach(server -> message.append(" + %s\n".formatted(server)));
             inspectorText.setMessage(message);
             inspectorText.setMaxWidth(getWidthRight());
@@ -220,7 +283,11 @@ public final class KeyManagementScreen extends BaseScreen {
         }
 
         public void forceRecalculateLayout() {
-            keySelectionList.updateSizeAndPosition(getWidthLeft(), getScrollListHeight(), layout.getX(), rootLayout.getHeaderHeight() + font.lineHeight + 20);
+            keySelectionList.updateSizeAndPosition(
+                    getWidthLeft(),
+                    getScrollListHeight(),
+                    layout.getX(),
+                    rootLayout.getHeaderHeight() + font.lineHeight + 20);
             inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
             inspectorText.setMaxWidth(getWidthRight());
             layout.arrangeElements();

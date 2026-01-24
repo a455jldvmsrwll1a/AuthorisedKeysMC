@@ -28,9 +28,13 @@ public abstract class JoinMultiplayerScreenMixin extends Screen {
     private void addConfigButton(CallbackInfo ci) {
         Validate.notNull(minecraft, "Minecraft must not be null");
 
-        authorisedKeysMC$keyButton = Button.builder(Component.translatable("authorisedkeysmc.button.key-manager"), button -> {
-            minecraft.setScreen(new KeyManagementScreen(this));
-        }).size(authorisedKeysMC$WIDTH, 20).pos(width - authorisedKeysMC$WIDTH - 6, 6).build();
+        authorisedKeysMC$keyButton = Button.builder(
+                        Component.translatable("authorisedkeysmc.button.key-manager"), button -> {
+                            minecraft.setScreen(new KeyManagementScreen(this));
+                        })
+                .size(authorisedKeysMC$WIDTH, 20)
+                .pos(width - authorisedKeysMC$WIDTH - 6, 6)
+                .build();
         addRenderableWidget(authorisedKeysMC$keyButton);
     }
 

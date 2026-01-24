@@ -36,17 +36,24 @@ public abstract class SimpleYesNoCancelScreen extends BaseScreen {
 
         layout.defaultCellSetting().alignHorizontallyLeft();
         layout.addChild(new StringWidget(title, font));
-        promptWidget = layout.addChild(new MultiLineTextWidget(prompt, font).setMaxWidth(width - 50).setMaxRows(15));
+        promptWidget = layout.addChild(
+                new MultiLineTextWidget(prompt, font).setMaxWidth(width - 50).setMaxRows(15));
 
         LinearLayout buttonLayout = layout.addChild(LinearLayout.horizontal().spacing(4));
         buttonLayout.defaultCellSetting().paddingTop(16);
 
         final int WIDTH = 74;
-        buttonLayout.addChild(Button.builder(CommonComponents.GUI_YES, button -> onYesClicked()).width(WIDTH).build());
-        buttonLayout.addChild(Button.builder(CommonComponents.GUI_NO, button -> onNoClicked()).width(WIDTH).build());
+        buttonLayout.addChild(Button.builder(CommonComponents.GUI_YES, button -> onYesClicked())
+                .width(WIDTH)
+                .build());
+        buttonLayout.addChild(Button.builder(CommonComponents.GUI_NO, button -> onNoClicked())
+                .width(WIDTH)
+                .build());
 
         if (hasCancelButton()) {
-            buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onCancelClicked()).width(WIDTH).build());
+            buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onCancelClicked())
+                    .width(WIDTH)
+                    .build());
         }
 
         layout.visitWidgets(this::addRenderableWidget);

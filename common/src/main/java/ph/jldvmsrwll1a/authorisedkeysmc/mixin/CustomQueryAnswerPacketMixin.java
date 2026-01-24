@@ -14,7 +14,8 @@ public abstract class CustomQueryAnswerPacketMixin {
     // Fabric has its own payload class, so this might not get applied.
     // Still fine though since it doesn't discard the contents either.
     @Inject(method = "readPayload", at = @At("HEAD"), cancellable = true)
-    private static void preservePayloadBuffer(int transactionId, FriendlyByteBuf buffer, CallbackInfoReturnable<CustomQueryAnswerPayload> cir) {
+    private static void preservePayloadBuffer(
+            int transactionId, FriendlyByteBuf buffer, CallbackInfoReturnable<CustomQueryAnswerPayload> cir) {
         boolean hasPayload = buffer.readBoolean();
         int len = buffer.readableBytes();
 

@@ -4,11 +4,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.util.InstantTypeAdapter;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public class UserKeys {
     private final ConcurrentHashMap<UUID, List<UserKey>> userKeysMap = new ConcurrentHashMap<>();
@@ -62,7 +61,11 @@ public class UserKeys {
                 if (issuingPlayerId == null) {
                     Constants.LOG.info("Key {} has been bound to {}.", Base64Util.encode(key.getEncoded()), playerId);
                 } else {
-                    Constants.LOG.info("Key {} has been bound by {} to {}.", Base64Util.encode(key.getEncoded()), issuingPlayerId, playerId);
+                    Constants.LOG.info(
+                            "Key {} has been bound by {} to {}.",
+                            Base64Util.encode(key.getEncoded()),
+                            issuingPlayerId,
+                            playerId);
                 }
             }
 
@@ -107,19 +110,23 @@ public class UserKeys {
     public void read() {
         try {
             String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
-            Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class, new InstantTypeAdapter()).create();
+            Gson gson = new GsonBuilder()
+                    .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
+                    .create();
             List<UserJsonEntry> entries = gson.fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
 
             userKeysMap.clear();
             entries.forEach(entry -> {
-                List<UserKey> keys = entry.keys.stream().map(jsonEntry -> {
-                    UserKey userKey = new UserKey();
-                    userKey.key = new Ed25519PublicKeyParameters(Base64Util.decode(jsonEntry.key));
-                    userKey.issuingPlayer = jsonEntry.issued_by;
-                    userKey.registrationTime = jsonEntry.time_added;
+                List<UserKey> keys = entry.keys.stream()
+                        .map(jsonEntry -> {
+                            UserKey userKey = new UserKey();
+                            userKey.key = new Ed25519PublicKeyParameters(Base64Util.decode(jsonEntry.key));
+                            userKey.issuingPlayer = jsonEntry.issued_by;
+                            userKey.registrationTime = jsonEntry.time_added;
 
-                    return userKey;
-                }).toList();
+                            return userKey;
+                        })
+                        .toList();
 
                 userKeysMap.put(entry.user, keys);
             });
@@ -140,10 +147,20 @@ public class UserKeys {
             for (var entry : userKeysMap.entrySet()) {
                 List<UserKey> keys = entry.getValue();
 
-                out.add(new UserJsonEntry(entry.getKey(), keys.stream().map(key -> new UserKeyJsonEntry(Base64Util.encode(key.key.getEncoded()), key.issuingPlayer, key.registrationTime)).toList()));
+                out.add(new UserJsonEntry(
+                        entry.getKey(),
+                        keys.stream()
+                                .map(key -> new UserKeyJsonEntry(
+                                        Base64Util.encode(key.key.getEncoded()),
+                                        key.issuingPlayer,
+                                        key.registrationTime))
+                                .toList()));
             }
 
-            Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class, new InstantTypeAdapter()).setPrettyPrinting().create();
+            Gson gson = new GsonBuilder()
+                    .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
+                    .setPrettyPrinting()
+                    .create();
             Files.writeString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -154,15 +171,14 @@ public class UserKeys {
 
     private static class UserKey {
         Ed25519PublicKeyParameters key;
-        @Nullable UUID issuingPlayer;
+
+        @Nullable
+        UUID issuingPlayer;
+
         Instant registrationTime;
     }
 
-    private record UserJsonEntry(UUID user, List<UserKeyJsonEntry> keys) {
+    private record UserJsonEntry(UUID user, List<UserKeyJsonEntry> keys) {}
 
-    }
-
-    private record UserKeyJsonEntry(String key, @Nullable UUID issued_by, Instant time_added) {
-
-    }
+    private record UserKeyJsonEntry(String key, @Nullable UUID issued_by, Instant time_added) {}
 }

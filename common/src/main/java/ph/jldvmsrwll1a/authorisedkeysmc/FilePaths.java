@@ -1,10 +1,9 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
-import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
+import static ph.jldvmsrwll1a.authorisedkeysmc.Constants.MOD_DIR_NAME;
 
 import java.nio.file.Path;
-
-import static ph.jldvmsrwll1a.authorisedkeysmc.Constants.MOD_DIR_NAME;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 
 public class FilePaths {
     public final Path MOD_DIR;
