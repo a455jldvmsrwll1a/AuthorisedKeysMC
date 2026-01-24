@@ -1,12 +1,13 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.util;
 
 import java.util.Base64;
+import org.jetbrains.annotations.NotNull;
 
 public final class Base64Util {
     private Base64Util() {}
 
     /// Encode bytes as URL-safe base64 but without trailing '='.
-    public static String encode(byte[] buf) {
+    public static String encode(byte @NotNull [] buf) {
         String encoded = Base64.getUrlEncoder().encodeToString(buf);
         return encoded.substring(0, encoded.indexOf('='));
     }
