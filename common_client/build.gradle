@@ -33,22 +33,32 @@ dependencies {
     compileOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
     compileOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
+
+    compileOnly(project(':common')) {
+        capabilities {
+            requireCapability "$group:$mod_id"
+        }
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
 }
 
 configurations {
-    commonJava {
+    commonClientJava {
         canBeResolved = false
         canBeConsumed = true
     }
-    commonResources {
+    commonClientResources {
         canBeResolved = false
         canBeConsumed = true
     }
 }
 
 artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+    commonClientJava sourceSets.main.java.sourceDirectories.singleFile
+    commonClientResources sourceSets.main.resources.sourceDirectories.singleFile
 }
 
 // Implement mcgradleconventions loader attribute
@@ -56,7 +66,7 @@ def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', Strin
 ['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
     configurations.named("$variant") {
         attributes {
-            attribute(loaderAttribute, 'common')
+            attribute(loaderAttribute, 'common_client')
         }
     }
 }
@@ -64,7 +74,7 @@ sourceSets.configureEach {
     [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
         configurations.named("$variant") {
             attributes {
-                attribute(loaderAttribute, 'common')
+                attribute(loaderAttribute, 'common_client')
             }
         }
     }
@@ -76,8 +86,8 @@ sourceSets.configureEach {
     configurations."$variant".outgoing {
         capability("$group:${project.name}:$version")
         capability("$group:${base.archivesName.get()}:$version")
-        capability("$group:$mod_id-${project.name}-${minecraft_version}:$version")
-        capability("$group:$mod_id:$version")
+        capability("$group:$mod_id-${project.name}-client-${minecraft_version}:$version")
+        capability("$group:$mod_id-client:$version")
     }
     publishing.publications.configureEach {
         suppressPomMetadataWarningsFor(variant)

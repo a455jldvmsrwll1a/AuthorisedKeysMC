@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
+package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.io.IOException;
 import java.time.Instant;

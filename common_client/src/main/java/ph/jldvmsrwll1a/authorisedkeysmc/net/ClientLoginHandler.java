@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.net.client;
+package ph.jldvmsrwll1a.authorisedkeysmc.net;
 
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
@@ -19,11 +19,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.LoginRegistrationScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.NoKeysLeftErrorScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.UnknownServerKeyWarningScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.WrongServerKeyWarningScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.mixin.client.ClientHandshakePacketListenerAccessorMixin;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.LoginRegistrationScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.NoKeysLeftErrorScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.UnknownServerKeyWarningScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.WrongServerKeyWarningScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 

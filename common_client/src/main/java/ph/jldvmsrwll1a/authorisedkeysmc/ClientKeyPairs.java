@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client;
+package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -11,8 +11,6 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public class ClientKeyPairs {
     public ClientKeyPairs() {

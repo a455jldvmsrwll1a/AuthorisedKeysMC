@@ -1,11 +1,11 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
+package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.network.chat.Component;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class LoginRegistrationScreen extends SimpleYesNoCancelScreen {

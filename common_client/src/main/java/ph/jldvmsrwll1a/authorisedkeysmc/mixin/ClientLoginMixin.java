@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
+package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 
 @Mixin(ClientHandshakePacketListenerImpl.class)
 public abstract class ClientLoginMixin implements ClientLoginPacketListener {

@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client;
+package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 

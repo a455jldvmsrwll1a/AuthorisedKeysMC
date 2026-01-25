@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
+package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.util.List;
 import net.minecraft.client.Minecraft;

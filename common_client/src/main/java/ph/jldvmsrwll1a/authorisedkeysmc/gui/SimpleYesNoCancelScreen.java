@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
+package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.MultiLineTextWidget;
@@ -8,7 +8,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 
 public abstract class SimpleYesNoCancelScreen extends BaseScreen {
     protected final ClientLoginHandler loginHandler;

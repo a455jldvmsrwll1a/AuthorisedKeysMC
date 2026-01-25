@@ -9,6 +9,13 @@ configurations {
     commonResources{
         canBeResolved = true
     }
+
+    commonClientJava{
+        canBeResolved = true
+    }
+    commonClientResources{
+        canBeResolved = true
+    }
 }
 
 dependencies {
@@ -23,26 +30,44 @@ dependencies {
     }
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
+
+    compileOnly(project(':common_client')) {
+        capabilities {
+            requireCapability "$group:$mod_id-client"
+        }
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common_client')
+        }
+    }
+
+    commonClientJava project(path: ':common_client', configuration: 'commonClientJava')
+    commonClientResources project(path: ':common_client', configuration: 'commonClientResources')
 }
 
 tasks.named('compileJava', JavaCompile) {
-    dependsOn(configurations.commonJava)
-    source(configurations.commonJava)
+    dependsOn(configurations.commonJava, configurations.commonClientJava)
+    source(configurations.commonJava, configurations.commonClientJava)
 }
 
 processResources {
     dependsOn(configurations.commonResources)
     from(configurations.commonResources)
+    dependsOn(configurations.commonClientResources)
+//    from(configurations.commonClientResources)
+    from(project(":common_client").sourceSets.main.resources)
 }
 
 tasks.named('javadoc', Javadoc).configure {
-    dependsOn(configurations.commonJava)
-    source(configurations.commonJava)
+    dependsOn(configurations.commonJava, configurations.commonClientJava)
+    source(configurations.commonJava, configurations.commonClientJava)
 }
 
 tasks.named('sourcesJar', Jar) {
-    dependsOn(configurations.commonJava)
+    dependsOn(configurations.commonJava, configurations.commonClientJava)
     from(configurations.commonJava)
-    dependsOn(configurations.commonResources)
+    from(configurations.commonClientJava)
+    dependsOn(configurations.commonResources, configurations.commonClientResources)
     from(configurations.commonResources)
+    from(configurations.commonClientResources)
 }

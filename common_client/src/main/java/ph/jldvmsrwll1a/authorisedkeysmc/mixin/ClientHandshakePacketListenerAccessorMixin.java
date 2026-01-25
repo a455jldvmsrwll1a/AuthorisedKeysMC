@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
+package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.client.multiplayer.ServerData;

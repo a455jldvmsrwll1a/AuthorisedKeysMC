@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
+package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ph.jldvmsrwll1a.authorisedkeysmc.client.gui.KeyManagementScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.KeyManagementScreen;
 
 @Mixin(JoinMultiplayerScreen.class)
 public abstract class JoinMultiplayerScreenMixin extends Screen {

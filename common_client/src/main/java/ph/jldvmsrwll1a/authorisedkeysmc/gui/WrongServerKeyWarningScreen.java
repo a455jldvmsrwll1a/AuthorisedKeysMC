@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.client.gui;
+package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -6,29 +6,33 @@ import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.network.chat.Component;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.client.ClientLoginHandler;
+import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-public class UnknownServerKeyWarningScreen extends SimpleYesNoCancelScreen {
-    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.unknown-server-key.title")
+public class WrongServerKeyWarningScreen extends SimpleYesNoCancelScreen {
+    private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.wrong-server-key.title")
             .withStyle(ChatFormatting.BOLD)
-            .withStyle(ChatFormatting.GOLD);
+            .withStyle(ChatFormatting.RED);
 
     private final Ed25519PublicKeyParameters serverKey;
 
-    public UnknownServerKeyWarningScreen(
+    public WrongServerKeyWarningScreen(
             ClientLoginHandler loginHandler, Component prompt, Ed25519PublicKeyParameters serverKey) {
         super(loginHandler, TITLE, prompt);
         this.serverKey = serverKey;
     }
 
-    public static UnknownServerKeyWarningScreen create(
-            ClientLoginHandler loginHandler, Ed25519PublicKeyParameters serverKey) {
+    public static WrongServerKeyWarningScreen create(
+            ClientLoginHandler loginHandler,
+            Ed25519PublicKeyParameters cachedKey,
+            Ed25519PublicKeyParameters currentKey) {
         String name = loginHandler.getServerName().orElse("<no name>");
-        String keyStr = Base64Util.encode(serverKey.getEncoded());
-        Component prompt = Component.translatable("authorisedkeysmc.screen.unknown-server-key.prompt", name, keyStr);
+        String cachedKeyStr = Base64Util.encode(cachedKey.getEncoded());
+        String currentKeyStr = Base64Util.encode(currentKey.getEncoded());
+        Component prompt = Component.translatable(
+                "authorisedkeysmc.screen.wrong-server-key.prompt", name, cachedKeyStr, currentKeyStr);
 
-        return new UnknownServerKeyWarningScreen(loginHandler, prompt, serverKey);
+        return new WrongServerKeyWarningScreen(loginHandler, prompt, currentKey);
     }
 
     @Override

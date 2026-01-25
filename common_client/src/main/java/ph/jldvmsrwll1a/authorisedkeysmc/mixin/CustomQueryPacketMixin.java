@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.mixin.client;
+package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
