@@ -24,6 +24,8 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
 
     public void updateKeyNames(@Nullable List<String> keyNames) {
         clearEntries();
+        shouldLoad = true;
+        setSelected(null);
 
         listIsEmpty = keyNames == null || keyNames.isEmpty();
         if (listIsEmpty) {
