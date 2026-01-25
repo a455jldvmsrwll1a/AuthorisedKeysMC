@@ -40,8 +40,8 @@ public class WrongServerKeyWarningScreen extends SimpleYesNoCancelScreen {
         minecraft.setScreen(parent);
 
         loginHandler
-                .getServerName()
-                .ifPresent(name -> AuthorisedKeysModClient.KNOWN_SERVERS.setServerKey(name, serverKey));
+                .getHostAddress()
+                .ifPresent(address -> AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(address, serverKey));
 
         loginHandler.sendServerChallenge();
     }

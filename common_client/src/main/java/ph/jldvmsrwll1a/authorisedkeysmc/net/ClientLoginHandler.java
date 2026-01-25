@@ -71,6 +71,11 @@ public final class ClientLoginHandler {
                 .map(data -> data.name);
     }
 
+    public Optional<String> getHostAddress() {
+        return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData())
+                .map(data -> data.ip);
+    }
+
     public void setSessionHash(byte @NotNull [] hash) {
         sessionHash = hash;
     }
@@ -102,8 +107,8 @@ public final class ClientLoginHandler {
             case S2CPublicKeyPayload serverKeyPayload -> {
                 serverKey = serverKeyPayload.key;
 
-                Ed25519PublicKeyParameters knownKey = getServerName()
-                        .map(name -> AuthorisedKeysModClient.KNOWN_SERVERS.getServerKey(name))
+                Ed25519PublicKeyParameters knownKey = getHostAddress()
+                        .map(address -> AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(address))
                         .orElse(null);
 
                 if (knownKey == null) {
@@ -201,8 +206,8 @@ public final class ClientLoginHandler {
     }
 
     public void confirmRegistration() {
-        getServerName().ifPresent(name -> {
-            AuthorisedKeysModClient.KNOWN_SERVERS.addKeyForServer(name, secretKeyName);
+        getHostAddress().ifPresent(name -> {
+            AuthorisedKeysModClient.KNOWN_HOSTS.addKeyForHost(name, secretKeyName);
         });
 
         Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
@@ -245,8 +250,8 @@ public final class ClientLoginHandler {
         secretKeyName = null;
 
         if (remainingSecretKeys == null) {
-            List<String> keyNames = AuthorisedKeysModClient.KNOWN_SERVERS.getKeysForServer(
-                    getServerName().orElse(null));
+            List<String> keyNames = AuthorisedKeysModClient.KNOWN_HOSTS.getKeysUsedForHost(
+                    getHostAddress().orElse(null));
             if (keyNames.isEmpty()) {
                 return false;
             }

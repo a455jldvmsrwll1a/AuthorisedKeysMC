@@ -258,7 +258,7 @@ public final class KeyManagementScreen extends BaseScreen {
             }
 
             currentPubkey = secret.generatePublicKey();
-            List<String> servers = AuthorisedKeysModClient.KNOWN_SERVERS.getAddressesUsingKey(name);
+            List<String> hosts = AuthorisedKeysModClient.KNOWN_HOSTS.getHostsUsingKey(name);
 
             MutableComponent message = Component.translatable(
                             "authorisedkeysmc.screen.config.keys.properties-subtitle", name)
@@ -268,7 +268,7 @@ public final class KeyManagementScreen extends BaseScreen {
                     .append(Component.literal(Base64Util.encode(currentPubkey.getEncoded())))
                     .append("\n\n")
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
-            servers.forEach(server -> message.append(" + %s\n".formatted(server)));
+            hosts.forEach(host -> message.append(" + %s\n".formatted(host)));
             inspectorText.setMessage(message);
             inspectorText.setMaxWidth(getWidthRight());
             inspectorScroller.arrangeElements();

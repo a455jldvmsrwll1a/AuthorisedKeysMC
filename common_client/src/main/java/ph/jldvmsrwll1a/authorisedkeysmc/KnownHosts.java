@@ -16,26 +16,26 @@ import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
-public class KnownServers {
+public class KnownHosts {
     private static final List<String> DEFAULT_KEY_LIST = List.of("default");
 
-    private final ConcurrentHashMap<String, ServerInfo> knownServers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HostInfo> knownHosts = new ConcurrentHashMap<>();
 
-    public KnownServers() {
+    public KnownHosts() {
         read();
     }
 
-    public @Nullable Ed25519PublicKeyParameters getServerKey(String server) {
-        ServerInfo info = knownServers.get(server);
+    public @Nullable Ed25519PublicKeyParameters getHostKey(String hostAddress) {
+        HostInfo info = knownHosts.get(hostAddress);
 
         return info == null ? null : info.hostKey;
     }
 
-    public void setServerKey(String server, @Nullable Ed25519PublicKeyParameters key) {
+    public void setHostKey(String hostAddress, @Nullable Ed25519PublicKeyParameters key) {
         final Boolean[] dirty = {false};
 
-        knownServers.compute(server, (name, info) -> {
-            ServerInfo newInfo = info != null ? info : new ServerInfo();
+        knownHosts.compute(hostAddress, (name, info) -> {
+            HostInfo newInfo = info != null ? info : new HostInfo();
 
             if (!KeyUtil.areNullableKeysEqual(newInfo.hostKey, key)) {
                 dirty[0] = true;
@@ -50,21 +50,21 @@ public class KnownServers {
         }
     }
 
-    public @NotNull List<String> getKeysForServer(@Nullable String server) {
-        if (server == null) {
+    public @NotNull List<String> getKeysUsedForHost(@Nullable String hostAddress) {
+        if (hostAddress == null) {
             return DEFAULT_KEY_LIST;
         }
 
-        ServerInfo info = knownServers.get(server);
+        HostInfo info = knownHosts.get(hostAddress);
         return (info == null || info.keysToUse.isEmpty()) ? DEFAULT_KEY_LIST : info.keysToUse;
     }
 
-    public boolean addKeyForServer(String server, String keyName) {
+    public boolean addKeyForHost(String hostAddress, String keyName) {
         final Boolean[] dirty = {false};
 
-        knownServers.compute(server, (name, info) -> {
+        knownHosts.compute(hostAddress, (name, info) -> {
             if (info == null) {
-                info = new ServerInfo();
+                info = new HostInfo();
             }
 
             if (info.keysToUse.stream().noneMatch(key -> key.equals(keyName))) {
@@ -82,10 +82,10 @@ public class KnownServers {
         return dirty[0];
     }
 
-    public List<String> getAddressesUsingKey(String keyName) {
+    public List<String> getHostsUsingKey(String keyName) {
         List<String> addresses = new ArrayList<>();
 
-        knownServers.forEach((address, info) -> {
+        knownHosts.forEach((address, info) -> {
             if (info.keysToUse.contains(keyName)) {
                 addresses.add(address);
             }
@@ -96,59 +96,59 @@ public class KnownServers {
 
     public void read() {
         try {
-            String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_SERVERS_PATH);
+            String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_HOSTS_PATH);
             Gson gson = new Gson();
-            List<ServerJsonEntry> entries = gson.fromJson(json, new TypeToken<List<ServerJsonEntry>>() {}.getType());
+            List<HostJsonEntry> entries = gson.fromJson(json, new TypeToken<List<HostJsonEntry>>() {}.getType());
 
-            knownServers.clear();
+            knownHosts.clear();
             entries.forEach(entry -> {
-                ServerInfo info = new ServerInfo();
+                HostInfo info = new HostInfo();
                 info.hostKey = new Ed25519PublicKeyParameters(Base64Util.decode(entry.host_key));
                 info.keysToUse =
                         entry.use_keys != null ? Arrays.stream(entry.use_keys).toList() : new ArrayList<>();
 
-                knownServers.put(entry.name, info);
+                knownHosts.put(entry.address, info);
             });
         } catch (FileNotFoundException ignored) {
             // Ignored.
         } catch (IOException e) {
-            Constants.LOG.error("Could not load known servers list: {}", e.toString());
+            Constants.LOG.error("Could not load known hosts list: {}", e.toString());
         }
 
-        Constants.LOG.debug("Read {} known servers from disk.", knownServers.size());
+        Constants.LOG.debug("Read {} known hosts from disk.", knownHosts.size());
     }
 
     public void write() {
         try {
             Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
 
-            List<ServerJsonEntry> out = new ArrayList<>();
-            for (var entry : knownServers.entrySet()) {
-                ServerInfo info = entry.getValue();
-                out.add(new ServerJsonEntry(entry.getKey(), info.hostKey, info.keysToUse));
+            List<HostJsonEntry> out = new ArrayList<>();
+            for (var entry : knownHosts.entrySet()) {
+                HostInfo info = entry.getValue();
+                out.add(new HostJsonEntry(entry.getKey(), info.hostKey, info.keysToUse));
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Files.writeString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_SERVERS_PATH, gson.toJson(out));
+            Files.writeString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_HOSTS_PATH, gson.toJson(out));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        Constants.LOG.debug("Wrote {} known servers to disk.", knownServers.size());
+        Constants.LOG.debug("Wrote {} known hosts to disk.", knownHosts.size());
     }
 
-    private static class ServerInfo {
+    private static class HostInfo {
         private @Nullable Ed25519PublicKeyParameters hostKey;
         private @NotNull List<String> keysToUse = new ArrayList<>();
     }
 
-    private record ServerJsonEntry(
-            String name,
+    private record HostJsonEntry(
+            String address,
             @Nullable String host_key,
             @Nullable String[] use_keys) {
-        private ServerJsonEntry(String name, @Nullable Ed25519PublicKeyParameters host_key, List<String> use_keys) {
+        private HostJsonEntry(String address, @Nullable Ed25519PublicKeyParameters host_key, List<String> use_keys) {
             this(
-                    name,
+                    address,
                     host_key == null ? null : Base64Util.encode(host_key.getEncoded()),
                     use_keys.toArray(new String[0]));
         }
