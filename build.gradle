@@ -20,7 +20,7 @@ tasks.register("collectJars", Copy) {
 
         from (subproject.layout.buildDirectory.dir("libs")) {
             include("*.jar")
-            exclude("*-sources.jar", "*-javadoc.jar", "*common*")
+            exclude("*-sources.jar", "*-javadoc.jar", "*common*", "*-forge-${minecraft_version}-${version}.jar")
         }
     }
 }
