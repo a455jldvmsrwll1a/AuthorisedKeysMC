@@ -16,9 +16,7 @@ public class ClientKeyPairs {
     public ClientKeyPairs() {
         ensureWarningFileExists();
 
-        try {
-            Ed25519PrivateKeyParameters ignored = loadFromFile("default");
-        } catch (IOException ignored) {
+        if (retrieveKeyNamesFromDisk().isEmpty()) {
             generate("default");
         }
     }
