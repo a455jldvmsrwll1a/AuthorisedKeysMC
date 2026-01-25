@@ -9,3 +9,19 @@ allprojects {
         mavenCentral()
     }
 }
+
+tasks.register("collectJars", Copy) {
+    group = "build"
+    description = "Copy all JARs to dist/"
+
+    into layout.buildDirectory.dir("dist")
+
+    subprojects.each { subproject ->
+        dependsOn subproject.tasks.matching { it.name == "build" }
+
+        from (subproject.layout.buildDirectory.dir("libs")) {
+            include("*.jar")
+            exclude("*-sources.jar", "*-javadoc.jar", "*common*")
+        }
+    }
+}
