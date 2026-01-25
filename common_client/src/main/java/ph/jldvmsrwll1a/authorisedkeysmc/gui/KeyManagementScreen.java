@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
@@ -14,6 +15,8 @@ import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.*;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
@@ -28,6 +31,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
     private final TabManager tabManager;
+    private final ServerList serverList;
 
     private TabNavigationBar tabNav;
     private KeyListTab keyListTab;
@@ -39,6 +43,9 @@ public final class KeyManagementScreen extends BaseScreen {
 
         rootLayout = new HeaderAndFooterLayout(this);
         tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
+
+        serverList = new ServerList(Minecraft.getInstance());
+        serverList.load();
     }
 
     protected void init() {
@@ -112,6 +119,26 @@ public final class KeyManagementScreen extends BaseScreen {
                 2,
                 32,
                 2);
+    }
+
+    private List<String> getServerNamesUsingKey(String keyName) {
+        List<String> hosts = AuthorisedKeysModClient.KNOWN_HOSTS.getHostsUsingKey(keyName);
+
+        List<String> servers = new ArrayList<>(hosts.size());
+
+        hosts.forEach(host -> {
+            for (int i = 0; i < serverList.size(); ++i) {
+                ServerData data = serverList.get(i);
+
+                if (data.ip.equals(host)) {
+                    servers.add(data.name);
+                }
+            }
+        });
+
+        servers.sort(String::compareToIgnoreCase);
+
+        return servers;
     }
 
     class KeyListTab extends GridLayoutTab {
@@ -240,35 +267,35 @@ public final class KeyManagementScreen extends BaseScreen {
                 return;
             }
 
-            String name = selected.getKeyName();
+            String keyName = selected.getKeyName();
 
             Ed25519PrivateKeyParameters secret;
             Instant modificationTime;
 
             try {
-                secret = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(name);
-                modificationTime = AuthorisedKeysModClient.KEY_PAIRS.getModificationTime(name);
+                secret = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+                modificationTime = AuthorisedKeysModClient.KEY_PAIRS.getModificationTime(keyName);
             } catch (IOException e) {
-                Constants.LOG.error("Could not load secret key \"{}\": {}", name, e);
+                Constants.LOG.error("Could not load secret key \"{}\": {}", keyName, e);
 
                 inspectorText.setMessage(
-                        Component.translatable("authorisedkeysmc.error.key-props", name, e.toString()));
+                        Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString()));
 
                 return;
             }
 
             currentPubkey = secret.generatePublicKey();
-            List<String> hosts = AuthorisedKeysModClient.KNOWN_HOSTS.getHostsUsingKey(name);
+            List<String> servers = getServerNamesUsingKey(keyName);
 
             MutableComponent message = Component.translatable(
-                            "authorisedkeysmc.screen.config.keys.properties-subtitle", name)
+                            "authorisedkeysmc.screen.config.keys.properties-subtitle", keyName)
                     .append(Component.translatable(
                             "authorisedkeysmc.screen.config.keys.properties-time", modificationTime.toString()))
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
                     .append(Component.literal(Base64Util.encode(currentPubkey.getEncoded())))
                     .append("\n\n")
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
-            hosts.forEach(host -> message.append(" + %s\n".formatted(host)));
+            servers.forEach(server -> message.append(" + %s\n".formatted(server)));
             inspectorText.setMessage(message);
             inspectorText.setMaxWidth(getWidthRight());
             inspectorScroller.arrangeElements();
