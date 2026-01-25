@@ -48,10 +48,16 @@ neoForge {
 }
 
 dependencies {
-    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.83'
-    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
-    implementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+    jarJar(implementation(group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: "${bouncycastle_version}")) {
+        version {
+            strictly "${bouncycastle_version}"
+        }
+    }
+    jarJar(implementation(group: 'org.bouncycastle', name: 'bcpkix-jdk18on', version: "${bouncycastle_version}")) {
+        version {
+            strictly "${bouncycastle_version}"
+        }
+    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
