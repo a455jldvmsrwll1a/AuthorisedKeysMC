@@ -30,9 +30,9 @@ dependencies {
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
-    compileOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
+    compileOnly "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
-    compileOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
+    compileOnly "org.bouncycastle:bcpkix-jdk18on:${bouncycastle_version}"
 }
 
 configurations {
