@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.layouts.SpacerElement;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -45,6 +46,7 @@ public class KeyCreationScreen extends BaseScreen {
             .withStyle(ChatFormatting.YELLOW, ChatFormatting.UNDERLINE);
     private static final Component NAME_TAKEN_LABEL =
             Component.translatable("authorisedkeysmc.screen.new-key.name-taken").withStyle(ChatFormatting.RED);
+    private static final Component WAITING_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.waiting");
 
     private final Screen parent;
     private final Consumer<String> callback;
@@ -271,11 +273,14 @@ public class KeyCreationScreen extends BaseScreen {
             return;
         }
 
-        AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, currentPassword);
+        minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
 
-        callback.accept(currentName);
+        minecraft.executeBlocking(() -> {
+            AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, currentPassword);
 
-        onClose();
+            callback.accept(currentName);
+            onClose();
+        });
     }
 
     private int elementWidth() {
