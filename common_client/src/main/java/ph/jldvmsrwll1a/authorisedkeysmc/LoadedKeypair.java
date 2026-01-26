@@ -1,5 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+import java.io.IOException;
+import java.time.Instant;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -15,9 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
-import java.io.IOException;
-import java.time.Instant;
-
 public class LoadedKeypair {
     private final @NotNull String name;
     private final @NotNull Instant modificationTime;
@@ -26,7 +25,11 @@ public class LoadedKeypair {
     private @Nullable Ed25519PublicKeyParameters publicKey;
     private @Nullable Ed25519PrivateKeyParameters privateKey;
 
-    public LoadedKeypair(@NotNull String name, @NotNull Instant modificationTime, @NotNull Ed25519PrivateKeyParameters privateKey, @Nullable Ed25519PublicKeyParameters publicKey) {
+    public LoadedKeypair(
+            @NotNull String name,
+            @NotNull Instant modificationTime,
+            @NotNull Ed25519PrivateKeyParameters privateKey,
+            @Nullable Ed25519PublicKeyParameters publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
         this.encryptedInfo = null;
@@ -35,7 +38,11 @@ public class LoadedKeypair {
         this.publicKey = publicKey != null ? publicKey : privateKey.generatePublicKey();
     }
 
-    public LoadedKeypair(@NotNull String name, @NotNull Instant modificationTime, @NotNull PKCS8EncryptedPrivateKeyInfo encryptedInfo, @Nullable Ed25519PublicKeyParameters publicKey) {
+    public LoadedKeypair(
+            @NotNull String name,
+            @NotNull Instant modificationTime,
+            @NotNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
+            @Nullable Ed25519PublicKeyParameters publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
         this.encryptedInfo = encryptedInfo;
@@ -64,7 +71,8 @@ public class LoadedKeypair {
         if (publicKey != null) {
             return publicKey;
         } else {
-            throw new IllegalStateException("public key is undetermined (private key has likely not yet been decrypted, and no public key was explicitly supplied in the key file)");
+            throw new IllegalStateException(
+                    "public key is undetermined (private key has likely not yet been decrypted, and no public key was explicitly supplied in the key file)");
         }
     }
 
@@ -86,7 +94,8 @@ public class LoadedKeypair {
         Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
 
         try {
-            InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password.toCharArray());
+            InputDecryptorProvider decryptorProvider =
+                    new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password.toCharArray());
             PrivateKeyInfo pki = encryptedInfo.decryptPrivateKeyInfo(decryptorProvider);
             AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
 
@@ -99,7 +108,10 @@ public class LoadedKeypair {
 
                 return true;
             } else {
-                throw new IllegalArgumentException("Expected a %s but found a %s!".formatted(Ed25519PublicKeyParameters.class.getName(), key.getClass().getName()));
+                throw new IllegalArgumentException("Expected a %s but found a %s!"
+                        .formatted(
+                                Ed25519PublicKeyParameters.class.getName(),
+                                key.getClass().getName()));
             }
         } catch (OperatorCreationException | IOException e) {
             throw new RuntimeException(e);

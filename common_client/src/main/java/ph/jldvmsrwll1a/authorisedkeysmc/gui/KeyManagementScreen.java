@@ -1,7 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.nio.file.InvalidPathException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -19,13 +18,11 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class KeyManagementScreen extends BaseScreen {
     private final Screen parent;
@@ -187,7 +184,8 @@ public final class KeyManagementScreen extends BaseScreen {
                     .build());
             listFooterLayout.addChild(Button.builder(
                             Component.translatable("authorisedkeysmc.button.create-key"),
-                            button -> minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, newKey -> reloadKeys())))
+                            button -> minecraft.setScreen(
+                                    new KeyCreationScreen(KeyManagementScreen.this, newKey -> reloadKeys())))
                     .size(74, 20)
                     .build());
 
@@ -223,7 +221,8 @@ public final class KeyManagementScreen extends BaseScreen {
                     .size(74, 20)
                     .build());
             inspectorButtons.add(Button.builder(
-                            Component.translatable("authorisedkeysmc.button.delete-key").withStyle(ChatFormatting.RED),
+                            Component.translatable("authorisedkeysmc.button.delete-key")
+                                    .withStyle(ChatFormatting.RED),
                             button -> Constants.LOG.warn("Deleting is not implemented!"))
                     .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.delete-key")))
                     .size(74, 20)
@@ -293,23 +292,26 @@ public final class KeyManagementScreen extends BaseScreen {
 
             List<String> servers = getServerNamesUsingKey(keyName);
 
-            MutableComponent message = Component.translatable(
-                            "authorisedkeysmc.screen.config.keys.properties-subtitle", keyName);
+            MutableComponent message =
+                    Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", keyName);
 
             if (currentKeypair.requiresDecryption()) {
-                message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted").withStyle(ChatFormatting.GREEN));
+                message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted")
+                        .withStyle(ChatFormatting.GREEN));
             }
 
-            message
-                    .append(Component.translatable(
-                            "authorisedkeysmc.screen.config.keys.properties-time", currentKeypair.getModificationTime().toString()).withStyle(ChatFormatting.GRAY))
+            message.append(Component.translatable(
+                                    "authorisedkeysmc.screen.config.keys.properties-time",
+                                    currentKeypair.getModificationTime().toString())
+                            .withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
                     .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))
                     .append("\n\n")
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
 
             for (int i = 0; i < servers.size(); ++i) {
-                message.append(" + %s\n".formatted(servers.get(i))).withStyle(i % 2 == 0 ? ChatFormatting.WHITE : ChatFormatting.GRAY);
+                message.append(" + %s\n".formatted(servers.get(i)))
+                        .withStyle(i % 2 == 0 ? ChatFormatting.WHITE : ChatFormatting.GRAY);
             }
 
             inspectorText.setMessage(message);

@@ -9,7 +9,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -92,17 +91,24 @@ public class ClientKeyPairs {
                         if (key instanceof Ed25519PrivateKeyParameters edPri) {
                             privateKey = edPri;
                         } else {
-                            throw new IllegalArgumentException("expected a private key of type %s but found a %s".formatted(Ed25519PrivateKeyParameters.class.getName(), key.getClass().getName()));
+                            throw new IllegalArgumentException("expected a private key of type %s but found a %s"
+                                    .formatted(
+                                            Ed25519PrivateKeyParameters.class.getName(),
+                                            key.getClass().getName()));
                         }
                     }
-                    case "ENCRYPTED PRIVATE KEY" -> encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
+                    case "ENCRYPTED PRIVATE KEY" ->
+                        encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
                     case "PUBLIC KEY" -> {
                         AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
 
                         if (key instanceof Ed25519PublicKeyParameters edPub) {
                             publicKey = edPub;
                         } else {
-                            throw new IllegalArgumentException("expected a public key of type %s but found a %s".formatted(Ed25519PublicKeyParameters.class.getName(), key.getClass().getName()));
+                            throw new IllegalArgumentException("expected a public key of type %s but found a %s"
+                                    .formatted(
+                                            Ed25519PublicKeyParameters.class.getName(),
+                                            key.getClass().getName()));
                         }
                     }
                 }
@@ -139,7 +145,7 @@ public class ClientKeyPairs {
 
             }
 
-            Ed25519KeyPairGenerator generator  = new Ed25519KeyPairGenerator();
+            Ed25519KeyPairGenerator generator = new Ed25519KeyPairGenerator();
             generator.init(new Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()));
 
             AsymmetricCipherKeyPair kp = generator.generateKeyPair();
@@ -152,14 +158,16 @@ public class ClientKeyPairs {
             PemObject privatePem;
 
             if (password != null) {
-                JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder = new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
+                JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder =
+                        new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
                 encryptorBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
                 encryptorBuilder.setRandom(new SecureRandom());
                 encryptorBuilder.setIterationCount(2_000_000);
                 encryptorBuilder.setPassword(password.toCharArray());
                 OutputEncryptor encryptor = encryptorBuilder.build();
 
-                PKCS8EncryptedPrivateKeyInfo encryptedInfo = new PKCS8EncryptedPrivateKeyInfoBuilder(privateKeyInfo).build(encryptor);
+                PKCS8EncryptedPrivateKeyInfo encryptedInfo =
+                        new PKCS8EncryptedPrivateKeyInfoBuilder(privateKeyInfo).build(encryptor);
 
                 privatePem = new PemObject("ENCRYPTED PRIVATE KEY", encryptedInfo.getEncoded());
 

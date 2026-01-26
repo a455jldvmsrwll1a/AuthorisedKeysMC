@@ -271,7 +271,9 @@ public final class ClientLoginHandler {
             try {
                 LoadedKeypair keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
                 if (keypair.requiresDecryption()) {
-                    Constants.LOG.error("{} requires a password to decrypt but a password prompt has not yet been implemented.", secretKeyName);
+                    Constants.LOG.error(
+                            "{} requires a password to decrypt but a password prompt has not yet been implemented.",
+                            secretKeyName);
                 } else {
                     secretKey = keypair.getDecryptedPrivate();
                 }
