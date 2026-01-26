@@ -146,6 +146,10 @@ public class KeyCreationScreen extends BaseScreen {
 
         rootLayout.visitWidgets(this::addRenderableWidget);
         repositionElements();
+
+        if (existingNames.isEmpty()) {
+            nameEdit.setValue("default");
+        }
     }
 
     @Override
@@ -267,9 +271,11 @@ public class KeyCreationScreen extends BaseScreen {
             return;
         }
 
+        AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, currentPassword);
+
         callback.accept(currentName);
 
-        // do stuff
+        onClose();
     }
 
     private int elementWidth() {

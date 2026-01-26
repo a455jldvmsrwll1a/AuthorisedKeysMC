@@ -1,7 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
+
+import java.security.Security;
 
 public class AuthorisedKeysModCore {
     public static IPlatformHelper PLATFORM;
@@ -25,5 +28,7 @@ public class AuthorisedKeysModCore {
         Constants.LOG.info("UUID_REMAPS_PATH: {}", FILE_PATHS.UUID_REMAPS_PATH);
         Constants.LOG.info("HISTORY_PATH: {}", FILE_PATHS.HISTORY_PATH);
         Constants.LOG.info("SERVER_SECRET_PATH: {}", FILE_PATHS.SERVER_SECRET_PATH);
+
+        Security.addProvider(new BouncyCastleProvider());
     }
 }

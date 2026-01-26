@@ -268,7 +268,13 @@ public final class ClientLoginHandler {
             }
 
             try {
-                secretKey = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
+                var tryKey = AuthorisedKeysModClient.KEY_PAIRS.privateKeyFromFile(secretKeyName);
+
+                if (tryKey.isPresent()) {
+                    secretKey = tryKey.get();
+                } else {
+                    Constants.LOG.error("{} requires a password to decrypt but a password prompt has not yet been implemented.", secretKeyName);
+                }
             } catch (InvalidPathException | IOException e) {
                 Constants.LOG.error("Could not load the \"{}\" key: {}", secretKeyName, e);
             }

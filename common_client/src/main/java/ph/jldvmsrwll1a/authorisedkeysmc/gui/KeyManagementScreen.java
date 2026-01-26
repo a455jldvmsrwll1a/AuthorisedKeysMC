@@ -188,9 +188,7 @@ public final class KeyManagementScreen extends BaseScreen {
                     .build());
             listFooterLayout.addChild(Button.builder(
                             Component.translatable("authorisedkeysmc.button.create-key"),
-                            button -> minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, newKey -> {
-                                reloadKeys();
-                            })))
+                            button -> minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, newKey -> reloadKeys())))
                     .size(74, 20)
                     .build());
 
@@ -272,13 +270,23 @@ public final class KeyManagementScreen extends BaseScreen {
 
             String keyName = selected.getKeyName();
 
-            Ed25519PrivateKeyParameters secret;
             Instant modificationTime;
 
             needsLayout = true;
 
             try {
-                secret = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+                var tryKey = AuthorisedKeysModClient.KEY_PAIRS.publicKeyFromFile(keyName);
+                if (tryKey.isEmpty()){
+                    Constants.LOG.error("Could not retrieve a public key from the file \"{}\".", keyName);
+
+                    inspectorText.setMessage(
+                            Component.translatable("authorisedkeysmc.error.key-props", keyName, "public key is missing")
+                                    .withStyle(ChatFormatting.RED));
+
+                    return;
+                }
+
+                currentPubkey = tryKey.get();
                 modificationTime = AuthorisedKeysModClient.KEY_PAIRS.getModificationTime(keyName);
             } catch (InvalidPathException e) {
                 Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
@@ -288,7 +296,7 @@ public final class KeyManagementScreen extends BaseScreen {
                                 .withStyle(ChatFormatting.RED));
 
                 return;
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Constants.LOG.error("Could not load secret key \"{}\": {}", keyName, e);
 
                 inspectorText.setMessage(
@@ -298,7 +306,6 @@ public final class KeyManagementScreen extends BaseScreen {
                 return;
             }
 
-            currentPubkey = secret.generatePublicKey();
             List<String> servers = getServerNamesUsingKey(keyName);
 
             MutableComponent message = Component.translatable(
