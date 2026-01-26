@@ -68,7 +68,7 @@ public class ClientKeyPairs {
         return names;
     }
 
-    public LoadedKeypair loadFromFile(String name) throws IOException, InvalidPathException {
+    public @NotNull LoadedKeypair loadFromFile(String name) throws IOException, InvalidPathException {
         Path path = fromKeyName(name);
 
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();

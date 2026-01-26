@@ -27,6 +27,7 @@
     "authorisedkeysmc.screen.config.keys.empty-list-message": "You have no keys.",
     "authorisedkeysmc.screen.config.keys.properties-header": "Key Properties",
     "authorisedkeysmc.screen.config.keys.properties-subtitle": "Properties for %1$s:\n\n",
+    "authorisedkeysmc.screen.config.keys.properties-encrypted": "This key is encrypted with a password.\n\n",
     "authorisedkeysmc.screen.config.keys.properties-time": "Last modified on %1$s\n\n",
     "authorisedkeysmc.screen.config.keys.properties-key": "Public key (as URL-safe base64):\n",
     "authorisedkeysmc.screen.config.keys.properties-servers": "This key is used on the following servers:\n\n",

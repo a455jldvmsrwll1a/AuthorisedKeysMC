@@ -165,7 +165,7 @@ public final class KeyManagementScreen extends BaseScreen {
         private final MultiLineTextWidget inspectorText;
         private final List<Button> inspectorButtons = new ArrayList<>(3);
 
-        private @Nullable Ed25519PublicKeyParameters currentPubkey;
+        private @Nullable LoadedKeypair currentKeypair;
 
         private boolean needsLayout = true;
 
@@ -204,8 +204,8 @@ public final class KeyManagementScreen extends BaseScreen {
             inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
 
             inspectorButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.copy-key"), button -> {
-                        if (currentPubkey != null) {
-                            minecraft.keyboardHandler.setClipboard(Base64Util.encode(currentPubkey.getEncoded()));
+                        if (currentKeypair != null) {
+                            minecraft.keyboardHandler.setClipboard(currentKeypair.getTextualPublic());
                             SystemToast.addOrUpdate(
                                     minecraft.getToastManager(),
                                     KEY_COPIED_TOAST,
@@ -223,7 +223,7 @@ public final class KeyManagementScreen extends BaseScreen {
                     .size(74, 20)
                     .build());
             inspectorButtons.add(Button.builder(
-                            Component.translatable("authorisedkeysmc.button.delete-key"),
+                            Component.translatable("authorisedkeysmc.button.delete-key").withStyle(ChatFormatting.RED),
                             button -> Constants.LOG.warn("Deleting is not implemented!"))
                     .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.delete-key")))
                     .size(74, 20)
@@ -269,14 +269,10 @@ public final class KeyManagementScreen extends BaseScreen {
 
             String keyName = selected.getKeyName();
 
-            Instant modificationTime;
-
             needsLayout = true;
 
             try {
-                LoadedKeypair keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
-                currentPubkey = keypair.getPublic();
-                modificationTime = keypair.getModificationTime();
+                currentKeypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
             } catch (InvalidPathException e) {
                 Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
 
@@ -298,14 +294,24 @@ public final class KeyManagementScreen extends BaseScreen {
             List<String> servers = getServerNamesUsingKey(keyName);
 
             MutableComponent message = Component.translatable(
-                            "authorisedkeysmc.screen.config.keys.properties-subtitle", keyName)
+                            "authorisedkeysmc.screen.config.keys.properties-subtitle", keyName);
+
+            if (currentKeypair.requiresDecryption()) {
+                message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted").withStyle(ChatFormatting.GREEN));
+            }
+
+            message
                     .append(Component.translatable(
-                            "authorisedkeysmc.screen.config.keys.properties-time", modificationTime.toString()))
+                            "authorisedkeysmc.screen.config.keys.properties-time", currentKeypair.getModificationTime().toString()).withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
-                    .append(Component.literal(Base64Util.encode(currentPubkey.getEncoded())))
+                    .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))
                     .append("\n\n")
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
-            servers.forEach(server -> message.append(" + %s\n".formatted(server)));
+
+            for (int i = 0; i < servers.size(); ++i) {
+                message.append(" + %s\n".formatted(servers.get(i))).withStyle(i % 2 == 0 ? ChatFormatting.WHITE : ChatFormatting.GRAY);
+            }
+
             inspectorText.setMessage(message);
             inspectorText.setMaxWidth(getWidthRight());
             inspectorScroller.arrangeElements();

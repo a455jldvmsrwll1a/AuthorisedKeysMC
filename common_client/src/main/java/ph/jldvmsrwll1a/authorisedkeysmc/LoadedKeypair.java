@@ -13,6 +13,7 @@ import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -49,6 +50,10 @@ public class LoadedKeypair {
 
     public @NotNull Instant getModificationTime() {
         return modificationTime;
+    }
+
+    public @NotNull String getTextualPublic() {
+        return Base64Util.encode(getPublic().getEncoded());
     }
 
     public @NotNull Ed25519PublicKeyParameters getPublic() {
@@ -101,5 +106,10 @@ public class LoadedKeypair {
         } catch (PKCSException e) {
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        return getTextualPublic();
     }
 }
