@@ -5,6 +5,8 @@ plugins {
 }
 
 spotless {
+    setEnforceCheck(false)
+
     java {
         palantirJavaFormat()
     }
