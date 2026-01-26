@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -187,7 +188,9 @@ public final class KeyManagementScreen extends BaseScreen {
                     .build());
             listFooterLayout.addChild(Button.builder(
                             Component.translatable("authorisedkeysmc.button.create-key"),
-                            button -> Constants.LOG.warn("Creating not implemented!"))
+                            button -> minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, newKey -> {
+                                reloadKeys();
+                            })))
                     .size(74, 20)
                     .build());
 
@@ -256,9 +259,9 @@ public final class KeyManagementScreen extends BaseScreen {
                 return;
             }
 
-            var selected = keySelectionList.getSelected();
+            inspectorButtons.forEach(button -> button.active = false);
 
-            inspectorButtons.forEach(button -> button.active = selected != null);
+            var selected = keySelectionList.getSelected();
 
             if (selected == null) {
                 inspectorText.setMessage(
@@ -272,14 +275,25 @@ public final class KeyManagementScreen extends BaseScreen {
             Ed25519PrivateKeyParameters secret;
             Instant modificationTime;
 
+            needsLayout = true;
+
             try {
                 secret = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
                 modificationTime = AuthorisedKeysModClient.KEY_PAIRS.getModificationTime(keyName);
+            } catch (InvalidPathException e) {
+                Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
+
+                inspectorText.setMessage(
+                        Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
+                                .withStyle(ChatFormatting.RED));
+
+                return;
             } catch (IOException e) {
                 Constants.LOG.error("Could not load secret key \"{}\": {}", keyName, e);
 
                 inspectorText.setMessage(
-                        Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString()));
+                        Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
+                                .withStyle(ChatFormatting.RED));
 
                 return;
             }
@@ -299,6 +313,8 @@ public final class KeyManagementScreen extends BaseScreen {
             inspectorText.setMessage(message);
             inspectorText.setMaxWidth(getWidthRight());
             inspectorScroller.arrangeElements();
+
+            inspectorButtons.forEach(button -> button.active = true);
         }
 
         public void recalculateLayoutIfNeeded() {
