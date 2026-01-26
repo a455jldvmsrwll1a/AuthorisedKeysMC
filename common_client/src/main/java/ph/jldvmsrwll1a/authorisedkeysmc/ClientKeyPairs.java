@@ -9,6 +9,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.Validate;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -193,6 +194,21 @@ public class ClientKeyPairs {
         }
 
         Constants.LOG.info("Generated new keypair \"{}\".", name);
+    }
+
+    public void deleteKeyFile(@NotNull LoadedKeypair keypair) {
+        deleteKeyFile(keypair.getName());
+    }
+
+    public void deleteKeyFile(@NotNull String name) {
+        try {
+            Path path = fromKeyName(name);
+            Validate.isTrue(Files.isRegularFile(path), "Refusing to delete anything but a regular file!");
+
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            Constants.LOG.warn("Failed to delete file for key {}: {}", name, e);
+        }
     }
 
     private void ensureWarningFileExists() {

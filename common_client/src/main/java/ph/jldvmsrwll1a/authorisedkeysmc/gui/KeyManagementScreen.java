@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.*;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
@@ -201,29 +202,20 @@ public final class KeyManagementScreen extends BaseScreen {
             inspectorScroller = new ScrollableLayout(minecraft, inspectorLayout, inspectorLayout.getHeight());
             inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
 
-            inspectorButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.copy-key"), button -> {
-                        if (currentKeypair != null) {
-                            minecraft.keyboardHandler.setClipboard(currentKeypair.getTextualPublic());
-                            SystemToast.addOrUpdate(
-                                    minecraft.getToastManager(),
-                                    KEY_COPIED_TOAST,
-                                    Component.translatable("authorisedkeysmc.toast.key-shared"),
-                                    null);
-                        }
-                    })
+            inspectorButtons.add(Button.builder(
+                            Component.translatable("authorisedkeysmc.button.copy-key"), this::onCopyButtonPressed)
                     .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.share-key")))
                     .size(74, 20)
                     .build());
             inspectorButtons.add(Button.builder(
-                            Component.translatable("authorisedkeysmc.button.export-key"),
-                            button -> Constants.LOG.warn("Backing up not implemented!"))
+                            Component.translatable("authorisedkeysmc.button.export-key"), this::onBackupButtonPressed)
                     .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.backup-key")))
                     .size(74, 20)
                     .build());
             inspectorButtons.add(Button.builder(
                             Component.translatable("authorisedkeysmc.button.delete-key")
                                     .withStyle(ChatFormatting.RED),
-                            button -> Constants.LOG.warn("Deleting is not implemented!"))
+                            this::onDeleteButtonPressed)
                     .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.delete-key")))
                     .size(74, 20)
                     .build());
@@ -368,6 +360,42 @@ public final class KeyManagementScreen extends BaseScreen {
             var headerHeight = font.lineHeight + 8 + 8;
             var footerHeight = 20 + 8 + 8;
             return rootLayout.getContentHeight() - headerHeight - footerHeight;
+        }
+
+        private void onCopyButtonPressed(Button ignored) {
+            if (currentKeypair != null) {
+                minecraft.keyboardHandler.setClipboard(currentKeypair.getTextualPublic());
+                SystemToast.addOrUpdate(
+                        minecraft.getToastManager(),
+                        KEY_COPIED_TOAST,
+                        Component.translatable("authorisedkeysmc.toast.key-shared"),
+                        null);
+            }
+        }
+
+        private void onBackupButtonPressed(Button ignored) {
+            Constants.LOG.warn("Backing up not implemented!");
+        }
+
+        private void onDeleteButtonPressed(Button ignored) {
+            if (currentKeypair == null) {
+                return;
+            }
+
+            ConfirmScreen screen = new ConfirmScreen(
+                    confirmed -> {
+                        if (confirmed) {
+                            AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(currentKeypair);
+                            reloadKeys();
+                        }
+
+                        minecraft.setScreen(KeyManagementScreen.this);
+                    },
+                    Component.translatable("authorisedkeysmc.screen.delete-key.title")
+                            .withStyle(ChatFormatting.RED),
+                    Component.translatable("authorisedkeysmc.screen.delete-key.prompt"));
+
+            minecraft.setScreen(screen);
         }
     }
 

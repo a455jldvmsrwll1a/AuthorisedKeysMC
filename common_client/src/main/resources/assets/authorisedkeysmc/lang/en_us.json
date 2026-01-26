@@ -43,6 +43,8 @@
     "authorisedkeysmc.screen.new-key.invalid-name": "Invalid file name: %1$s",
     "authorisedkeysmc.screen.new-key.name-taken": "There is already an existing key-pair with that name!",
     "authorisedkeysmc.screen.new-key.encryption-reminder": "You will need to enter the password whenever this key is used.\n\nPasswords are never transmitted to the server and are only used to decrypt the private key for use.",
+    "authorisedkeysmc.screen.delete-key.title": "Confirm Key-Pair Deletion",
+    "authorisedkeysmc.screen.delete-key.prompt": "Are you sure you wish to §npermanently delete§r this key-pair?\n\nThis operation is irreversible!",
     "authorisedkeysmc.status.waiting-verdict": "Waiting for authentication verdict...",
     "authorisedkeysmc.status.key-rejected": "Key rejected! Trying next key...",
     "authorisedkeysmc.status.verifying": "Verifying server's identity...",
