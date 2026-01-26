@@ -67,7 +67,7 @@ public class KeyCreationScreen extends BaseScreen {
     private String currentName;
     private String currentPassword;
     private String lastNameError = "";
-    private AtomicBoolean showPassword = new AtomicBoolean(false);
+    private final AtomicBoolean showPassword = new AtomicBoolean(false);
 
     public KeyCreationScreen(Screen parent, Consumer<String> callback) {
         super(TITLE_LABEL);
