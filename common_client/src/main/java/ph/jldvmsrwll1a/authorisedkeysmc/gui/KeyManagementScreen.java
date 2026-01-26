@@ -1,6 +1,5 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
-import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,12 +19,12 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class KeyManagementScreen extends BaseScreen {
@@ -275,19 +274,9 @@ public final class KeyManagementScreen extends BaseScreen {
             needsLayout = true;
 
             try {
-                var tryKey = AuthorisedKeysModClient.KEY_PAIRS.publicKeyFromFile(keyName);
-                if (tryKey.isEmpty()){
-                    Constants.LOG.error("Could not retrieve a public key from the file \"{}\".", keyName);
-
-                    inspectorText.setMessage(
-                            Component.translatable("authorisedkeysmc.error.key-props", keyName, "public key is missing")
-                                    .withStyle(ChatFormatting.RED));
-
-                    return;
-                }
-
-                currentPubkey = tryKey.get();
-                modificationTime = AuthorisedKeysModClient.KEY_PAIRS.getModificationTime(keyName);
+                LoadedKeypair keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+                currentPubkey = keypair.getPublic();
+                modificationTime = keypair.getModificationTime();
             } catch (InvalidPathException e) {
                 Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
 

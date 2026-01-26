@@ -9,9 +9,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -70,20 +68,16 @@ public class ClientKeyPairs {
         return names;
     }
 
-    public Instant getModificationTime(String name) throws IOException, InvalidPathException {
+    public LoadedKeypair loadFromFile(String name) throws IOException, InvalidPathException {
         Path path = fromKeyName(name);
-        return Files.getLastModifiedTime(path).toInstant();
-    }
 
-    public Optional<Ed25519PrivateKeyParameters> privateKeyFromFile(String name) throws IOException, InvalidPathException {
-        return privateKeyFromFile(name, null);
-    }
+        Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
-    public Optional<Ed25519PrivateKeyParameters> privateKeyFromFile(@NotNull String name, @Nullable String password) throws IOException, InvalidPathException {
-        Path path = fromKeyName(name);
+        Ed25519PrivateKeyParameters privateKey = null;
+        Ed25519PublicKeyParameters publicKey = null;
+        PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = null;
 
         try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
-
             while (true) {
                 PemObject pem = reader.readPemObject();
 
@@ -96,50 +90,32 @@ public class ClientKeyPairs {
                         AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
 
                         if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                            return Optional.of(edPri);
+                            privateKey = edPri;
                         } else {
-                            throw new IllegalArgumentException("Expected a %s but found a %s!".formatted(Ed25519PrivateKeyParameters.class.getName(), key.getClass().getName()));
+                            throw new IllegalArgumentException("expected a private key of type %s but found a %s".formatted(Ed25519PrivateKeyParameters.class.getName(), key.getClass().getName()));
                         }
                     }
-                    case "ENCRYPTED PRIVATE KEY" -> {
-                        throw new NotImplementedException("fuck you");
-                    }
-                    default -> {
-                    }
-                }
-            }
-        }
+                    case "ENCRYPTED PRIVATE KEY" -> encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
+                    case "PUBLIC KEY" -> {
+                        AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
 
-        return Optional.empty();
-    }
-
-    public Optional<Ed25519PublicKeyParameters> publicKeyFromFile(@NotNull String name) throws IOException, InvalidPathException {
-        Path path = fromKeyName(name);
-
-        try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
-
-            while (true) {
-                PemObject pem = reader.readPemObject();
-
-                if (pem == null) {
-                    break;
-                }
-
-                if (pem.getType().equals("PUBLIC KEY")) {
-
-                    AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
-
-                    if (key instanceof Ed25519PublicKeyParameters edPri) {
-                        return Optional.of(edPri);
-                    } else {
-                        throw new IllegalArgumentException("Expected a %s but found a %s!".formatted(Ed25519PublicKeyParameters.class.getName(), key.getClass().getName()));
+                        if (key instanceof Ed25519PublicKeyParameters edPub) {
+                            publicKey = edPub;
+                        } else {
+                            throw new IllegalArgumentException("expected a public key of type %s but found a %s".formatted(Ed25519PublicKeyParameters.class.getName(), key.getClass().getName()));
+                        }
                     }
                 }
             }
         }
 
-        // If we can't load it from the file, try deriving it from the private key, if available.
-        return privateKeyFromFile(name).map(Ed25519PrivateKeyParameters::generatePublicKey);
+        if (privateKey != null) {
+            return new LoadedKeypair(name, modificationTime, privateKey, publicKey);
+        } else if (encryptedPrivateKeyInfo != null) {
+            return new LoadedKeypair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
+        } else {
+            throw new IllegalArgumentException("File contains no valid data.");
+        }
     }
 
     public void generate(@NotNull String name, @Nullable String password) throws InvalidPathException {

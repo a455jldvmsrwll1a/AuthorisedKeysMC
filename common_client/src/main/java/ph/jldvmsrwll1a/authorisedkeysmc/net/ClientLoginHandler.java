@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.LoginRegistrationScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.NoKeysLeftErrorScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.UnknownServerKeyWarningScreen;
@@ -268,12 +269,11 @@ public final class ClientLoginHandler {
             }
 
             try {
-                var tryKey = AuthorisedKeysModClient.KEY_PAIRS.privateKeyFromFile(secretKeyName);
-
-                if (tryKey.isPresent()) {
-                    secretKey = tryKey.get();
-                } else {
+                LoadedKeypair keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
+                if (keypair.requiresDecryption()) {
                     Constants.LOG.error("{} requires a password to decrypt but a password prompt has not yet been implemented.", secretKeyName);
+                } else {
+                    secretKey = keypair.getDecryptedPrivate();
                 }
             } catch (InvalidPathException | IOException e) {
                 Constants.LOG.error("Could not load the \"{}\" key: {}", secretKeyName, e);
