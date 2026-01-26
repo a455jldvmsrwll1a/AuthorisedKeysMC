@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
 public class ClientKeyPairs {
     public ClientKeyPairs() {
@@ -19,6 +20,10 @@ public class ClientKeyPairs {
         if (retrieveKeyNamesFromDisk().isEmpty()) {
             generate("default");
         }
+    }
+
+    public static Path fromKeyName(String name) throws InvalidPathException {
+        return ValidPath.makePath(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR, name, ".der");
     }
 
     public List<String> retrieveKeyNamesFromDisk() {
@@ -91,9 +96,5 @@ public class ClientKeyPairs {
         } catch (IOException e) {
             Constants.LOG.warn("Could not create warning file: {}", e.toString());
         }
-    }
-
-    private Path fromKeyName(String name) throws InvalidPathException {
-        return AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("%s.der".formatted(name));
     }
 }
