@@ -1,6 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.time.Instant;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -8,11 +12,14 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
 import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
@@ -123,5 +130,61 @@ public class LoadedKeypair {
     @Override
     public String toString() {
         return getTextualPublic();
+    }
+
+    public static LoadedKeypair fromFile(@NotNull Path path, @NotNull String name)
+            throws IOException, InvalidPathException {
+        Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
+
+        Ed25519PrivateKeyParameters privateKey = null;
+        Ed25519PublicKeyParameters publicKey = null;
+        PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = null;
+
+        try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
+            while (true) {
+                PemObject pem = reader.readPemObject();
+
+                if (pem == null) {
+                    break;
+                }
+
+                switch (pem.getType()) {
+                    case "PRIVATE KEY" -> {
+                        AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
+
+                        if (key instanceof Ed25519PrivateKeyParameters edPri) {
+                            privateKey = edPri;
+                        } else {
+                            throw new IllegalArgumentException("expected a private key of type %s but found a %s"
+                                    .formatted(
+                                            Ed25519PrivateKeyParameters.class.getName(),
+                                            key.getClass().getName()));
+                        }
+                    }
+                    case "ENCRYPTED PRIVATE KEY" ->
+                        encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
+                    case "PUBLIC KEY" -> {
+                        AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
+
+                        if (key instanceof Ed25519PublicKeyParameters edPub) {
+                            publicKey = edPub;
+                        } else {
+                            throw new IllegalArgumentException("expected a public key of type %s but found a %s"
+                                    .formatted(
+                                            Ed25519PublicKeyParameters.class.getName(),
+                                            key.getClass().getName()));
+                        }
+                    }
+                }
+            }
+        }
+
+        if (privateKey != null) {
+            return new LoadedKeypair(name, modificationTime, privateKey, publicKey);
+        } else if (encryptedPrivateKeyInfo != null) {
+            return new LoadedKeypair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
+        } else {
+            throw new IllegalArgumentException("File contains no valid data.");
+        }
     }
 }

@@ -1,12 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.Validate;
@@ -14,13 +12,10 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PKCS8Generator;
@@ -30,7 +25,6 @@ import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfoBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,60 +63,7 @@ public class ClientKeyPairs {
     }
 
     public @NotNull LoadedKeypair loadFromFile(String name) throws IOException, InvalidPathException {
-        Path path = fromKeyName(name);
-
-        Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
-
-        Ed25519PrivateKeyParameters privateKey = null;
-        Ed25519PublicKeyParameters publicKey = null;
-        PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = null;
-
-        try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
-            while (true) {
-                PemObject pem = reader.readPemObject();
-
-                if (pem == null) {
-                    break;
-                }
-
-                switch (pem.getType()) {
-                    case "PRIVATE KEY" -> {
-                        AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
-
-                        if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                            privateKey = edPri;
-                        } else {
-                            throw new IllegalArgumentException("expected a private key of type %s but found a %s"
-                                    .formatted(
-                                            Ed25519PrivateKeyParameters.class.getName(),
-                                            key.getClass().getName()));
-                        }
-                    }
-                    case "ENCRYPTED PRIVATE KEY" ->
-                        encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
-                    case "PUBLIC KEY" -> {
-                        AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
-
-                        if (key instanceof Ed25519PublicKeyParameters edPub) {
-                            publicKey = edPub;
-                        } else {
-                            throw new IllegalArgumentException("expected a public key of type %s but found a %s"
-                                    .formatted(
-                                            Ed25519PublicKeyParameters.class.getName(),
-                                            key.getClass().getName()));
-                        }
-                    }
-                }
-            }
-        }
-
-        if (privateKey != null) {
-            return new LoadedKeypair(name, modificationTime, privateKey, publicKey);
-        } else if (encryptedPrivateKeyInfo != null) {
-            return new LoadedKeypair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
-        } else {
-            throw new IllegalArgumentException("File contains no valid data.");
-        }
+        return LoadedKeypair.fromFile(fromKeyName(name), name);
     }
 
     public void generate(@NotNull String name, @Nullable String password) throws InvalidPathException {
