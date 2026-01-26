@@ -17,7 +17,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public class KnownHosts {
-    private static final List<String> DEFAULT_KEY_LIST = List.of("default");
+    private static final ArrayList<String> DEFAULT_KEY_LIST = new ArrayList<>(List.of("default"));
 
     private final ConcurrentHashMap<String, HostInfo> knownHosts = new ConcurrentHashMap<>();
 
@@ -50,7 +50,7 @@ public class KnownHosts {
         }
     }
 
-    public @NotNull List<String> getKeysUsedForHost(@Nullable String hostAddress) {
+    public @NotNull ArrayList<String> getKeysUsedForHost(@Nullable String hostAddress) {
         if (hostAddress == null) {
             return DEFAULT_KEY_LIST;
         }
@@ -82,8 +82,8 @@ public class KnownHosts {
         return dirty[0];
     }
 
-    public List<String> getHostsUsingKey(String keyName) {
-        List<String> addresses = new ArrayList<>();
+    public ArrayList<String> getHostsUsingKey(String keyName) {
+        ArrayList<String> addresses = new ArrayList<>();
 
         knownHosts.forEach((address, info) -> {
             if (info.keysToUse.contains(keyName)) {
@@ -98,14 +98,15 @@ public class KnownHosts {
         try {
             String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KNOWN_HOSTS_PATH);
             Gson gson = new Gson();
-            List<HostJsonEntry> entries = gson.fromJson(json, new TypeToken<List<HostJsonEntry>>() {}.getType());
+            List<HostJsonEntry> entries = gson.fromJson(json, new TypeToken<ArrayList<HostJsonEntry>>() {}.getType());
 
             knownHosts.clear();
             entries.forEach(entry -> {
                 HostInfo info = new HostInfo();
                 info.hostKey = new Ed25519PublicKeyParameters(Base64Util.decode(entry.host_key));
-                info.keysToUse =
-                        entry.use_keys != null ? Arrays.stream(entry.use_keys).toList() : new ArrayList<>();
+                info.keysToUse = entry.use_keys != null
+                        ? new ArrayList<>(Arrays.stream(entry.use_keys).toList())
+                        : new ArrayList<>();
 
                 knownHosts.put(entry.address, info);
             });
@@ -122,7 +123,7 @@ public class KnownHosts {
         try {
             Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
 
-            List<HostJsonEntry> out = new ArrayList<>();
+            ArrayList<HostJsonEntry> out = new ArrayList<>();
             for (var entry : knownHosts.entrySet()) {
                 HostInfo info = entry.getValue();
                 out.add(new HostJsonEntry(entry.getKey(), info.hostKey, info.keysToUse));
@@ -139,14 +140,15 @@ public class KnownHosts {
 
     private static class HostInfo {
         private @Nullable Ed25519PublicKeyParameters hostKey;
-        private @NotNull List<String> keysToUse = new ArrayList<>();
+        private @NotNull ArrayList<String> keysToUse = new ArrayList<>();
     }
 
     private record HostJsonEntry(
             String address,
             @Nullable String host_key,
             @Nullable String[] use_keys) {
-        private HostJsonEntry(String address, @Nullable Ed25519PublicKeyParameters host_key, List<String> use_keys) {
+        private HostJsonEntry(
+                String address, @Nullable Ed25519PublicKeyParameters host_key, ArrayList<String> use_keys) {
             this(
                     address,
                     host_key == null ? null : Base64Util.encode(host_key.getEncoded()),

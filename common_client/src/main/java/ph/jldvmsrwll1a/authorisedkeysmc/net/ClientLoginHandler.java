@@ -13,20 +13,15 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
-import ph.jldvmsrwll1a.authorisedkeysmc.gui.LoginRegistrationScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.gui.NoKeysLeftErrorScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.gui.UnknownServerKeyWarningScreen;
-import ph.jldvmsrwll1a.authorisedkeysmc.gui.WrongServerKeyWarningScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class ClientLoginHandler {
     private final Minecraft minecraft;
@@ -39,9 +34,9 @@ public final class ClientLoginHandler {
     private Ed25519PublicKeyParameters serverKey;
     private byte[] nonce;
 
-    private Ed25519PrivateKeyParameters secretKey;
-    private String secretKeyName;
-    private Queue<String> remainingSecretKeys;
+    private LoadedKeypair keypair;
+    private String keyName;
+    private Queue<String> remainingKeys;
     private String[] allSecretKeyNames;
 
     boolean registering;
@@ -159,24 +154,43 @@ public final class ClientLoginHandler {
                             "Session hash is null. This is impossible as encryption is required.");
                 }
 
-                var c2s =
-                        C2SSignaturePayload.fromSigningChallenge(secretKey, challengePayload, sessionHash, registering);
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
-                this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
+                if (keypair.requiresDecryption()) {
+                    minecraft.execute(() -> {
+                        Screen screen = new PasswordPromptScreen(minecraft.screen, keypair, processedKeypair -> {
+                            if (processedKeypair.requiresDecryption()) {
+                                tryAcquireNextSecretKey();
+                            } else {
+                                keypair = processedKeypair;
+
+                                var c2s = C2SSignaturePayload.fromSigningChallenge(
+                                        keypair.getDecryptedPrivate(), challengePayload, sessionHash, registering);
+                                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
+                                this.updateStatus.accept(
+                                        Component.translatable("authorisedkeysmc.status.waiting-verdict"));
+                            }
+                        });
+
+                        minecraft.setScreen(screen);
+                    });
+                } else {
+                    var c2s = C2SSignaturePayload.fromSigningChallenge(
+                            keypair.getDecryptedPrivate(), challengePayload, sessionHash, registering);
+                    this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
+                    this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
+                }
             }
             case S2CKeyRejectedPayload ignored -> {
                 tryAcquireNextSecretKey();
 
-                Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
-                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));
+                this.connection.send(
+                        new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
                 this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.key-rejected"));
             }
             case S2CRegistrationRequestPayload ignored -> {
                 registering = true;
 
                 minecraft.execute(() -> {
-                    LoginRegistrationScreen screen =
-                            LoginRegistrationScreen.create(this, secretKeyName, secretKey.generatePublicKey());
+                    LoginRegistrationScreen screen = LoginRegistrationScreen.create(this, keyName, keypair.getPublic());
                     minecraft.setScreen(screen);
                 });
             }
@@ -199,21 +213,21 @@ public final class ClientLoginHandler {
             throw new IllegalStateException("Encryption must be enabled.");
         }
 
-        Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
-        Constants.LOG.info("Sending pubkey for authentication: {}", Base64Util.encode(pub.getEncoded()));
-        this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));
+        Constants.LOG.info("Sending pubkey for authentication: {}", keypair.getTextualPublic());
+        this.connection.send(
+                new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
 
         this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-for-challenge"));
     }
 
     public void confirmRegistration() {
         getHostAddress().ifPresent(name -> {
-            AuthorisedKeysModClient.KNOWN_HOSTS.addKeyForHost(name, secretKeyName);
+            Constants.LOG.info("addKeyForHost({}, {})", name, keyName);
+            AuthorisedKeysModClient.KNOWN_HOSTS.addKeyForHost(name, keyName);
         });
 
-        Ed25519PublicKeyParameters pub = secretKey.generatePublicKey();
-        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", Base64Util.encode(pub.getEncoded()));
-        connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(pub)));
+        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
+        connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
     }
 
@@ -247,42 +261,35 @@ public final class ClientLoginHandler {
     }
 
     private boolean acquireNextSecretKey() {
-        secretKey = null;
-        secretKeyName = null;
+        keypair = null;
+        keyName = null;
 
-        if (remainingSecretKeys == null) {
+        if (remainingKeys == null) {
             List<String> keyNames = AuthorisedKeysModClient.KNOWN_HOSTS.getKeysUsedForHost(
                     getHostAddress().orElse(null));
             if (keyNames.isEmpty()) {
                 return false;
             }
 
-            remainingSecretKeys = new ArrayDeque<>(keyNames);
+            remainingKeys = new ArrayDeque<>(keyNames);
             allSecretKeyNames = keyNames.toArray(new String[0]);
         }
 
-        while (secretKey == null) {
-            secretKeyName = remainingSecretKeys.poll();
-            if (secretKeyName == null) {
+        while (keypair == null) {
+            keyName = remainingKeys.poll();
+            if (keyName == null) {
                 // Queue was emptied.
                 return false;
             }
 
             try {
-                LoadedKeypair keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(secretKeyName);
-                if (keypair.requiresDecryption()) {
-                    Constants.LOG.error(
-                            "{} requires a password to decrypt but a password prompt has not yet been implemented.",
-                            secretKeyName);
-                } else {
-                    secretKey = keypair.getDecryptedPrivate();
-                }
+                keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
             } catch (InvalidPathException | IOException e) {
-                Constants.LOG.error("Could not load the \"{}\" key: {}", secretKeyName, e);
+                Constants.LOG.error("Could not load the \"{}\" key: {}", keyName, e);
             }
         }
 
-        Constants.LOG.info("Trying the \"{}\" key.", secretKeyName);
+        Constants.LOG.info("Trying the \"{}\" key.", keyName);
         return true;
     }
 }
