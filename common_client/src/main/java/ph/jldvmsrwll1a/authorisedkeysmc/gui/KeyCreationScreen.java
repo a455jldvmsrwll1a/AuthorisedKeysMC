@@ -20,8 +20,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.NonNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
 public class KeyCreationScreen extends BaseScreen {

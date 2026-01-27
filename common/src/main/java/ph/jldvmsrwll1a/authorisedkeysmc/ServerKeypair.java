@@ -7,7 +7,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
-
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator;
@@ -54,7 +53,10 @@ public class ServerKeypair {
                         Constants.LOG.info("Loaded existing server keypair.");
                         return;
                     } else {
-                        throw new IllegalArgumentException("Expected a %s but found a %s!".formatted(Ed25519PrivateKeyParameters.class.getName(), key.getClass().getName()));
+                        throw new IllegalArgumentException("Expected a %s but found a %s!"
+                                .formatted(
+                                        Ed25519PrivateKeyParameters.class.getName(),
+                                        key.getClass().getName()));
                     }
                 }
             }
@@ -87,7 +89,7 @@ public class ServerKeypair {
 
             }
 
-            Ed25519KeyPairGenerator generator  = new Ed25519KeyPairGenerator();
+            Ed25519KeyPairGenerator generator = new Ed25519KeyPairGenerator();
             generator.init(new Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()));
 
             AsymmetricCipherKeyPair kp = generator.generateKeyPair();

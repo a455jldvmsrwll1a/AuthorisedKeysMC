@@ -4,7 +4,6 @@ import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;

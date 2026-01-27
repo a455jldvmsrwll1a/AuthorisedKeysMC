@@ -3,7 +3,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
-
 import java.net.SocketAddress;
 import java.security.PublicKey;
 import javax.crypto.SecretKey;
@@ -188,7 +187,8 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         if (!authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null && authenticatedProfile != null) {
             // Ensure that the player is actually allowed in the server as far as vanilla is concerned.
             PlayerList playerList = server.getPlayerList();
-            authorisedKeysMC$disconnectReason = playerList.canPlayerLogin(connection.getRemoteAddress(), new NameAndId(authenticatedProfile));
+            authorisedKeysMC$disconnectReason =
+                    playerList.canPlayerLogin(connection.getRemoteAddress(), new NameAndId(authenticatedProfile));
             authorisedKeysMC$alreadyCheckedIfCanJoin = true;
 
             if (authorisedKeysMC$disconnectReason != null) {
@@ -236,8 +236,15 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
     }
 
-    @WrapOperation(method = "verifyLoginAndFinishConnectionSetup", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/players/PlayerList;canPlayerLogin(Ljava/net/SocketAddress;Lnet/minecraft/server/players/NameAndId;)Lnet/minecraft/network/chat/Component;"))
-    private Component useCachedDisconnectReason(PlayerList instance, SocketAddress address, NameAndId nameAndId, Operation<Component> original) {
+    @WrapOperation(
+            method = "verifyLoginAndFinishConnectionSetup",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/server/players/PlayerList;canPlayerLogin(Ljava/net/SocketAddress;Lnet/minecraft/server/players/NameAndId;)Lnet/minecraft/network/chat/Component;"))
+    private Component useCachedDisconnectReason(
+            PlayerList instance, SocketAddress address, NameAndId nameAndId, Operation<Component> original) {
         if (authorisedKeysMC$alreadyCheckedIfCanJoin) {
             return authorisedKeysMC$disconnectReason;
         }

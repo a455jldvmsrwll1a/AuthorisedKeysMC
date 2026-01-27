@@ -1,10 +1,9 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
-
-import java.security.Security;
 
 public class AuthorisedKeysModCore {
     public static IPlatformHelper PLATFORM;
