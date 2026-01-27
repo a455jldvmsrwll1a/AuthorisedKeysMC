@@ -3,6 +3,8 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
+
+import java.net.SocketAddress;
 import java.security.PublicKey;
 import javax.crypto.SecretKey;
 import net.minecraft.core.UUIDUtil;
@@ -13,6 +15,8 @@ import net.minecraft.network.protocol.login.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import net.minecraft.server.notifications.ServerActivityMonitor;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.StringUtil;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.Nullable;
@@ -32,10 +36,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 // Use lower priority so that we run before any mod-loader-loaded mixin runs.
 @Mixin(value = ServerLoginPacketListenerImpl.class, priority = 500)
 public abstract class ServerLoginMixin implements ServerLoginPacketListener, TickablePacketListener {
-    @Unique
-    @Nullable
-    private volatile ServerLoginHandler authorisedKeysMC$loginHandler = null;
-
     @Shadow
     @Final
     Connection connection;
@@ -46,9 +46,6 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Shadow
     @Final
     MinecraftServer server;
-
-    @Shadow
-    private int tick;
 
     @Shadow
     @Nullable
@@ -69,10 +66,26 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     private @Nullable GameProfile authenticatedProfile;
 
     @Unique
-    private boolean authorisedKeysMC$skipped = false;
+    @Nullable
+    private ServerLoginHandler authorisedKeysMC$loginHandler = null;
+
+    @Unique
+    private ServerLoginHandler.@Nullable Sender authorisedKeysMC$handlerQueue = null;
+
+    @Unique
+    private boolean authorisedKeysMC$clientHasEverResponded = false;
+
+    @Unique
+    private volatile boolean authorisedKeysMC$skipped = false;
 
     @Unique
     private byte @Nullable [] authorisedKeysMC$sessionHash;
+
+    @Unique
+    private @Nullable Component authorisedKeysMC$disconnectReason = null;
+
+    @Unique
+    private boolean authorisedKeysMC$alreadyCheckedIfCanJoin = false;
 
     @Inject(method = "handleHello", at = @At("HEAD"), cancellable = true)
     private void handleIncoming(ServerboundHelloPacket packet, CallbackInfo ci) {
@@ -145,36 +158,16 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         return hash;
     }
 
-    @Inject(method = "startClientVerification", at = @At("HEAD"))
-    private void detourFromVerification(GameProfile authenticatedProfile, CallbackInfo ci) {
-        if (authorisedKeysMC$skipped || authorisedKeysMC$loginHandler != null) {
-            return;
-        }
-
-        Validate.notNull(
-                authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
-
-        // Start the custom authentication.
-        Constants.LOG.info("begin custom auth");
-        authorisedKeysMC$loginHandler = new ServerLoginHandler(
-                (ServerLoginPacketListenerImpl) (Object) this,
-                connection,
-                authenticatedProfile,
-                authorisedKeysMC$sessionHash);
-    }
-
     @Inject(method = "handleCustomQueryPacket", at = @At("HEAD"), cancellable = true)
     private void handleResponse(ServerboundCustomQueryAnswerPacket packet, CallbackInfo ci) {
-        ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
-
-        if (authorisedKeysMC$skipped || loginHandler == null) {
+        if (authorisedKeysMC$handlerQueue == null) {
             // Custom authentication hasn't started yet. We are not expecting a response at this time.
             return;
         }
 
         // Payload is null if client did not understand our custom query.
         if (packet.payload() == null) {
-            if (!loginHandler.hasClientEverResponded()) {
+            if (!authorisedKeysMC$clientHasEverResponded) {
                 // Did not understand the very first query we sent. Client most likely does not have the mod installed.
                 ci.cancel();
                 disconnect(Component.literal("Access denied!!! D:"));
@@ -186,32 +179,76 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
         ci.cancel();
 
-        loginHandler.handleRawMessage(packet.payload());
+        authorisedKeysMC$clientHasEverResponded = true;
+        authorisedKeysMC$handlerQueue.receive(packet.payload());
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void tick(CallbackInfo ci) {
-        ServerLoginHandler loginHandler = authorisedKeysMC$loginHandler;
+        if (!authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null && authenticatedProfile != null) {
+            // Ensure that the player is actually allowed in the server as far as vanilla is concerned.
+            PlayerList playerList = server.getPlayerList();
+            authorisedKeysMC$disconnectReason = playerList.canPlayerLogin(connection.getRemoteAddress(), new NameAndId(authenticatedProfile));
+            authorisedKeysMC$alreadyCheckedIfCanJoin = true;
 
-        if (authorisedKeysMC$skipped || loginHandler == null || loginHandler.finished()) {
-            Constants.LOG.info(
-                    "normal tick {}, state = {}",
-                    tick,
-                    AuthorisedKeysModCore.PLATFORM.getLoginState((ServerLoginPacketListenerImpl) (Object) this));
+            if (authorisedKeysMC$disconnectReason != null) {
+                ci.cancel();
+                disconnect(authorisedKeysMC$disconnectReason);
+                return;
+            }
+
+            Validate.notNull(
+                    authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
+
+            // Start the custom authentication.
+            Constants.LOG.info("begin custom auth");
+            authorisedKeysMC$loginHandler = new ServerLoginHandler(
+                    (ServerLoginPacketListenerImpl) (Object) this,
+                    connection,
+                    authenticatedProfile,
+                    authorisedKeysMC$sessionHash);
+
+            authorisedKeysMC$handlerQueue = authorisedKeysMC$loginHandler.getSender();
+        }
+
+        boolean bypassed = authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null;
+        boolean preAuth = !authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null;
+        boolean finished = authorisedKeysMC$loginHandler != null && authorisedKeysMC$loginHandler.finished();
+
+        if (bypassed || finished) {
+            return;
+        } else if (preAuth) {
+            // If authenticatedProfile was set at this point, vanilla login would proceed without the custom
+            // authentication ever stepping in. Obviously a very bad outcome.
+            if (authenticatedProfile != null) {
+                throw new IllegalStateException("Custom authentication handler did not get created on time!");
+            }
+
             return;
         }
+
         ci.cancel();
 
-        loginHandler.tick(tick);
+        authorisedKeysMC$loginHandler.tick();
 
-        if (loginHandler.finished()) {
+        if (authorisedKeysMC$loginHandler.finished()) {
             serverActivityMonitor.reportLoginActivity();
-            startClientVerification(authenticatedProfile);
         }
+    }
+
+    @WrapOperation(method = "verifyLoginAndFinishConnectionSetup", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/players/PlayerList;canPlayerLogin(Ljava/net/SocketAddress;Lnet/minecraft/server/players/NameAndId;)Lnet/minecraft/network/chat/Component;"))
+    private Component useCachedDisconnectReason(PlayerList instance, SocketAddress address, NameAndId nameAndId, Operation<Component> original) {
+        if (authorisedKeysMC$alreadyCheckedIfCanJoin) {
+            return authorisedKeysMC$disconnectReason;
+        }
+
+        return original.call(instance, address, nameAndId);
     }
 
     @Unique
     private void authorisedKeysMC$skipLogin() {
+        Validate.validState(authorisedKeysMC$loginHandler == null, "Login handler should not exist.");
+
         Constants.LOG.info("Skipped verifying {}'s identity!", requestedUsername);
         authorisedKeysMC$skipped = true;
     }

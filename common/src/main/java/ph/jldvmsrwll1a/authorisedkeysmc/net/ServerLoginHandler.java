@@ -3,6 +3,8 @@ package ph.jldvmsrwll1a.authorisedkeysmc.net;
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -23,12 +25,13 @@ public final class ServerLoginHandler {
     private final Connection connection;
     private final GameProfile profile;
     private final byte[] sessionHash;
+    private final ConcurrentLinkedQueue<BaseC2SPayload> inbox;
 
     private final Ed25519PrivateKeyParameters signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
     private final Ed25519PublicKeyParameters serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
 
-    private volatile int txId = 0;
-    private volatile Phase phase = Phase.SEND_SERVER_KEY;
+    private int txId = 0;
+    private Phase phase = Phase.SEND_SERVER_KEY;
     private int ticksLeft = 300;
     private int loginAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
     private int registerAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
@@ -42,24 +45,26 @@ public final class ServerLoginHandler {
             @NotNull ServerLoginPacketListenerImpl listener,
             @NotNull Connection connection,
             @NotNull GameProfile profile,
-            @NotNull byte[] sessionHash) {
+            byte @NotNull [] sessionHash) {
         Validate.isTrue(connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
 
         this.listener = listener;
         this.connection = connection;
         this.profile = profile;
         this.sessionHash = sessionHash;
+
+        inbox = new ConcurrentLinkedQueue<>();
     }
 
     public boolean finished() {
         return phase == Phase.SUCCESSFUL;
     }
 
-    public boolean hasClientEverResponded() {
-        return phase != Phase.SEND_SERVER_KEY && phase != Phase.WAIT_FOR_CLIENT_CHALLENGE;
+    public Sender getSender() {
+        return new Sender();
     }
 
-    public void tick(int tick) {
+    public void tick() {
         ticksLeft--;
 
         if (ticksLeft <= 0) {
@@ -82,9 +87,23 @@ public final class ServerLoginHandler {
                 // Do nothing. We are done.
             }
         }
+
+        handleMessages();
     }
 
-    public void handleMessage(BaseC2SPayload payload) {
+    private void handleMessages() {
+        while (true) {
+            BaseC2SPayload payload = inbox.poll();
+
+            if (payload != null) {
+                handleMessage(payload);
+            } else {
+                break;
+            }
+        }
+    }
+
+    private void handleMessage(BaseC2SPayload payload) {
         switch (payload) {
             case C2SChallengePayload challengePayload -> {
                 Validate.validState(
@@ -179,6 +198,7 @@ public final class ServerLoginHandler {
             case C2SRefuseRegistrationPayload ignored -> {
                 Validate.validState(phase.equals(Phase.WAIT_FOR_REGISTRATION), "Received bogus registration refusal.");
 
+                // TODO: add a configuration option for this.
                 if (false) {
                     Constants.LOG.info("{} refuses to register!", profile.name());
                     listener.disconnect(Component.translatable("authorisedkeysmc.error.registration-mandatory"));
@@ -195,26 +215,6 @@ public final class ServerLoginHandler {
         }
     }
 
-    public void handleRawMessage(FriendlyByteBuf buf) {
-        QueryAnswerPayloadType kind = BaseC2SPayload.peekPayloadType(buf);
-        BaseC2SPayload base =
-                switch (kind) {
-                    case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
-                    case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
-                    case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
-                    case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
-                };
-
-        handleMessage(base);
-    }
-
-    public void handleRawMessage(CustomQueryAnswerPayload payload) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        payload.write(buf);
-
-        handleRawMessage(buf);
-    }
-
     private void createAndSendChallenge() {
         S2CChallengePayload challenge = new S2CChallengePayload();
         nonce = challenge.getNonce();
@@ -227,14 +227,6 @@ public final class ServerLoginHandler {
             connection.send(new ClientboundCustomQueryPacket(txId, payload));
             txId++;
         }
-    }
-
-    private VanillaLoginHandlerState getState() {
-        return AuthorisedKeysModCore.PLATFORM.getLoginState(listener);
-    }
-
-    private void setState(VanillaLoginHandlerState state) {
-        AuthorisedKeysModCore.PLATFORM.setLoginState(listener, state);
     }
 
     private void transition(Phase phase) {
@@ -250,5 +242,31 @@ public final class ServerLoginHandler {
         WAIT_FOR_REGISTRATION,
         WAIT_FOR_REGISTRATION_SIGNATURE,
         SUCCESSFUL,
+    }
+
+    public class Sender {
+        public void receive(@NotNull BaseC2SPayload payload) {
+            inbox.add(payload);
+        }
+
+        public void receive(@NotNull FriendlyByteBuf buf) {
+            QueryAnswerPayloadType kind = BaseC2SPayload.peekPayloadType(buf);
+            BaseC2SPayload base =
+                    switch (kind) {
+                        case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
+                        case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
+                        case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
+                        case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
+                    };
+
+            receive(base);
+        }
+
+        public void receive(@NotNull CustomQueryAnswerPayload payload) {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            payload.write(buf);
+
+            receive(buf);
+        }
     }
 }
