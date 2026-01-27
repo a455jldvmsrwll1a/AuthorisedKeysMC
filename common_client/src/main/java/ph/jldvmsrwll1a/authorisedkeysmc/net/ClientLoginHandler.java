@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;

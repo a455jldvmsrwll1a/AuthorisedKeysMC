@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc;
+package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
 import java.io.FileReader;
 import java.io.IOException;

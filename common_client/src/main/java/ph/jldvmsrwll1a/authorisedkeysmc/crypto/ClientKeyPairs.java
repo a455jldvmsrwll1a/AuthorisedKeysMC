@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc;
+package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,6 +28,8 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
 public class ClientKeyPairs {

@@ -17,7 +17,7 @@ import net.minecraft.util.FormattedCharSequence;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
-import ph.jldvmsrwll1a.authorisedkeysmc.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 
 public class PasswordPromptScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;
