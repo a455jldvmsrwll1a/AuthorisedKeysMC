@@ -154,6 +154,7 @@ public class PasswordPromptScreen extends BaseScreen {
         }
 
         errorText.visible = true;
+        passwordEdit.setValue("");
         minecraft.setScreen(this);
     }
 
