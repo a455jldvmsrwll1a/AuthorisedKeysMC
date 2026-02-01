@@ -289,7 +289,7 @@ public class KeyCreationScreen extends BaseScreen {
 
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
-        String format = "%s%s%s%s.der".formatted(sep, Constants.MOD_DIR_NAME, sep, currentName);
+        String format = "%s%s%s%s.pem".formatted(sep, Constants.MOD_DIR_NAME, sep, currentName);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);
     }
