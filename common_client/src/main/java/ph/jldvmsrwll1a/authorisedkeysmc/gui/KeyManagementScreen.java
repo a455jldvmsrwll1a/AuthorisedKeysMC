@@ -302,8 +302,11 @@ public final class KeyManagementScreen extends BaseScreen {
                     .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
 
             for (int i = 0; i < servers.size(); ++i) {
-                message.append(" + %s\n".formatted(servers.get(i)))
-                        .withStyle(i % 2 == 0 ? ChatFormatting.WHITE : ChatFormatting.GRAY);
+                if (i % 2 == 0) {
+                    message.append(" + §7%s§r\n".formatted(servers.get(i)));
+                } else {
+                    message.append(" + %s\n".formatted(servers.get(i)));
+                }
             }
 
             inspectorText.setMessage(message);
