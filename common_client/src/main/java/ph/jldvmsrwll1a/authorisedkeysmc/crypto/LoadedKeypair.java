@@ -97,12 +97,12 @@ public class LoadedKeypair {
         return privateKey == null && encryptedInfo != null;
     }
 
-    public boolean decrypt(@NotNull String password) {
+    public boolean decrypt(char @NotNull [] password) {
         Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
 
         try {
             InputDecryptorProvider decryptorProvider =
-                    new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password.toCharArray());
+                    new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password);
             PrivateKeyInfo pki = encryptedInfo.decryptPrivateKeyInfo(decryptorProvider);
             AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
 

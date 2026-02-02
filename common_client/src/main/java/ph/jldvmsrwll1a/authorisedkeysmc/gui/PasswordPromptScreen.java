@@ -146,7 +146,7 @@ public class PasswordPromptScreen extends BaseScreen {
     private void decryptKey() {
         minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
 
-        if (keypair.decrypt(passwordEdit.getValue())) {
+        if (keypair.decrypt(passwordEdit.getValue().toCharArray())) {
             minecraft.setScreen(parent);
             onClose();
 
