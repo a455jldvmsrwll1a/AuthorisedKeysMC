@@ -68,7 +68,7 @@ public class ClientKeyPairs {
         return LoadedKeypair.fromFile(fromKeyName(name), name);
     }
 
-    public void generate(@NotNull String name, @Nullable String password) throws InvalidPathException {
+    public void generate(@NotNull String name, char @Nullable [] password) throws InvalidPathException {
         Path path = fromKeyName(name);
         Path backupPath = Path.of("%s.BACKUP".formatted(path));
 
@@ -107,7 +107,7 @@ public class ClientKeyPairs {
                 encryptorBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
                 encryptorBuilder.setRandom(new SecureRandom());
                 encryptorBuilder.setIterationCount(2_000_000);
-                encryptorBuilder.setPassword(password.toCharArray());
+                encryptorBuilder.setPassword(password);
                 OutputEncryptor encryptor = encryptorBuilder.build();
 
                 PKCS8EncryptedPrivateKeyInfo encryptedInfo =
