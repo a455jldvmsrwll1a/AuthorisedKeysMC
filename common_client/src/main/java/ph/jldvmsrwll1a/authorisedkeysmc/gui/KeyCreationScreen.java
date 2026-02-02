@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.layouts.SpacerElement;
+import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -276,7 +277,13 @@ public class KeyCreationScreen extends BaseScreen {
         minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
 
         minecraft.executeBlocking(() -> {
-            AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, currentPassword);
+            try {
+                AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, currentPassword);
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to generate keypair: {}", e.getMessage());
+                minecraft.setScreen(new ErrorScreen(Component.translatable("authorisedkeysmc.error.generation-fail"), Component.literal(e.getMessage())));
+                return;
+            }
 
             callback.accept(currentName);
             onClose();
