@@ -114,16 +114,8 @@ public class ClientKeyPairs {
                         new PKCS8EncryptedPrivateKeyInfoBuilder(privateKeyInfo).build(encryptor);
 
                 privatePem = new PemObject("ENCRYPTED PRIVATE KEY", encryptedInfo.getEncoded());
-
-                try (PemWriter w = new PemWriter(new FileWriter(path.toFile()))) {
-                    w.writeObject(privatePem);
-                }
             } else {
                 privatePem = new PemObject("PRIVATE KEY", privateKeyInfo.getEncoded());
-
-                try (PemWriter w = new PemWriter(new FileWriter(path.toFile()))) {
-                    w.writeObject(privatePem);
-                }
             }
 
             PemObject publicPem = new PemObject("PUBLIC KEY", pubInfo.getEncoded());
