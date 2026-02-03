@@ -3,11 +3,14 @@ package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
+import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.toasts.SystemToast;
@@ -33,6 +36,7 @@ public final class KeyManagementScreen extends BaseScreen {
 
     private TabNavigationBar tabNav;
     private KeyListTab keyListTab;
+    private ServerListTab serverListTab;
 
     public KeyManagementScreen(Screen parent) {
         super(Component.translatable("authorisedkeysmc.screen.config.title"));
@@ -48,8 +52,9 @@ public final class KeyManagementScreen extends BaseScreen {
 
     protected void init() {
         keyListTab = new KeyListTab();
+        serverListTab = new ServerListTab();
         tabNav = TabNavigationBar.builder(tabManager, width)
-                .addTabs(keyListTab, new ServerListTab())
+                .addTabs(keyListTab, serverListTab)
                 .build();
         addRenderableWidget(tabNav);
 
@@ -105,6 +110,7 @@ public final class KeyManagementScreen extends BaseScreen {
         super.render(gui, cursor_x, cursor_y, partialTick);
 
         keyListTab.recalculateLayoutIfNeeded();
+        serverListTab.updateListLayoutIfNeeded();
 
         gui.blit(
                 RenderPipelines.GUI_TEXTURED,
@@ -152,13 +158,14 @@ public final class KeyManagementScreen extends BaseScreen {
                         "authorisedkeysmc.screen.config.keys.properties-header")
                 .withStyle(ChatFormatting.BOLD)
                 .withStyle(ChatFormatting.AQUA);
+        private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message");
         private static final SystemToast.SystemToastId KEY_COPIED_TOAST = new SystemToast.SystemToastId(2000);
 
         private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
         private List<String> keyNames;
 
-        private final KeySelectionList keySelectionList;
+        private final GenericStringSelectionList keySelectionList;
         private final ScrollableLayout inspectorScroller;
         private final MultiLineTextWidget inspectorText;
         private final List<Button> inspectorButtons = new ArrayList<>(3);
@@ -175,8 +182,8 @@ public final class KeyManagementScreen extends BaseScreen {
             GridLayout.RowHelper rowHelper =
                     layout.columnSpacing(8).rowSpacing(8).createRowHelper(2);
 
-            keySelectionList = new KeySelectionList(
-                    KeyManagementScreen.this, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
+            keySelectionList = new GenericStringSelectionList(
+                    EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
 
             LinearLayout listFooterLayout = LinearLayout.horizontal().spacing(4);
             listFooterLayout.addChild(Button.builder(
@@ -402,12 +409,119 @@ public final class KeyManagementScreen extends BaseScreen {
         }
     }
 
-    class ServerListTab extends GridLayoutTab {
-        public ServerListTab() {
-            super(Component.translatable("authorisedkeysmc.screen.config.servers.title"));
+    class ServerListTab implements Tab {
+        private static final float MIN_TOTAL_WIDTH = 388.f;
+        private static final float MAX_TOTAL_WIDTH = 800.f;
+        private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.config.servers.title");
+        private static final Component LIST_HEADER_LABEL = Component.translatable(
+                        "authorisedkeysmc.screen.config.servers.list-header")
+                .withStyle(ChatFormatting.BOLD)
+                .withStyle(ChatFormatting.AQUA);
+        private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.config.servers.empty-list-message");
+        private static final Component RELOAD_SERVERS_LABEL = Component.translatable("authorisedkeysmc.button.reload-servers");
+        private static final Component FORGET_SERVER_LABEL = Component.translatable("authorisedkeysmc.button.forget")
+                .withStyle(ChatFormatting.RED);
+        private static final Component FORGET_SERVER_TOOLTIP_LABEL = Component.translatable("authorisedkeysmc.tooltip.forget-server");
 
-            GridLayout.RowHelper rowHelper = layout.rowSpacing(8).createRowHelper(1);
-            rowHelper.addChild(new StringWidget(Component.literal("SERVER LIST TAB"), font));
+        private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
+
+        private List<String> keyNames;
+
+        private final LinearLayout tabLayout;
+        private final GenericStringSelectionList keySelectionList;
+
+        boolean needsLayout = true;
+
+        public ServerListTab() {
+            reloadKeys();
+
+            tabLayout = LinearLayout.vertical().spacing(8);
+
+            keySelectionList = new GenericStringSelectionList(
+                    EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
+
+            LinearLayout listFooterLayout = LinearLayout.horizontal().spacing(4);
+            listFooterLayout.addChild(Button.builder(
+                            RELOAD_SERVERS_LABEL, button -> reloadKeys())
+                    .size(140, 20)
+                    .build());
+            listFooterLayout.addChild(Button.builder(
+                            FORGET_SERVER_LABEL,
+                            button -> Constants.LOG.warn("Forgetting not implemented!"))
+                            .tooltip(Tooltip.create(FORGET_SERVER_TOOLTIP_LABEL))
+                    .size(74, 20)
+                    .build());
+
+            tabLayout.addChild(
+                    new StringWidget(LIST_HEADER_LABEL, font).setMaxWidth(getWidthLeft()),
+                    LayoutSettings.defaults().paddingTop(4));
+            tabLayout.addChild(keySelectionList);
+            tabLayout.addChild(listFooterLayout);
+
+            tabLayout.arrangeElements();
+        }
+
+        public void tick() {
+            if (!keySelectionList.checkShouldLoad()) {
+                return;
+            }
+
+            var selected = keySelectionList.getSelected();
+        }
+
+        @Override
+        public @NonNull Component getTabTitle() {
+            return TITLE_LABEL;
+        }
+
+        @Override
+        public @NonNull Component getTabExtraNarration() {
+            return TITLE_LABEL;
+        }
+
+        @Override
+        public void visitChildren(@NonNull Consumer<AbstractWidget> consumer) {
+            tabLayout.visitWidgets(consumer);
+        }
+
+        @Override
+        public void doLayout(@NonNull ScreenRectangle screenRectangle) {
+            updateListLayout();
+            tabLayout.arrangeElements();
+            FrameLayout.centerInRectangle(tabLayout, screenRectangle);
+        }
+
+        public void reloadKeys() {
+            keyNames = AuthorisedKeysModClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
+            if (keySelectionList != null) {
+                keySelectionList.updateKeyNames(keyNames);
+            }
+        }
+
+        public void updateListLayoutIfNeeded() {
+            if (needsLayout) {
+                needsLayout = false;
+                updateListLayout();
+            }
+        }
+
+        private void updateListLayout() {
+            keySelectionList.updateSizeAndPosition(
+                    getWidthLeft(),
+                    getScrollListHeight(),
+                    tabLayout.getX(),
+                    rootLayout.getHeaderHeight() + font.lineHeight + 20);
+        }
+
+        private int getWidthLeft() {
+            float cappedWidth = Math.max(Math.min((float) width * 0.8f, MAX_TOTAL_WIDTH), MIN_TOTAL_WIDTH);
+            return Math.round(cappedWidth);
+        }
+
+        private int getScrollListHeight() {
+            var headerHeight = font.lineHeight + 8 + 8;
+            var footerHeight = 20 + 8 + 8;
+            return rootLayout.getContentHeight() - headerHeight - footerHeight;
         }
     }
 }

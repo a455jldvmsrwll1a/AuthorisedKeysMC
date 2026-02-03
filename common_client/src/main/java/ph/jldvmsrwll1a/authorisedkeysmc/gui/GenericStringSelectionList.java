@@ -11,13 +11,18 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-public final class KeySelectionList extends ObjectSelectionList<KeySelectionList.KeyListEntry> {
+public final class GenericStringSelectionList extends ObjectSelectionList<GenericStringSelectionList.StringEntry> {
+    private final Component emptyListLabel;
+
     private boolean listIsEmpty;
-    private @Nullable KeyListEntry lastSelection = null;
+    private GenericStringSelectionList.@Nullable StringEntry lastSelection = null;
     private boolean shouldLoad = false;
 
-    public KeySelectionList(Screen screen, Minecraft minecraft, List<String> keyNames, int width, int height) {
+    public GenericStringSelectionList(
+            Component emptyListLabel, Minecraft minecraft, List<String> keyNames, int width, int height) {
         super(minecraft, width, height, 0, minecraft.font.lineHeight * 2);
+
+        this.emptyListLabel = emptyListLabel;
 
         updateKeyNames(keyNames);
     }
@@ -33,12 +38,12 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
         }
 
         for (String name : keyNames) {
-            addEntry(new KeyListEntry(minecraft, name));
+            addEntry(new StringEntry(minecraft, name));
         }
     }
 
     @Override
-    public void setSelected(@Nullable KeyListEntry selected) {
+    public void setSelected(GenericStringSelectionList.@Nullable StringEntry selected) {
         super.setSelected(selected);
         if (lastSelection == null || lastSelection != selected) {
             lastSelection = selected;
@@ -64,7 +69,7 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
     }
 
     @Override
-    protected void renderSelection(GuiGraphics gui, KeyListEntry entry, int colour) {
+    protected void renderSelection(GuiGraphics gui, StringEntry entry, int colour) {
         int cappedWidth = Math.min(width - 8, entry.getWidth());
 
         int centreX = entry.getX() + entry.getWidth() / 2;
@@ -87,18 +92,18 @@ public final class KeySelectionList extends ObjectSelectionList<KeySelectionList
             int y = getY() + getHeight() / 2;
             gui.drawCenteredString(
                     minecraft.font,
-                    Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message"),
+                    emptyListLabel,
                     x,
                     y,
                     0xFFFFFFFF);
         }
     }
 
-    public static final class KeyListEntry extends ObjectSelectionList.Entry<KeyListEntry> {
+    public static final class StringEntry extends ObjectSelectionList.Entry<StringEntry> {
         private final StringWidget stringWidget;
         private final String keyName;
 
-        public KeyListEntry(@NotNull Minecraft minecraft, @NotNull String keyName) {
+        public StringEntry(@NotNull Minecraft minecraft, @NotNull String keyName) {
             this.keyName = keyName;
             stringWidget = new StringWidget(Component.literal(keyName), minecraft.font);
         }

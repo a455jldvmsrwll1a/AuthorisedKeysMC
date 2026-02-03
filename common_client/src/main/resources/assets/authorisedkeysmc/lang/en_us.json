@@ -8,6 +8,8 @@
     "authorisedkeysmc.button.goto-server-config": "Server Configuration",
     "authorisedkeysmc.button.key-manager": "Manage Keys",
     "authorisedkeysmc.button.reload-keys": "Reload Key List",
+    "authorisedkeysmc.button.reload-servers": "Reload Server List",
+    "authorisedkeysmc.button.forget": "Forget",
     "authorisedkeysmc.error.too-many-authentication-attempts": "Too many attempts to authenticate!",
     "authorisedkeysmc.error.too-many-registration-attempts": "Too many attempts to register!",
     "authorisedkeysmc.error.registration-mandatory": "Registration is mandatory!",
@@ -35,6 +37,8 @@
     "authorisedkeysmc.screen.config.keys.properties-servers": "This key is used on the following servers:\n\n",
     "authorisedkeysmc.screen.config.keys.properties-no-selected": "No key selected. Select an existing key or create a new one.",
     "authorisedkeysmc.screen.config.servers.title": "Servers",
+    "authorisedkeysmc.screen.config.servers.list-header": "Server List",
+    "authorisedkeysmc.screen.config.servers.empty-list-message": "You have not joined any servers yet.",
     "authorisedkeysmc.screen.new-key.title": "Key-pair Creation",
     "authorisedkeysmc.screen.new-key.preamble": "Creating a randomly generated public/private Ed25519 key-pair.\n\nThe public key is automatically sent to the servers you configure it for. The private key is never shared and remains on disk.\n\nNEVER SHARE YOUR PRIVATE KEYS!",
     "authorisedkeysmc.screen.new-key.field.name": "File Name",
@@ -62,5 +66,6 @@
     "authorisedkeysmc.toast.key-shared": "Copied to clipboard!",
     "authorisedkeysmc.tooltip.share-key": "Copy this public key string to the clipboard.",
     "authorisedkeysmc.tooltip.backup-key": "Make a back-up of this key-pair to a file or the clipboard.",
-    "authorisedkeysmc.tooltip.delete-key": "Delete this key-pair."
+    "authorisedkeysmc.tooltip.delete-key": "Delete this key-pair.",
+    "authorisedkeysmc.tooltip.forget-server": "Forget the server's public key and the list of keys used for this server.\n\nThis does not remove the server itself from your multiplayer server list."
 }
