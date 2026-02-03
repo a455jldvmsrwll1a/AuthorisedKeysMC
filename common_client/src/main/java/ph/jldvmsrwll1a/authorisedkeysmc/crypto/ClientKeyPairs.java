@@ -41,7 +41,7 @@ public class ClientKeyPairs {
         }
     }
 
-    public static Path fromKeyName(String name) throws InvalidPathException {
+    public static Path fromKeyName(@NotNull String name) throws InvalidPathException {
         return ValidPath.makePath(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR, name, ".pem");
     }
 
@@ -64,7 +64,7 @@ public class ClientKeyPairs {
         return names;
     }
 
-    public @NotNull LoadedKeypair loadFromFile(String name) throws IOException, InvalidPathException {
+    public @NotNull LoadedKeypair loadFromFile(@NotNull String name) throws IOException, InvalidPathException {
         return LoadedKeypair.fromFile(fromKeyName(name), name);
     }
 
