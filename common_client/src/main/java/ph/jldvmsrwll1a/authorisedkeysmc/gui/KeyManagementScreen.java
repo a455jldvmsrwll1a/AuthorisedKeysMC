@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
@@ -192,8 +193,7 @@ public final class KeyManagementScreen extends BaseScreen {
                     .build());
             listFooterLayout.addChild(Button.builder(
                             Component.translatable("authorisedkeysmc.button.create-key"),
-                            button -> minecraft.setScreen(
-                                    new KeyCreationScreen(KeyManagementScreen.this, newKey -> reloadKeys())))
+                            this::onNewKeyButtonPressed)
                     .size(74, 20)
                     .build());
 
@@ -380,6 +380,28 @@ public final class KeyManagementScreen extends BaseScreen {
                         KEY_COPIED_TOAST,
                         Component.translatable("authorisedkeysmc.toast.key-shared"),
                         null);
+            }
+        }
+
+        private void onNewKeyButtonPressed(Button ignored) {
+            minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, this::onNewKeyCreated));
+        }
+
+        private void onNewKeyCreated(@Nullable String keyName) {
+            reloadKeys();
+
+            if (keyName == null) {
+                return;
+            }
+
+            try {
+                LoadedKeypair newPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+
+                if (newPair.requiresDecryption()) {
+                    minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(KeyManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
+                }
+            } catch (IOException e) {
+                Constants.LOG.warn("Failed to load newly created key: {}", e.getMessage());
             }
         }
 

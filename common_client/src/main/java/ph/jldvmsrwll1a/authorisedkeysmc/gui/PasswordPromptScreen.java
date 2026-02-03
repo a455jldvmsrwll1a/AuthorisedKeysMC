@@ -16,18 +16,18 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 
 public class PasswordPromptScreen extends BaseScreen {
-    private static final int BUTTON_WIDTH = 74;
-    private static final int HORIZONTAL_SPACE = 60;
-    private static final int MAX_WIDTH = 550;
-    private static final int MAX_PASSWORD_LENGTH = 255;
+    protected static final int BUTTON_WIDTH = 74;
+    protected static final int HORIZONTAL_SPACE = 60;
+    protected static final int MAX_WIDTH = 550;
+    protected static final int MAX_PASSWORD_LENGTH = 255;
 
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.decrypt-key.title")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);
-    private static final Component PROMPT_LABEL = Component.translatable("authorisedkeysmc.screen.decrypt-key.prompt");
     private static final Component DECRYPT_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.decrypt-key");
     private static final Component PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.password");
@@ -38,17 +38,17 @@ public class PasswordPromptScreen extends BaseScreen {
     private static final Component WAITING_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
 
-    private final Screen parent;
-    private final LoadedKeypair keypair;
-    private final Consumer<LoadedKeypair> callback;
-    private final LinearLayout rootLayout;
-    private final AtomicBoolean showPassword = new AtomicBoolean(false);
+    protected final Screen parent;
+    protected final LoadedKeypair keypair;
+    protected final Consumer<@NonNull LoadedKeypair> callback;
+    protected final LinearLayout rootLayout;
+    protected final AtomicBoolean showPassword = new AtomicBoolean(false);
 
-    private MultiLineTextWidget promptText;
-    private EditBox passwordEdit;
-    private StringWidget errorText;
+    protected MultiLineTextWidget promptText;
+    protected EditBox passwordEdit;
+    protected StringWidget errorText;
 
-    public PasswordPromptScreen(Screen parent, LoadedKeypair keypair, Consumer<LoadedKeypair> callback) {
+    public PasswordPromptScreen(Screen parent, LoadedKeypair keypair, Consumer<@NonNull LoadedKeypair> callback) {
         super(TITLE_LABEL);
 
         Validate.isTrue(keypair.requiresDecryption(), "requesting password for an unencrypted key");
@@ -105,7 +105,7 @@ public class PasswordPromptScreen extends BaseScreen {
     }
 
     @Override
-    protected void repositionElements() {
+    protected final void repositionElements() {
         promptText.setMaxWidth(elementWidth());
         passwordEdit.setWidth(elementWidth());
 
@@ -135,15 +135,15 @@ public class PasswordPromptScreen extends BaseScreen {
         callback.accept(keypair);
     }
 
-    private void onPasswordChanged(String ignored) {
+    protected void onPasswordChanged(String ignored) {
         errorText.visible = false;
     }
 
-    private void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
+    protected void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
         showPassword.setRelease(b);
     }
 
-    private void decryptKey() {
+    protected void decryptKey() {
         minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
 
         if (keypair.decrypt(passwordEdit.getValue().toCharArray())) {
@@ -162,7 +162,7 @@ public class PasswordPromptScreen extends BaseScreen {
         return Math.min(width - HORIZONTAL_SPACE, MAX_WIDTH);
     }
 
-    private record PasswordTextFormatter(AtomicBoolean shouldShow) implements EditBox.TextFormatter {
+    protected record PasswordTextFormatter(AtomicBoolean shouldShow) implements EditBox.TextFormatter {
         @Override
         public @NonNull FormattedCharSequence format(@NonNull String s, int i) {
             if (shouldShow.getAcquire()) {

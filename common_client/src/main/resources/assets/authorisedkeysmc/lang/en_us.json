@@ -1,5 +1,6 @@
 {
     "authorisedkeysmc.button.create-key": "New Key",
+    "authorisedkeysmc.button.confirm": "Confirm",
     "authorisedkeysmc.button.copy-key": "Share",
     "authorisedkeysmc.button.delete-key": "Delete",
     "authorisedkeysmc.button.decrypt-key": "Decrypt",
@@ -57,6 +58,8 @@
     "authorisedkeysmc.screen.decrypt-key.prompt": "The \"%1$s\" key needs to be decrypted with the correct password.",
     "authorisedkeysmc.screen.decrypt-key.error": "Incorrect password or corrupted private key.",
     "authorisedkeysmc.screen.decrypt-key.waiting": "Decrypting key. The window may freeze for a short moment.",
+    "authorisedkeysmc.screen.confirm-key.title": "Decrypt Key for Confirmation",
+    "authorisedkeysmc.screen.confirm-key.prompt": "To ensure that you remember the password, the newly created \"%1$s\" key needs to be decrypted with that same password.\n\nIf you have already forgotten the password, you can create a fresh keypair.",
     "authorisedkeysmc.status.waiting-verdict": "Waiting for authentication verdict...",
     "authorisedkeysmc.status.key-rejected": "Key rejected! Trying next key...",
     "authorisedkeysmc.status.verifying": "Verifying server's identity...",

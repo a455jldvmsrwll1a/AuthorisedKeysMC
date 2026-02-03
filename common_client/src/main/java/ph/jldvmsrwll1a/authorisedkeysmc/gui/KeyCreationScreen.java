@@ -20,6 +20,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.ClientKeyPairs;
@@ -50,7 +51,7 @@ public class KeyCreationScreen extends BaseScreen {
     private static final Component WAITING_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.waiting");
 
     private final Screen parent;
-    private final Consumer<String> callback;
+    private final Consumer<@Nullable String> callback;
     private final List<String> existingNames;
     private final LinearLayout rootLayout;
 
@@ -69,8 +70,13 @@ public class KeyCreationScreen extends BaseScreen {
     private String currentPassword;
     private String lastNameError = "";
     private final AtomicBoolean showPassword = new AtomicBoolean(false);
+    private boolean hasCreated = false;
 
-    public KeyCreationScreen(Screen parent, Consumer<String> callback) {
+    public KeyCreationScreen(Screen parent, Consumer<@Nullable String> callback) {
+        this(parent, callback, null);
+    }
+
+    public KeyCreationScreen(Screen parent, Consumer<@Nullable String> callback, @Nullable String defaultName) {
         super(TITLE_LABEL);
 
         this.parent = parent;
@@ -78,6 +84,7 @@ public class KeyCreationScreen extends BaseScreen {
 
         existingNames = AuthorisedKeysModClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
         rootLayout = LinearLayout.vertical().spacing(4);
+        currentName = defaultName;
     }
 
     @Override
@@ -94,8 +101,12 @@ public class KeyCreationScreen extends BaseScreen {
 
         nameEdit = new EditBox(font, 300, 20, NAME_LABEL);
         nameEdit.setHint(Component.literal("default"));
-        nameEdit.setResponder(this::onNameChanged);
         nameEdit.setMaxLength(ValidPath.MAX_LENGTH + 1);
+        if (currentName != null) {
+            // We set the value before any responder is set so we do not run our callbacks prematurely.
+            nameEdit.setValue(currentName);
+        }
+        nameEdit.setResponder(this::onNameChanged);
 
         passwordEdit = new EditBox(font, 300, 0, PASSWORD_LABEL);
         passwordEdit.setResponder(this::onPasswordChanged);
@@ -153,6 +164,11 @@ public class KeyCreationScreen extends BaseScreen {
         if (existingNames.isEmpty()) {
             nameEdit.setValue("default");
         }
+
+        // Bit of a hack to make the location hint text update if the screen was initialised with a default name.
+        if (currentName != null && !currentName.isEmpty()) {
+            onNameChanged(currentName);
+        }
     }
 
     @Override
@@ -182,6 +198,10 @@ public class KeyCreationScreen extends BaseScreen {
 
     @Override
     public void onClose() {
+        if (!hasCreated) {
+            callback.accept(null);
+        }
+
         minecraft.setScreen(parent);
     }
 
@@ -286,6 +306,7 @@ public class KeyCreationScreen extends BaseScreen {
             }
 
             callback.accept(currentName);
+            hasCreated = true;
             onClose();
         });
     }
