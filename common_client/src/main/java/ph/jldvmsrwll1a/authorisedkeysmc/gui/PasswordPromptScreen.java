@@ -135,8 +135,10 @@ public class PasswordPromptScreen extends BaseScreen {
         callback.accept(keypair);
     }
 
-    protected void onPasswordChanged(String ignored) {
-        errorText.visible = false;
+    protected void onPasswordChanged(String password) {
+        if (!password.isEmpty()) {
+            errorText.visible = false;
+        }
     }
 
     protected void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
