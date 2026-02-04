@@ -5,7 +5,6 @@ import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -159,7 +158,8 @@ public final class KeyManagementScreen extends BaseScreen {
                         "authorisedkeysmc.screen.config.keys.properties-header")
                 .withStyle(ChatFormatting.BOLD)
                 .withStyle(ChatFormatting.AQUA);
-        private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message");
+        private static final Component EMPTY_LIST_LABEL =
+                Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message");
         private static final SystemToast.SystemToastId KEY_COPIED_TOAST = new SystemToast.SystemToastId(2000);
 
         private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
@@ -192,8 +192,7 @@ public final class KeyManagementScreen extends BaseScreen {
                     .size(90, 20)
                     .build());
             listFooterLayout.addChild(Button.builder(
-                            Component.translatable("authorisedkeysmc.button.create-key"),
-                            this::onNewKeyButtonPressed)
+                            Component.translatable("authorisedkeysmc.button.create-key"), this::onNewKeyButtonPressed)
                     .size(74, 20)
                     .build());
 
@@ -398,7 +397,8 @@ public final class KeyManagementScreen extends BaseScreen {
                 LoadedKeypair newPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
 
                 if (newPair.requiresDecryption()) {
-                    minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(KeyManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
+                    minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(
+                            KeyManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
                 }
             } catch (IOException e) {
                 Constants.LOG.warn("Failed to load newly created key: {}", e.getMessage());
@@ -434,16 +434,20 @@ public final class KeyManagementScreen extends BaseScreen {
     class ServerListTab implements Tab {
         private static final float MIN_TOTAL_WIDTH = 388.f;
         private static final float MAX_TOTAL_WIDTH = 800.f;
-        private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.config.servers.title");
+        private static final Component TITLE_LABEL =
+                Component.translatable("authorisedkeysmc.screen.config.servers.title");
         private static final Component LIST_HEADER_LABEL = Component.translatable(
                         "authorisedkeysmc.screen.config.servers.list-header")
                 .withStyle(ChatFormatting.BOLD)
                 .withStyle(ChatFormatting.AQUA);
-        private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.config.servers.empty-list-message");
-        private static final Component RELOAD_SERVERS_LABEL = Component.translatable("authorisedkeysmc.button.reload-servers");
-        private static final Component FORGET_SERVER_LABEL = Component.translatable("authorisedkeysmc.button.forget")
-                .withStyle(ChatFormatting.RED);
-        private static final Component FORGET_SERVER_TOOLTIP_LABEL = Component.translatable("authorisedkeysmc.tooltip.forget-server");
+        private static final Component EMPTY_LIST_LABEL =
+                Component.translatable("authorisedkeysmc.screen.config.servers.empty-list-message");
+        private static final Component RELOAD_SERVERS_LABEL =
+                Component.translatable("authorisedkeysmc.button.reload-servers");
+        private static final Component FORGET_SERVER_LABEL =
+                Component.translatable("authorisedkeysmc.button.forget").withStyle(ChatFormatting.RED);
+        private static final Component FORGET_SERVER_TOOLTIP_LABEL =
+                Component.translatable("authorisedkeysmc.tooltip.forget-server");
 
         private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
@@ -463,16 +467,14 @@ public final class KeyManagementScreen extends BaseScreen {
                     EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
 
             LinearLayout listFooterLayout = LinearLayout.horizontal().spacing(4);
-            listFooterLayout.addChild(Button.builder(
-                            RELOAD_SERVERS_LABEL, button -> reloadKeys())
+            listFooterLayout.addChild(Button.builder(RELOAD_SERVERS_LABEL, button -> reloadKeys())
                     .size(140, 20)
                     .build());
-            listFooterLayout.addChild(Button.builder(
-                            FORGET_SERVER_LABEL,
-                            button -> Constants.LOG.warn("Forgetting not implemented!"))
+            listFooterLayout.addChild(
+                    Button.builder(FORGET_SERVER_LABEL, button -> Constants.LOG.warn("Forgetting not implemented!"))
                             .tooltip(Tooltip.create(FORGET_SERVER_TOOLTIP_LABEL))
-                    .size(74, 20)
-                    .build());
+                            .size(74, 20)
+                            .build());
 
             tabLayout.addChild(
                     new StringWidget(LIST_HEADER_LABEL, font).setMaxWidth(getWidthLeft()),

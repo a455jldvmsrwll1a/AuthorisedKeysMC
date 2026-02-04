@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -11,8 +12,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
-
-import java.util.function.Consumer;
 
 public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.confirm-key.title")
@@ -28,7 +27,11 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
 
     private final Consumer<@Nullable String> newKeyCallback;
 
-    public PasswordConfirmPromptScreen(Screen parent, LoadedKeypair keypair, Consumer<@NonNull LoadedKeypair> callback, Consumer<@Nullable String> newKeycallback) {
+    public PasswordConfirmPromptScreen(
+            Screen parent,
+            LoadedKeypair keypair,
+            Consumer<@NonNull LoadedKeypair> callback,
+            Consumer<@Nullable String> newKeycallback) {
         super(parent, keypair, callback);
 
         this.newKeyCallback = newKeycallback;

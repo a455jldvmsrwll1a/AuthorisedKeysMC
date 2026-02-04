@@ -103,7 +103,8 @@ public class LoadedKeypair {
 
         if (publicKey == null) {
             publicKey = secret.generatePublicKey();
-        } else if (!Arrays.areEqual(publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
+        } else if (!Arrays.areEqual(
+                publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
             throw new IllegalStateException("Provided private key does not match the current public key.");
         }
     }
@@ -112,8 +113,7 @@ public class LoadedKeypair {
         Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
 
         try {
-            InputDecryptorProvider decryptorProvider =
-                    new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password);
+            InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password);
             PrivateKeyInfo pki = encryptedInfo.decryptPrivateKeyInfo(decryptorProvider);
             AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
 

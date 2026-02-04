@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -90,12 +89,7 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
         if (listIsEmpty) {
             int x = getX() + getWidth() / 2;
             int y = getY() + getHeight() / 2;
-            gui.drawCenteredString(
-                    minecraft.font,
-                    emptyListLabel,
-                    x,
-                    y,
-                    0xFFFFFFFF);
+            gui.drawCenteredString(minecraft.font, emptyListLabel, x, y, 0xFFFFFFFF);
         }
     }
 

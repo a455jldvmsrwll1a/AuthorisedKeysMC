@@ -298,10 +298,13 @@ public class KeyCreationScreen extends BaseScreen {
 
         minecraft.executeBlocking(() -> {
             try {
-                AuthorisedKeysModClient.KEY_PAIRS.generate(currentName, passwordCheckbox.selected() ? currentPassword.toCharArray() : null);
+                AuthorisedKeysModClient.KEY_PAIRS.generate(
+                        currentName, passwordCheckbox.selected() ? currentPassword.toCharArray() : null);
             } catch (Exception e) {
                 Constants.LOG.error("Failed to generate keypair: {}", e.getMessage());
-                minecraft.setScreen(new ErrorScreen(Component.translatable("authorisedkeysmc.error.generation-fail"), Component.literal(e.getMessage())));
+                minecraft.setScreen(new ErrorScreen(
+                        Component.translatable("authorisedkeysmc.error.generation-fail"),
+                        Component.literal(e.getMessage())));
                 return;
             }
 

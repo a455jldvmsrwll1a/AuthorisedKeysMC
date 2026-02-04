@@ -1,24 +1,24 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Memory-only private key cache.
  */
 public class PrivateKeyCache {
-    private final ConcurrentHashMap<HashablePublicKey, Ed25519PrivateKeyParameters> CACHED_KEYS = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<HashablePublicKey, Ed25519PrivateKeyParameters> CACHED_KEYS =
+            new ConcurrentHashMap<>();
 
     /**
      * Insert the private key of the keypair in the cache.
      * @param keypair The keypair with the private key to cache. Must already be decrypted.
      */
-    public void cacheKey(@NonNull LoadedKeypair keypair)  {
+    public void cacheKey(@NonNull LoadedKeypair keypair) {
         try {
             CACHED_KEYS.put(new HashablePublicKey(keypair.getPublic()), keypair.getDecryptedPrivate());
         } catch (IllegalStateException e) {

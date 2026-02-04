@@ -35,8 +35,9 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
     private static final Component CACHE_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.cache-key");
-    private static final Component CACHE_TEXT_LABEL =
-            Component.translatable("authorisedkeysmc.screen.decrypt-key.cache-key-text").withStyle(ChatFormatting.GOLD);
+    private static final Component CACHE_TEXT_LABEL = Component.translatable(
+                    "authorisedkeysmc.screen.decrypt-key.cache-key-text")
+            .withStyle(ChatFormatting.GOLD);
     private static final Component ERROR_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
     private static final Component WAITING_LABEL =
