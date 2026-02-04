@@ -75,5 +75,5 @@
     "authorisedkeysmc.tooltip.share-key": "Copy this public key string to the clipboard.",
     "authorisedkeysmc.tooltip.backup-key": "Make a back-up of this key-pair to a file or the clipboard.",
     "authorisedkeysmc.tooltip.delete-key": "Delete this key-pair.",
-    "authorisedkeysmc.tooltip.forget-server": "Forget the server's public key and the list of keys used for this server.\n\nThis does not remove the server itself from your multiplayer server list."
+    "authorisedkeysmc.tooltip.forget-server": "Forget the list of keys used for this server.\n\nThis does not remove the server itself from your multiplayer server list."
 }
