@@ -18,7 +18,6 @@ import net.minecraft.client.gui.layouts.*;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
@@ -126,23 +125,7 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private List<String> getServerNamesUsingKey(String keyName) {
-        List<String> hosts = AuthorisedKeysModClient.KNOWN_HOSTS.getHostsUsingKey(keyName);
-
-        List<String> servers = new ArrayList<>(hosts.size());
-
-        hosts.forEach(host -> {
-            for (int i = 0; i < serverList.size(); ++i) {
-                ServerData data = serverList.get(i);
-
-                if (data.ip.equals(host)) {
-                    servers.add(data.name);
-                }
-            }
-        });
-
-        servers.sort(String::compareToIgnoreCase);
-
-        return servers;
+        return AuthorisedKeysModClient.KEY_USES.getServersUsingKey(keyName);
     }
 
     class KeyListTab extends GridLayoutTab {

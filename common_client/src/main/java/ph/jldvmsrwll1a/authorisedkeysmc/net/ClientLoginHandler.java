@@ -223,9 +223,9 @@ public final class ClientLoginHandler {
     }
 
     public void confirmRegistration() {
-        getHostAddress().ifPresent(name -> {
-            Constants.LOG.info("addKeyForHost({}, {})", name, keyName);
-            AuthorisedKeysModClient.KNOWN_HOSTS.addKeyForHost(name, keyName);
+        getServerName().ifPresent(name -> {
+            Constants.LOG.info("addKeyForServer({}, {})", name, keyName);
+            AuthorisedKeysModClient.KEY_USES.addKeyForServer(name, keyName);
         });
 
         Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
@@ -267,8 +267,8 @@ public final class ClientLoginHandler {
         keyName = null;
 
         if (remainingKeys == null) {
-            List<String> keyNames = AuthorisedKeysModClient.KNOWN_HOSTS.getKeysUsedForHost(
-                    getHostAddress().orElse(null));
+            List<String> keyNames = AuthorisedKeysModClient.KEY_USES.getKeysUsedForServer(
+                    getServerName().orElse(null));
             if (keyNames.isEmpty()) {
                 return false;
             }
