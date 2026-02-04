@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ph.jldvmsrwll1a.authorisedkeysmc.gui.KeyManagementScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.gui.ManagementScreen;
 
 @Mixin(JoinMultiplayerScreen.class)
 public abstract class JoinMultiplayerScreenMixin extends Screen {
@@ -30,7 +30,7 @@ public abstract class JoinMultiplayerScreenMixin extends Screen {
 
         authorisedKeysMC$keyButton = Button.builder(
                         Component.translatable("authorisedkeysmc.button.key-manager"), button -> {
-                            minecraft.setScreen(new KeyManagementScreen(this));
+                            minecraft.setScreen(new ManagementScreen(this));
                         })
                 .size(authorisedKeysMC$WIDTH, 20)
                 .pos(width - authorisedKeysMC$WIDTH - 6, 6)

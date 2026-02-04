@@ -27,7 +27,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 
-public final class KeyManagementScreen extends BaseScreen {
+public final class ManagementScreen extends BaseScreen {
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
     private final TabManager tabManager;
@@ -37,7 +37,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private KeyListTab keyListTab;
     private ServerListTab serverListTab;
 
-    public KeyManagementScreen(Screen parent) {
+    public ManagementScreen(Screen parent) {
         super(Component.translatable("authorisedkeysmc.screen.config.title"));
 
         this.parent = parent;
@@ -366,7 +366,7 @@ public final class KeyManagementScreen extends BaseScreen {
         }
 
         private void onNewKeyButtonPressed(Button ignored) {
-            minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, this::onNewKeyCreated));
+            minecraft.setScreen(new KeyCreationScreen(ManagementScreen.this, this::onNewKeyCreated));
         }
 
         private void onNewKeyCreated(@Nullable String keyName) {
@@ -381,7 +381,7 @@ public final class KeyManagementScreen extends BaseScreen {
 
                 if (newPair.requiresDecryption()) {
                     minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(
-                            KeyManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
+                            ManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
                 }
             } catch (IOException e) {
                 Constants.LOG.warn("Failed to load newly created key: {}", e.getMessage());
@@ -404,7 +404,7 @@ public final class KeyManagementScreen extends BaseScreen {
                             reloadKeys();
                         }
 
-                        minecraft.setScreen(KeyManagementScreen.this);
+                        minecraft.setScreen(ManagementScreen.this);
                     },
                     Component.translatable("authorisedkeysmc.screen.delete-key.title")
                             .withStyle(ChatFormatting.RED),
