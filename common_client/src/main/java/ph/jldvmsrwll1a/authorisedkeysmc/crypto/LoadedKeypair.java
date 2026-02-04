@@ -1,81 +1,105 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.security.SecureRandom;
 import java.time.Instant;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PKCS8Generator;
 import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
 import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfoBuilder;
 import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.bouncycastle.util.io.pem.PemWriter;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
+/**
+ * Keypair that may or may not be encrypted.
+ */
 public class LoadedKeypair {
-    private final @NotNull String name;
-    private final @NotNull Instant modificationTime;
-    private final @Nullable PKCS8EncryptedPrivateKeyInfo encryptedInfo;
+    private final @NonNull String name;
+    private Instant modificationTime;
 
     private @Nullable Ed25519PublicKeyParameters publicKey;
     private @Nullable Ed25519PrivateKeyParameters privateKey;
+    private @Nullable PKCS8EncryptedPrivateKeyInfo encryptedInfo;
 
     public LoadedKeypair(
-            @NotNull String name,
-            @NotNull Instant modificationTime,
-            @NotNull Ed25519PrivateKeyParameters privateKey,
+            @NonNull String name,
+            @NonNull Instant modificationTime,
+            @NonNull Ed25519PrivateKeyParameters privateKey,
             @Nullable Ed25519PublicKeyParameters publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
-        this.encryptedInfo = null;
 
         this.privateKey = privateKey;
         this.publicKey = publicKey != null ? publicKey : privateKey.generatePublicKey();
+        this.encryptedInfo = null;
     }
 
     public LoadedKeypair(
-            @NotNull String name,
-            @NotNull Instant modificationTime,
-            @NotNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
+            @NonNull String name,
+            @NonNull Instant modificationTime,
+            @NonNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
             @Nullable Ed25519PublicKeyParameters publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
-        this.encryptedInfo = encryptedInfo;
 
         this.privateKey = null;
         this.publicKey = publicKey;
+        this.encryptedInfo = encryptedInfo;
     }
 
-    public @NotNull String getName() {
+    /**
+     * Get the name of this keypair.
+     */
+    public @NonNull String getName() {
         return name;
     }
 
-    public @NotNull Instant getModificationTime() {
+    /**
+     * Get the latest modification time of this keypair.
+     */
+    public @NonNull Instant getModificationTime() {
         return modificationTime;
     }
 
-    public @NotNull String getTextualPublic() {
+    /**
+     * Get a textual representation of the public key. This is intended to define the "canonical" format that will be
+     * used by users and stored in files.
+     */
+    public @NonNull String getTextualPublic() {
         return Base64Util.encode(getPublic().getEncoded());
     }
 
-    public @NotNull Ed25519PublicKeyParameters getPublic() {
-        if (publicKey == null && privateKey != null) {
-            publicKey = privateKey.generatePublicKey();
-        }
-
+    /**
+     * Get the public key of this keypair. The keypair's private key must already be unencrypted or this will throw.
+     */
+    public @NonNull Ed25519PublicKeyParameters getPublic() {
         if (publicKey != null) {
             return publicKey;
         } else {
@@ -84,7 +108,10 @@ public class LoadedKeypair {
         }
     }
 
-    public @NotNull Ed25519PrivateKeyParameters getDecryptedPrivate() {
+    /**
+     * Get the private key of this keypair. The keypair must already be decrypted or this will throw.
+     */
+    public @NonNull Ed25519PrivateKeyParameters getDecryptedPrivate() {
         if (privateKey != null) {
             return privateKey;
         } else if (encryptedInfo != null) {
@@ -94,22 +121,41 @@ public class LoadedKeypair {
         }
     }
 
+    /**
+     * Does this keypair need to be decrypted in order to be usable?
+     */
     public boolean requiresDecryption() {
         return privateKey == null && encryptedInfo != null;
     }
 
-    public void setPrivateKey(@NotNull Ed25519PrivateKeyParameters secret) {
-        privateKey = secret;
+    /**
+     * Manually set the private key of this keypair. If present, the public key must correspond with the private key.
+     * <p>
+     * Care should be taken if the new private key is different from the current encrypted private key.
+     * @param secret The new private key.
+     */
+    public void setPrivateKey(@NonNull Ed25519PrivateKeyParameters secret) {
+        Ed25519PublicKeyParameters newPublicKey = secret.generatePublicKey();
 
-        if (publicKey == null) {
-            publicKey = secret.generatePublicKey();
-        } else if (!Arrays.areEqual(
-                publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
+        if (publicKey != null
+                && !Arrays.areEqual(
+                        publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
             throw new IllegalStateException("Provided private key does not match the current public key.");
         }
+
+        privateKey = secret;
+        if (publicKey == null) {
+            publicKey = newPublicKey;
+        }
+        modificationTime = Instant.now();
     }
 
-    public boolean decrypt(char @NotNull [] password) {
+    /**
+     * Attempt to decrypt the keypair in-place with the provided password. Never erases the encrypted private key.
+     * @param password The password to decrypt with.
+     * @return {@code true} if successful.
+     */
+    public boolean decrypt(char @NonNull [] password) {
         Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
 
         try {
@@ -130,8 +176,40 @@ public class LoadedKeypair {
         } catch (OperatorCreationException | IOException e) {
             throw new RuntimeException(e);
         } catch (PKCSException e) {
-            return false;
+            // Nothing.
+        } finally {
+            Arrays.fill(password, '\0');
         }
+
+        return false;
+    }
+
+    /**
+     * Encrypt the keypair in-place with the provided password. Does not erase the unencrypted private key.
+     * @param password The password to encrypt with.
+     */
+    public void encrypt(char @NonNull [] password) {
+        Validate.validState(privateKey != null, "Decrypted private key not available.");
+
+        try {
+            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey);
+
+            JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder =
+                    new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
+            encryptorBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+            encryptorBuilder.setRandom(new SecureRandom());
+            encryptorBuilder.setIterationCount(2_000_000);
+            encryptorBuilder.setPassword(password);
+            OutputEncryptor encryptor = encryptorBuilder.build();
+
+            encryptedInfo = new PKCS8EncryptedPrivateKeyInfoBuilder(privateKeyInfo).build(encryptor);
+        } catch (OperatorCreationException | IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            Arrays.fill(password, '\0');
+        }
+
+        modificationTime = Instant.now();
     }
 
     @Override
@@ -139,8 +217,70 @@ public class LoadedKeypair {
         return getTextualPublic();
     }
 
-    public static LoadedKeypair fromFile(@NotNull Path path, @NotNull String name)
-            throws IOException, InvalidPathException {
+    /**
+     * Emit a PEM file containing both the private key and the public key.
+     * <p>
+     * An {@code ENCRYPTED PRIVATE KEY} PEM object will be emitted if the keypair contains an encrypted private key.
+     * Otherwise, it will emit a {@code PRIVATE KEY} PEM object instead.
+     * @param outPath The file path to write to.
+     * @throws IOException May fail to write the file.
+     */
+    public void writeFile(@NonNull Path outPath) throws IOException {
+        Path path = outPath.normalize();
+        Files.createDirectories(path.getParent());
+
+        try {
+            Path backup = Path.of("%s.BACKUP".formatted(path));
+            Files.move(path, backup, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ignored) {
+            // Don't care.
+        }
+
+        PemObject privatePem;
+        if (encryptedInfo != null) {
+            privatePem = new PemObject("ENCRYPTED PRIVATE KEY", encryptedInfo.getEncoded());
+        } else if (privateKey != null) {
+            PrivateKeyInfo pki = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey);
+            privatePem = new PemObject("PRIVATE KEY", pki.getEncoded());
+        } else {
+            throw new IllegalStateException("Degenerate keypair has no private key");
+        }
+
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getPublic());
+        PemObject publicPem = new PemObject("PUBLIC KEY", spki.getEncoded());
+
+        try (PemWriter writer = new PemWriter(new FileWriter(path.toFile()))) {
+            writer.writeObject(privatePem);
+            writer.writeObject(publicPem);
+        }
+    }
+
+    /**
+     * Generate a new keypair.
+     * @param random RNG to use for the generator.
+     * @param name A label for the key.
+     * @return The newly created keypair.
+     */
+    public static @NonNull LoadedKeypair generate(@NonNull SecureRandom random, @NonNull String name) {
+        Ed25519KeyPairGenerator generator = new Ed25519KeyPairGenerator();
+        generator.init(new Ed25519KeyGenerationParameters(random));
+
+        AsymmetricCipherKeyPair kp = generator.generateKeyPair();
+        Ed25519PrivateKeyParameters privateKey = (Ed25519PrivateKeyParameters) kp.getPrivate();
+        Ed25519PublicKeyParameters publicKey = (Ed25519PublicKeyParameters) kp.getPublic();
+
+        Instant now = Instant.now();
+
+        return new LoadedKeypair(name, now, privateKey, publicKey);
+    }
+
+    /**
+     * Loads a keypair from a PEM file.
+     * @param name A label for the key.
+     * @return The loaded keypair.
+     * @throws IOException May fail to read the file.
+     */
+    public static LoadedKeypair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
         Ed25519PrivateKeyParameters privateKey = null;
