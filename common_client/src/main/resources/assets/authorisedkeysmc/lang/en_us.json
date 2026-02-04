@@ -55,6 +55,8 @@
     "authorisedkeysmc.screen.delete-key.prompt": "Are you sure you wish to §npermanently delete§r this key-pair?\n\nThis operation is irreversible!",
     "authorisedkeysmc.screen.decrypt-key.title": "Decrypt Key",
     "authorisedkeysmc.screen.decrypt-key.password": "Decryption Password",
+    "authorisedkeysmc.screen.decrypt-key.cache-key": "Cache decrypted private key",
+    "authorisedkeysmc.screen.decrypt-key.cache-key-text": "When decrypted, the private key will be temporarily cached.\nUntil the game closes, you do not need to enter the password repeatedly.",
     "authorisedkeysmc.screen.decrypt-key.prompt": "The \"%1$s\" key needs to be decrypted with the correct password.",
     "authorisedkeysmc.screen.decrypt-key.error": "Incorrect password or corrupted private key.",
     "authorisedkeysmc.screen.decrypt-key.waiting": "Decrypting key. The window may freeze for a short moment.",

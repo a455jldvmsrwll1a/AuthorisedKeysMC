@@ -16,8 +16,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 
 public class PasswordPromptScreen extends BaseScreen {
@@ -33,6 +33,10 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.password");
     private static final Component SHOW_PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
+    private static final Component CACHE_LABEL =
+            Component.translatable("authorisedkeysmc.screen.decrypt-key.cache-key");
+    private static final Component CACHE_TEXT_LABEL =
+            Component.translatable("authorisedkeysmc.screen.decrypt-key.cache-key-text").withStyle(ChatFormatting.GOLD);
     private static final Component ERROR_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
     private static final Component WAITING_LABEL =
@@ -47,6 +51,8 @@ public class PasswordPromptScreen extends BaseScreen {
     protected MultiLineTextWidget promptText;
     protected EditBox passwordEdit;
     protected StringWidget errorText;
+    protected MultiLineTextWidget cacheText;
+    protected boolean cacheDecryptedKey = false;
 
     public PasswordPromptScreen(Screen parent, LoadedKeypair keypair, Consumer<@NonNull LoadedKeypair> callback) {
         super(TITLE_LABEL);
@@ -76,8 +82,15 @@ public class PasswordPromptScreen extends BaseScreen {
                 .onValueChange(this::onShowPasswordCheckboxChanged)
                 .build();
 
+        Checkbox cacheCheckbox = Checkbox.builder(CACHE_LABEL, font)
+                .onValueChange(this::onCacheCheckboxChanged)
+                .build();
+
         errorText = new StringWidget(ERROR_LABEL, font);
         errorText.visible = false;
+
+        cacheText = new MultiLineTextWidget(CACHE_TEXT_LABEL, font);
+        cacheText.visible = false;
 
         LinearLayout buttonLayout = LinearLayout.horizontal().spacing(4);
         buttonLayout.defaultCellSetting().paddingTop(16);
@@ -97,7 +110,9 @@ public class PasswordPromptScreen extends BaseScreen {
         rootLayout.addChild(passwordLabel);
         rootLayout.addChild(passwordEdit);
         rootLayout.addChild(showPasswordCheckbox);
+        rootLayout.addChild(cacheCheckbox);
         rootLayout.addChild(errorText);
+        rootLayout.addChild(cacheText);
         rootLayout.addChild(buttonLayout);
 
         rootLayout.visitWidgets(this::addRenderableWidget);
@@ -145,10 +160,19 @@ public class PasswordPromptScreen extends BaseScreen {
         showPassword.setRelease(b);
     }
 
+    protected void onCacheCheckboxChanged(Checkbox checkbox, boolean b) {
+        cacheDecryptedKey = b;
+        cacheText.visible = b;
+    }
+
     protected void decryptKey() {
         minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
 
         if (keypair.decrypt(passwordEdit.getValue().toCharArray())) {
+            if (cacheDecryptedKey) {
+                AuthorisedKeysModClient.CACHED_KEYS.cacheKey(keypair);
+            }
+
             minecraft.setScreen(parent);
             onClose();
 

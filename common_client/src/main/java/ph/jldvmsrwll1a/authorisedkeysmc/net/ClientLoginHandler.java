@@ -154,6 +154,8 @@ public final class ClientLoginHandler {
                             "Session hash is null. This is impossible as encryption is required.");
                 }
 
+                AuthorisedKeysModClient.CACHED_KEYS.decryptKeypair(keypair);
+
                 if (keypair.requiresDecryption()) {
                     minecraft.execute(() -> {
                         Screen screen = new PasswordPromptScreen(minecraft.screen, keypair, processedKeypair -> {

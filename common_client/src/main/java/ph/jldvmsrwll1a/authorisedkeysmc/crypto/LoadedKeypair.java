@@ -18,6 +18,7 @@ import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
+import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.jetbrains.annotations.NotNull;
@@ -97,6 +98,16 @@ public class LoadedKeypair {
         return privateKey == null && encryptedInfo != null;
     }
 
+    public void setPrivateKey(@NotNull Ed25519PrivateKeyParameters secret) {
+        privateKey = secret;
+
+        if (publicKey == null) {
+            publicKey = secret.generatePublicKey();
+        } else if (!Arrays.areEqual(publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
+            throw new IllegalStateException("Provided private key does not match the current public key.");
+        }
+    }
+
     public boolean decrypt(char @NotNull [] password) {
         Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
 
@@ -107,11 +118,7 @@ public class LoadedKeypair {
             AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
 
             if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                privateKey = edPri;
-
-                if (publicKey == null) {
-                    publicKey = edPri.generatePublicKey();
-                }
+                setPrivateKey(edPri);
 
                 return true;
             } else {
