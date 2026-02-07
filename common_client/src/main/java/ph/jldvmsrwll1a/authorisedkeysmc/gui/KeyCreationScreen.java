@@ -22,6 +22,7 @@ import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
@@ -320,7 +321,8 @@ public class KeyCreationScreen extends BaseScreen {
 
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
-        String format = "%s%s%s%s.pem".formatted(sep, Constants.MOD_DIR_NAME, sep, currentName);
+        Path keysDir = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
+        String format = "%s%s%s%s%s%s.pem".formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);
     }
