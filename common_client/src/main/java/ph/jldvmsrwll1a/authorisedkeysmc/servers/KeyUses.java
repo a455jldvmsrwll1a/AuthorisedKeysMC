@@ -6,9 +6,7 @@ import com.google.gson.GsonBuilder;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -22,6 +20,10 @@ public final class KeyUses {
 
     public KeyUses() {
         read();
+    }
+
+    public List<String> getServers() {
+        return Collections.list(usedKeysTable.keys());
     }
 
     public @NonNull ArrayList<String> getKeysUsedForServer(@Nullable String name) {
