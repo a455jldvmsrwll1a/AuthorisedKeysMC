@@ -15,6 +15,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
+import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
@@ -50,6 +51,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private Button deleteButton;
 
     private @Nullable LoadedKeypair currentKeypair;
+    private @Nullable String keyName;
 
     private boolean needsLayout = true;
 
@@ -171,7 +173,8 @@ public final class KeyManagementScreen extends BaseScreen {
             return;
         }
 
-        String keyName = selected.getKeyName();
+        keyName = selected.getKeyName();
+        currentKeypair = null;
 
         needsLayout = true;
 
@@ -189,6 +192,8 @@ public final class KeyManagementScreen extends BaseScreen {
 
             inspectorText.setMessage(Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
                     .withStyle(ChatFormatting.RED));
+
+            deleteButton.active = true;
 
             return;
         }
@@ -331,14 +336,20 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onDeleteButtonPressed(Button ignored) {
-        if (currentKeypair == null) {
+        if (keyName == null && currentKeypair == null) {
             return;
         }
 
         ConfirmScreen screen = new ConfirmScreen(
                 confirmed -> {
                     if (confirmed) {
-                        AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(currentKeypair);
+                        if (keyName != null) {
+                            if (currentKeypair != null) {
+                                Validate.validState(currentKeypair.getName().equals(keyName));
+                            }
+
+                            AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(keyName);
+                        }
                         reloadKeys();
                     }
 
