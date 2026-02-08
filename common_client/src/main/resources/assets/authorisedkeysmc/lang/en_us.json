@@ -1,5 +1,6 @@
 {
     "authorisedkeysmc.button.create-key": "New Key",
+    "authorisedkeysmc.button.configuration": "Configure Settings",
     "authorisedkeysmc.button.confirm": "Confirm",
     "authorisedkeysmc.button.copy-key": "Share",
     "authorisedkeysmc.button.delete-key": "Delete",
@@ -8,6 +9,7 @@
     "authorisedkeysmc.button.generate-key": "Generate",
     "authorisedkeysmc.button.goto-server-config": "Server Configuration",
     "authorisedkeysmc.button.key-manager": "Manage Keys",
+    "authorisedkeysmc.button.server-manager": "Manage Servers",
     "authorisedkeysmc.button.password-add": "Add Password",
     "authorisedkeysmc.button.password-change": "Change Password",
     "authorisedkeysmc.button.password-remove": "Remove Password",

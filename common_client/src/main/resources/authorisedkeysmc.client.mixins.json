@@ -9,7 +9,8 @@
     "ClientHandshakePacketListenerAccessorMixin",
     "ClientLoginMixin",
     "CustomQueryPacketMixin",
-    "JoinMultiplayerScreenMixin"
+    "JoinMultiplayerScreenMixin",
+    "TitleScreenMixin"
   ],
   "server": [],
   "injectors": {
