@@ -18,7 +18,7 @@ public abstract class BaseScreen extends Screen {
     public void render(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
         super.render(gui, mouseX, mouseY, partialTick);
 
-        int colour = AuthorisedKeysModCore.PLATFORM.isDevelopmentEnvironment() ? 0xFFFF00FF: 0xFF7F7F7F;
+        int colour = AuthorisedKeysModCore.PLATFORM.isDevelopmentEnvironment() ? 0xFFFF00FF : 0xFF7F7F7F;
         gui.drawString(font, LABEL, 2, height - font.lineHeight - 1, colour, true);
     }
 }
