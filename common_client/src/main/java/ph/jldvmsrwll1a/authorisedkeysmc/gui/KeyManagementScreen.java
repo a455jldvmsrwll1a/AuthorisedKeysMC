@@ -33,6 +33,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private static final Component EMPTY_LIST_LABEL =
             Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message");
     private static final SystemToast.SystemToastId KEY_COPIED_TOAST = new SystemToast.SystemToastId(2000);
+    private static final SystemToast.SystemToastId WIP_TOAST = new SystemToast.SystemToastId(1500);
 
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
@@ -49,6 +50,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private List<Button> listButtons;
     private List<Button> inspectorButtons;
     private Button deleteButton;
+    private Button passwordButton;
 
     private @Nullable LoadedKeypair currentKeypair;
     private @Nullable String keyName;
@@ -100,11 +102,14 @@ public final class KeyManagementScreen extends BaseScreen {
                 .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.backup-key")))
                 .size(getWidthRightDual(), 20)
                 .build());
+
         inspectorButtons.add(Button.builder(
-                        Component.translatable("authorisedkeysmc.button.set-password"), this::onPasswordButtonPressed)
+                        Component.translatable("authorisedkeysmc.button.password-add"), this::onPasswordButtonPressed)
                 .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.set-password")))
                 .size(getWidthRightDual(), 20)
                 .build());
+        passwordButton = inspectorButtons.getLast();
+
         inspectorButtons.add(Button.builder(
                         Component.translatable("authorisedkeysmc.button.delete-key")
                                 .withStyle(ChatFormatting.RED),
@@ -231,6 +236,12 @@ public final class KeyManagementScreen extends BaseScreen {
         inspectorScroller.arrangeElements();
 
         inspectorButtons.forEach(button -> button.active = true);
+
+        if (currentKeypair.requiresDecryption()) {
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-change"));
+        } else {
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-add"));
+        }
     }
 
     @Override
@@ -330,10 +341,22 @@ public final class KeyManagementScreen extends BaseScreen {
 
     private void onBackupButtonPressed(Button ignored) {
         Constants.LOG.warn("Backing up not implemented!");
+
+        SystemToast.addOrUpdate(
+                minecraft.getToastManager(),
+                WIP_TOAST,
+                Component.literal("Work in progress."),
+                null);
     }
 
     private void onPasswordButtonPressed(Button ignored) {
         Constants.LOG.warn("Setting/Updating/Erasing password not implemented!");
+
+        SystemToast.addOrUpdate(
+                minecraft.getToastManager(),
+                WIP_TOAST,
+                Component.literal("Work in progress."),
+                null);
     }
 
     private void onDeleteButtonPressed(Button ignored) {

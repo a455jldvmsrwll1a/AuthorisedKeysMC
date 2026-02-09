@@ -85,6 +85,7 @@
     "authorisedkeysmc.status.registering": "Registering key...",
     "authorisedkeysmc.status.refusing-to-register": "Refusing to register...",
     "authorisedkeysmc.toast.key-shared": "Copied to clipboard!",
+    "authorisedkeysmc.tooltip.set-password": "Set, update, or erase this key pair's password",
     "authorisedkeysmc.tooltip.must-select-key": "Select a key pair first.\n\nYou will also be prompted to select one if you try to join.",
     "authorisedkeysmc.tooltip.select-key": "Select a key pair to use for this server.",
     "authorisedkeysmc.tooltip.unknown-host-key": "Not yet known.\n\nTry joining the server first.",
