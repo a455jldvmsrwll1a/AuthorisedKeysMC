@@ -3,6 +3,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -38,10 +39,10 @@ public class PortalScreen extends BaseScreen {
         addRenderableWidget(Button.builder(KEYS_LABEL, button -> minecraft.setScreen(new KeyManagementScreen(this)))
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre - STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
-        addRenderableWidget(Button.builder(SERVERS_LABEL, button -> {})
+        addRenderableWidget(Button.builder(SERVERS_LABEL, button -> minecraft.setScreen(new ServerManagementScreen(this)))
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
-        addRenderableWidget(Button.builder(CONFIG_LABEL, button -> {})
+        addRenderableWidget(Button.builder(CONFIG_LABEL, button -> minecraft.setScreen(new ErrorScreen(Component.literal("not yet implemented"), Component.empty())))
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre + STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())

@@ -17,6 +17,8 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
     private GenericStringSelectionList.@Nullable StringEntry lastSelection = null;
     private boolean shouldLoad = false;
 
+    public boolean borderless = false;
+
     public GenericStringSelectionList(
             Component emptyListLabel, Minecraft minecraft, List<String> keyNames, int width, int height) {
         super(minecraft, width, height, 0, minecraft.font.lineHeight * 2);
@@ -90,6 +92,20 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
             int x = getX() + getWidth() / 2;
             int y = getY() + getHeight() / 2;
             gui.drawCenteredString(minecraft.font, emptyListLabel, x, y, 0xFFFFFFFF);
+        }
+    }
+
+    @Override
+    protected void renderListBackground(GuiGraphics gui) {
+        if (!borderless) {
+            super.renderListBackground(gui);
+        }
+    }
+
+    @Override
+    protected void renderListSeparators(GuiGraphics gui) {
+        if (!borderless) {
+            super.renderListSeparators(gui);
         }
     }
 
