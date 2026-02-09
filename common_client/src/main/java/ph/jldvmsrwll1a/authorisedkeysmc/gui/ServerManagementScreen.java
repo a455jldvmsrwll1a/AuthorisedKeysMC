@@ -23,15 +23,12 @@ public class ServerManagementScreen extends BaseScreen {
             .withStyle(ChatFormatting.BOLD)
             .withStyle(ChatFormatting.AQUA);
     private static final Component EDIT_LABEL = Component.translatable("authorisedkeysmc.button.edit");
-    private static final Component RELOAD_LABEL = Component.translatable("authorisedkeysmc.button.reload-servers");
     private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.servers.empty");
 
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
     private final LinearLayout listContainerLayout;
     private final ServerList serverList;
-
-    private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
     private GenericStringSelectionList serverSelectionList;
     private Button editButton;
@@ -54,7 +51,6 @@ public class ServerManagementScreen extends BaseScreen {
 
     protected void init() {
         reloadServers();
-        reloadServers();
 
         serverSelectionList = new GenericStringSelectionList(
                 EMPTY_LIST_LABEL, minecraft, serverNames, getBestWidth(), rootLayout.getContentHeight());
@@ -69,9 +65,6 @@ public class ServerManagementScreen extends BaseScreen {
                 .build();
 
         buttonsLayout.addChild(editButton);
-        buttonsLayout.addChild(Button.builder(RELOAD_LABEL, button -> reloadServers())
-                .size(120, 20)
-                .build());
         buttonsLayout.addChild(Button.builder(CommonComponents.GUI_BACK, button -> onClose())
                 .size(120, 20)
                 .build());

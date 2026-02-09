@@ -31,6 +31,23 @@ public final class KeyUses {
         return keys != null && !keys.isEmpty() ? keys.getFirst() : null;
     }
 
+    public void setKeyNameUsedForServer(String serverName, @Nullable String keyName) {
+        if (keyName == null) {
+            usedKeysTable.remove(serverName);
+        } else {
+            if (!usedKeysTable.containsKey(serverName)) {
+                usedKeysTable.put(serverName, new ArrayList<>(1));
+            }
+
+            ArrayList<String> keys = usedKeysTable.get(serverName);
+            if (keys.isEmpty() || !keys.getFirst().equals(keyName)) {
+                keys.clear();
+                keys.add(keyName);
+                write();
+            }
+        }
+    }
+
     public @NonNull ArrayList<String> getKeysUsedForServer(@Nullable String name) {
         if (name == null) {
             return DEFAULT_KEY_LIST;

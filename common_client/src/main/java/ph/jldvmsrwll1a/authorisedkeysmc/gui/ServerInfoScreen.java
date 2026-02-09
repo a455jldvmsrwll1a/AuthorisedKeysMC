@@ -44,10 +44,12 @@ public final class ServerInfoScreen extends BaseScreen {
     private final Component hostKeyLabel;
     private final boolean hostKeyIsKnown;
     private final @Nullable String originalUsedKeyName;
+    private final String serverName;
 
     private @Nullable String usedKeyName;
     private Component usedKeyLabel = NO_USED_KEY_LABEL;
     private @Nullable String usedKeyString;
+    private boolean dirty = false;
 
     private MultiLineTextWidget preambleText;
     private Button hostKeyField;
@@ -58,6 +60,7 @@ public final class ServerInfoScreen extends BaseScreen {
                 .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA));
 
         rootLayout = LinearLayout.vertical().spacing(4);
+        serverName = server.name;
 
         this.parent = parent;
 
@@ -65,6 +68,7 @@ public final class ServerInfoScreen extends BaseScreen {
         hostKeyLabel = hostKey != null ? Component.literal(Base64Util.encode(hostKey.getEncoded())) : UNKNOWN_KEY_LABEL;
         hostKeyIsKnown = hostKey != null;
 
+        AuthorisedKeysModClient.KEY_USES.read();
         originalUsedKeyName = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(server.name);
     }
 
@@ -95,10 +99,10 @@ public final class ServerInfoScreen extends BaseScreen {
         LinearLayout buttonLayout = LinearLayout.horizontal().spacing(4);
         buttonLayout.defaultCellSetting().paddingTop(16);
 
-        buttonLayout.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
+        buttonLayout.addChild(Button.builder(CommonComponents.GUI_DONE, this::onDoneButtonPressed)
                 .width(BUTTON_WIDTH)
                 .build());
-        buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose())
+        buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> minecraft.setScreen(parent))
                 .width(BUTTON_WIDTH)
                 .build());
 
@@ -147,9 +151,31 @@ public final class ServerInfoScreen extends BaseScreen {
         }
     }
 
-    private void onSelectButtonPressed(Button button) {}
+    private void onDoneButtonPressed(Button button) {
+        if (dirty) {
+            AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, usedKeyName);
+        }
 
-    private void setUsedKey(String keyName) {
+        minecraft.setScreen(parent);
+    }
+
+    private void onSelectButtonPressed(Button button) {
+        minecraft.setScreen(new KeySelectionScreen(this, this::onKeySelected));
+    }
+
+    private void onKeySelected(String keyName) {
+        if (keyName == null) {
+            return;
+        }
+
+        setUsedKey(keyName);
+    }
+
+    private void setUsedKey(@Nullable String keyName) {
+        if (keyName == null || !keyName.equals(usedKeyName)) {
+            dirty = true;
+        }
+
         usedKeyName = keyName;
         usedKeyLabel = NO_USED_KEY_LABEL;
         usedKeyString = null;
