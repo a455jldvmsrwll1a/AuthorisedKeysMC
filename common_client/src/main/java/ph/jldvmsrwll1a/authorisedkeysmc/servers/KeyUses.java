@@ -26,6 +26,11 @@ public final class KeyUses {
         return Collections.list(usedKeysTable.keys());
     }
 
+    public @Nullable String getKeyNameUsedForServer(@NonNull String name) {
+        ArrayList<String> keys = usedKeysTable.get(name);
+        return keys != null && !keys.isEmpty() ? keys.getFirst() : null;
+    }
+
     public @NonNull ArrayList<String> getKeysUsedForServer(@Nullable String name) {
         if (name == null) {
             return DEFAULT_KEY_LIST;

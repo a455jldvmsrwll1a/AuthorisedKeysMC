@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.util.ArrayList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -7,19 +8,13 @@ import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-
-import java.nio.file.InvalidPathException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ServerManagementScreen extends BaseScreen {
     private static final float MIN_TOTAL_WIDTH = 250.0f;
@@ -27,12 +22,9 @@ public class ServerManagementScreen extends BaseScreen {
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.servers.title")
             .withStyle(ChatFormatting.BOLD)
             .withStyle(ChatFormatting.AQUA);
-    private static final Component EDIT_LABEL =
-            Component.translatable("authorisedkeysmc.button.edit");
-    private static final Component RELOAD_LABEL =
-            Component.translatable("authorisedkeysmc.button.reload-servers");
-    private static final Component EMPTY_LIST_LABEL =
-            Component.translatable("authorisedkeysmc.screen.servers.empty");
+    private static final Component EDIT_LABEL = Component.translatable("authorisedkeysmc.button.edit");
+    private static final Component RELOAD_LABEL = Component.translatable("authorisedkeysmc.button.reload-servers");
+    private static final Component EMPTY_LIST_LABEL = Component.translatable("authorisedkeysmc.screen.servers.empty");
 
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
@@ -172,7 +164,16 @@ public class ServerManagementScreen extends BaseScreen {
     }
 
     private void onEditButtonPressed(Button button) {
+        ServerData data;
+        for (int i = 0; i < serverList.size(); ++i) {
+            data = serverList.get(i);
 
+            if (data.name.equals(selectedServer)) {
+                minecraft.setScreen(new ServerInfoScreen(this, data));
+
+                return;
+            }
+        }
     }
 
     private void reloadServers() {
@@ -205,7 +206,7 @@ public class ServerManagementScreen extends BaseScreen {
         serverSelectionList.updateSizeAndPosition(
                 getBestWidth(),
                 rootLayout.getContentHeight(),
-                 listContainerLayout.getX(),
+                listContainerLayout.getX(),
                 rootLayout.getHeaderHeight());
 
         rootLayout.arrangeElements();

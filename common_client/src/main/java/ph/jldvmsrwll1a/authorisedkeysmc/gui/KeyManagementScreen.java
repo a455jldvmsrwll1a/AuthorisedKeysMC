@@ -125,9 +125,10 @@ public final class KeyManagementScreen extends BaseScreen {
         inspectorLowerFooterLayout.addChild(inspectorButtons.get(3));
 
         listButtons = new ArrayList<>(2);
-        listButtons.add(Button.builder(Component.translatable("authorisedkeysmc.button.reload-keys"), button -> reloadKeys())
-                .size(getWidthLeft(), 20)
-                .build());
+        listButtons.add(
+                Button.builder(Component.translatable("authorisedkeysmc.button.reload-keys"), button -> reloadKeys())
+                        .size(getWidthLeft(), 20)
+                        .build());
         listButtons.add(Button.builder(
                         Component.translatable("authorisedkeysmc.button.create-key"), this::onNewKeyButtonPressed)
                 .size(getWidthLeft(), 20)
@@ -400,10 +401,7 @@ public final class KeyManagementScreen extends BaseScreen {
     public void forceRecalculateLayout() {
         contentLayout.setY(rootLayout.getHeaderHeight() + 5);
         keySelectionList.updateSizeAndPosition(
-                getWidthLeft(),
-                getScrollListHeight(),
-                contentLayout.getX(),
-                rootLayout.getHeaderHeight() + 5);
+                getWidthLeft(), getScrollListHeight(), contentLayout.getX(), rootLayout.getHeaderHeight() + 5);
         inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
         inspectorText.setMaxWidth(getWidthRight());
         listButtons.forEach(button -> button.setWidth(getWidthLeft()));
