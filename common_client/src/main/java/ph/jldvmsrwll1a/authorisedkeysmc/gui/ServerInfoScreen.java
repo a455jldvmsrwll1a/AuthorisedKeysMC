@@ -47,7 +47,6 @@ public final class ServerInfoScreen extends BaseScreen {
     private final String serverName;
 
     private @Nullable String usedKeyName;
-    private Component usedKeyLabel = NO_USED_KEY_LABEL;
     private @Nullable String usedKeyString;
     private boolean dirty = false;
 
@@ -177,8 +176,9 @@ public final class ServerInfoScreen extends BaseScreen {
         }
 
         usedKeyName = keyName;
-        usedKeyLabel = NO_USED_KEY_LABEL;
         usedKeyString = null;
+
+        Component usedKeyLabel = NO_USED_KEY_LABEL;
 
         if (usedKeyName != null) {
             try {

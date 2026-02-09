@@ -137,7 +137,7 @@ public class KeySelectionScreen extends BaseScreen {
         }
 
         keyName = selected.getKeyName();
-        LoadedKeypair currentKeypair = null;
+        LoadedKeypair currentKeypair;
 
         needsLayout = true;
 
