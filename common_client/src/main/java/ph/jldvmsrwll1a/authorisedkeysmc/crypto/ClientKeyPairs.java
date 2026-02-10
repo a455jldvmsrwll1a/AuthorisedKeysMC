@@ -16,10 +16,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 public class ClientKeyPairs {
     public ClientKeyPairs() {
         ensureWarningFileExists();
-
-        if (retrieveKeyNamesFromDisk().isEmpty()) {
-            generate("default", null);
-        }
     }
 
     public static Path fromKeyName(@NotNull String name) throws InvalidPathException {

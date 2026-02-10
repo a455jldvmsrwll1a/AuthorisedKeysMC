@@ -2,6 +2,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.PortalScreen;
 
@@ -43,10 +45,20 @@ public abstract class TitleScreenMixin extends Screen {
         authorisedKeysMC$buttonY = y;
 
         addRenderableWidget(Button.builder(Component.empty(), button -> {
-                    minecraft.setScreen(new PortalScreen(minecraft.screen));
+                    if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(minecraft, new PortalScreen(minecraft.screen))) {
+                        minecraft.setScreen(new PortalScreen(minecraft.screen));
+                    }
                 })
                 .bounds(authorisedKeysMC$buttonX, authorisedKeysMC$buttonY, 20, 20)
                 .build());
+    }
+
+    /// Redirect "Multiplayer" button in the title screen.
+    @WrapOperation(method = "lambda$createNormalMenuOptions$10", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
+    private void redirectToFirstRunScreen(Minecraft instance, Screen guiScreen, Operation<Void> original) {
+        if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(instance, guiScreen)) {
+            original.call(instance, guiScreen);
+        }
     }
 
     @Inject(method = "render", at = @At("RETURN"))
