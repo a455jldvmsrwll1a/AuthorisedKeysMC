@@ -14,77 +14,36 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public final class KeyUses {
-    private static final ArrayList<String> DEFAULT_KEY_LIST = new ArrayList<>(List.of("default"));
-
-    private final ConcurrentHashMap<String, ArrayList<String>> usedKeysTable = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> usedKeyTable = new ConcurrentHashMap<>();
 
     public KeyUses() {
         read();
     }
 
-    public List<String> getServers() {
-        return Collections.list(usedKeysTable.keys());
-    }
-
     public @Nullable String getKeyNameUsedForServer(@NonNull String name) {
-        ArrayList<String> keys = usedKeysTable.get(name);
-        return keys != null && !keys.isEmpty() ? keys.getFirst() : null;
+        return usedKeyTable.get(name);
     }
 
     public void setKeyNameUsedForServer(String serverName, @Nullable String keyName) {
-        if (keyName == null) {
-            usedKeysTable.remove(serverName);
-        } else {
-            if (!usedKeysTable.containsKey(serverName)) {
-                usedKeysTable.put(serverName, new ArrayList<>(1));
-            }
+        if (keyName != null) {
+            String oldKeyName = usedKeyTable.put(serverName, keyName);
 
-            ArrayList<String> keys = usedKeysTable.get(serverName);
-            if (keys.isEmpty() || !keys.getFirst().equals(keyName)) {
-                keys.clear();
-                keys.add(keyName);
+            if (oldKeyName == null || !oldKeyName.equals(keyName)) {
+                write();
+            }
+        } else {
+            String oldKeyName = usedKeyTable.remove(serverName);
+
+            if (oldKeyName != null) {
                 write();
             }
         }
     }
 
-    public @NonNull ArrayList<String> getKeysUsedForServer(@Nullable String name) {
-        if (name == null) {
-            return DEFAULT_KEY_LIST;
-        }
-
-        ArrayList<String> keys = usedKeysTable.get(name);
-        return keys != null ? new ArrayList<>(keys) : DEFAULT_KEY_LIST;
-    }
-
-    public boolean addKeyForServer(String hostAddress, String keyName) {
-        final Boolean[] dirty = {false};
-
-        usedKeysTable.compute(hostAddress, (name, keys) -> {
-            if (keys == null) {
-                keys = new ArrayList<>(1);
-            }
-
-            if (keys.stream().noneMatch(key -> key.equals(keyName))) {
-                dirty[0] = true;
-            }
-
-            keys.add(keyName);
-
-            return keys;
-        });
-
-        if (dirty[0]) {
-            write();
-        }
-
-        return dirty[0];
-    }
-
     public ArrayList<String> getServersUsingKey(String keyName) {
         ArrayList<String> servers = new ArrayList<>();
 
-        usedKeysTable.forEach((address, keys) -> {
+        usedKeyTable.forEach((address, keys) -> {
             if (keys.contains(keyName)) {
                 servers.add(address);
             }
@@ -102,13 +61,11 @@ public final class KeyUses {
             List<ServerKeyListJsonEntry> entries =
                     gson.fromJson(json, new TypeToken<ArrayList<ServerKeyListJsonEntry>>() {}.getType());
 
-            usedKeysTable.clear();
+            usedKeyTable.clear();
             entries.forEach(entry -> {
-                ArrayList<String> keys = entry.use_keys != null
-                        ? new ArrayList<>(Arrays.stream(entry.use_keys).toList())
-                        : new ArrayList<>();
-
-                usedKeysTable.put(entry.name, keys);
+                if (entry.use_keys != null && entry.use_keys.length > 0 && entry.use_keys[0] != null) {
+                    usedKeyTable.put(entry.name, entry.use_keys[0]);
+                }
             });
         } catch (FileNotFoundException ignored) {
             // Ignored.
@@ -122,9 +79,8 @@ public final class KeyUses {
             Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
 
             ArrayList<ServerKeyListJsonEntry> out = new ArrayList<>();
-            for (var entry : usedKeysTable.entrySet()) {
-                ArrayList<String> keys = entry.getValue();
-                out.add(new ServerKeyListJsonEntry(entry.getKey(), keys));
+            for (var entry : usedKeyTable.entrySet()) {
+                out.add(new ServerKeyListJsonEntry(entry.getKey(), entry.getValue()));
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -136,8 +92,8 @@ public final class KeyUses {
 
     private record ServerKeyListJsonEntry(
             String name, @Nullable String[] use_keys) {
-        private ServerKeyListJsonEntry(String name, ArrayList<String> use_keys) {
-            this(name, use_keys.toArray(new String[0]));
+        private ServerKeyListJsonEntry(String name, String useKey) {
+            this(name, new String[]{useKey});
         }
     }
 }
