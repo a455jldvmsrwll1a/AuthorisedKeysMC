@@ -39,6 +39,7 @@ public final class ClientLoginHandler {
     private Queue<String> remainingKeys;
     private String[] allSecretKeyNames;
 
+    boolean serverVerified = false;
     boolean registering;
 
     private volatile int txId = -1;
@@ -145,10 +146,14 @@ public final class ClientLoginHandler {
                     return;
                 }
 
+                serverVerified = true;
+
                 tryAcquireNextSecretKey();
                 sendPublicKeyForAuthentication();
             }
             case S2CChallengePayload challengePayload -> {
+                ensureServerVerified();
+
                 if (sessionHash == null) {
                     throw new IllegalStateException(
                             "Session hash is null. This is impossible as encryption is required.");
@@ -211,6 +216,8 @@ public final class ClientLoginHandler {
     }
 
     public void sendPublicKeyForAuthentication() {
+        ensureServerVerified();
+
         if (!connection.isEncrypted()) {
             throw new IllegalStateException("Encryption must be enabled.");
         }
@@ -223,6 +230,8 @@ public final class ClientLoginHandler {
     }
 
     public void confirmRegistration() {
+        ensureServerVerified();
+
         getServerName().ifPresent(name -> {
             Constants.LOG.info("addKeyForServer({}, {})", name, keyName);
             AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(name, keyName);
@@ -238,6 +247,12 @@ public final class ClientLoginHandler {
 
         connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SRefuseRegistrationPayload()));
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.refusing-to-register"));
+    }
+
+    public void ensureServerVerified() {
+        if (!serverVerified) {
+            throw new IllegalStateException("The server is requesting us to authenticate, but we haven't yet verified its identity.");
+        }
     }
 
     public void cancelLogin() {
