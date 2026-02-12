@@ -342,21 +342,13 @@ public final class KeyManagementScreen extends BaseScreen {
     private void onBackupButtonPressed(Button ignored) {
         Constants.LOG.warn("Backing up not implemented!");
 
-        SystemToast.addOrUpdate(
-                minecraft.getToastManager(),
-                WIP_TOAST,
-                Component.literal("Work in progress."),
-                null);
+        SystemToast.addOrUpdate(minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
     }
 
     private void onPasswordButtonPressed(Button ignored) {
         Constants.LOG.warn("Setting/Updating/Erasing password not implemented!");
 
-        SystemToast.addOrUpdate(
-                minecraft.getToastManager(),
-                WIP_TOAST,
-                Component.literal("Work in progress."),
-                null);
+        SystemToast.addOrUpdate(minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
     }
 
     private void onDeleteButtonPressed(Button ignored) {

@@ -93,7 +93,7 @@ public final class KeyUses {
     private record ServerKeyListJsonEntry(
             String name, @Nullable String[] use_keys) {
         private ServerKeyListJsonEntry(String name, String useKey) {
-            this(name, new String[]{useKey});
+            this(name, new String[] {useKey});
         }
     }
 }

@@ -16,7 +16,8 @@ public class FirstRunScreen extends BaseScreen {
     private static final int MAX_WIDTH = 300;
     private static final int COOLDOWN_TICKS = 40;
 
-    private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.first-run.title").withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);
+    private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.first-run.title")
+            .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);
     private static final Component BODY_1_LABEL = Component.translatable("authorisedkeysmc.screen.first-run.body1");
     private static final Component BODY_2_LABEL = Component.translatable("authorisedkeysmc.screen.first-run.body2");
     private static final Component PROCEED_LABEL = Component.translatable("authorisedkeysmc.button.proceed");
@@ -41,7 +42,9 @@ public class FirstRunScreen extends BaseScreen {
         bodyText = new MultiLineTextWidget(BODY_1_LABEL, font);
         bodyText.setMaxWidth(elementWidth());
 
-        proceedButton = Button.builder(PROCEED_LABEL, this::onProceedButtonPressed).width(BUTTON_WIDTH).build();
+        proceedButton = Button.builder(PROCEED_LABEL, this::onProceedButtonPressed)
+                .width(BUTTON_WIDTH)
+                .build();
         proceedButton.active = false;
 
         rootLayout.addChild(new StringWidget(TITLE_LABEL, font));

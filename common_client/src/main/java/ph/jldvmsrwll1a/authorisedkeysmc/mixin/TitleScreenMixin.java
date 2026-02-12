@@ -45,7 +45,8 @@ public abstract class TitleScreenMixin extends Screen {
         authorisedKeysMC$buttonY = y;
 
         addRenderableWidget(Button.builder(Component.empty(), button -> {
-                    if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(minecraft, new PortalScreen(minecraft.screen))) {
+                    if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(
+                            minecraft, new PortalScreen(minecraft.screen))) {
                         minecraft.setScreen(new PortalScreen(minecraft.screen));
                     }
                 })
@@ -54,7 +55,13 @@ public abstract class TitleScreenMixin extends Screen {
     }
 
     /// Redirect "Multiplayer" button in the title screen.
-    @WrapOperation(method = "lambda$createNormalMenuOptions$10", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
+    @WrapOperation(
+            method = "lambda$createNormalMenuOptions$10",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
     private void redirectToFirstRunScreen(Minecraft instance, Screen guiScreen, Operation<Void> original) {
         if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(instance, guiScreen)) {
             original.call(instance, guiScreen);
