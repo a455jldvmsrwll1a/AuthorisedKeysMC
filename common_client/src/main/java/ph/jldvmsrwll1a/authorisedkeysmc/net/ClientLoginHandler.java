@@ -32,6 +32,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public final class ClientLoginHandler {
     private final Minecraft minecraft;
+    private final Screen originalScreen;
     private final Connection connection;
     private final EventLoop nettyLoop;
     private final Consumer<Component> updateStatus;
@@ -51,6 +52,7 @@ public final class ClientLoginHandler {
             Connection connection,
             Consumer<Component> updateStatus) {
         this.minecraft = minecraft;
+        this.originalScreen = minecraft.screen;
         this.connection = connection;
         this.nettyLoop =
                 ((ConnectionAccessorMixin) connection).getNettyChannel().eventLoop();
@@ -82,6 +84,12 @@ public final class ClientLoginHandler {
         Validate.isTrue(sessionHash == null, "Session hash was set twice.");
 
         sessionHash = hash;
+    }
+
+    public void handleDisconnection() {
+        if (minecraft.screen != originalScreen) {
+            showScreen(originalScreen);
+        }
     }
 
     public void handleRawMessage(CustomQueryPayload payload, int txId) {

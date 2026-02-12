@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
 import net.minecraft.network.protocol.login.ClientboundHelloPacket;
+import net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -80,5 +81,14 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
         }
 
         handler.handleRawMessage(packet.payload(), packet.transactionId());
+    }
+
+    @Inject(method = "handleDisconnect", at = @At("HEAD"))
+    private void handleDisconnection(ClientboundLoginDisconnectPacket packet, CallbackInfo ci) {
+        ClientLoginHandler handler = authorisedKeysMC$loginHandler;
+
+        if (handler != null) {
+            handler.handleDisconnection();
+        }
     }
 }
