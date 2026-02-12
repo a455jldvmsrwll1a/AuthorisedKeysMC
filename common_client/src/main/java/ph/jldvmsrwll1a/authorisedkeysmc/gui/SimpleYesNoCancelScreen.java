@@ -8,30 +8,37 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
+import org.apache.commons.lang3.function.BooleanConsumer;
+import org.jspecify.annotations.Nullable;
 
 public abstract class SimpleYesNoCancelScreen extends BaseScreen {
-    protected final ClientLoginHandler loginHandler;
     protected final Screen parent;
-    protected final LinearLayout layout;
-    protected final Component prompt;
+    private final LinearLayout layout;
+    private final Component prompt;
 
     private MultiLineTextWidget promptWidget;
-    private int lastWidth;
 
-    public SimpleYesNoCancelScreen(ClientLoginHandler loginHandler, Component title, Component prompt) {
+    protected final @Nullable BooleanConsumer actionCallback;
+    protected final @Nullable Runnable cancelCallback;
+
+    public SimpleYesNoCancelScreen(
+            Screen parent,
+            Component title,
+            Component prompt,
+            @Nullable BooleanConsumer onAction,
+            @Nullable Runnable onCancel) {
         super(title);
 
-        this.loginHandler = loginHandler;
-        this.parent = loginHandler.getMinecraft().screen;
+        this.parent = parent;
+        actionCallback = onAction;
+        cancelCallback = onCancel;
 
         layout = LinearLayout.vertical().spacing(8);
         this.prompt = prompt;
-        lastWidth = width;
     }
 
     @Override
-    protected void init() {
+    protected final void init() {
         super.init();
 
         layout.defaultCellSetting().alignHorizontallyLeft();
@@ -62,31 +69,33 @@ public abstract class SimpleYesNoCancelScreen extends BaseScreen {
 
     @Override
     protected final void repositionElements() {
+        promptWidget.setMaxWidth(width);
+
         layout.arrangeElements();
         FrameLayout.centerInRectangle(layout, getRectangle());
-    }
-
-    @Override
-    public void tick() {
-        if (loginHandler.disconnected()) {
-            minecraft.setScreen(parent);
-        }
-
-        if (width != lastWidth) {
-            lastWidth = width;
-            promptWidget.setMaxWidth(width - 50);
-        }
     }
 
     protected boolean hasCancelButton() {
         return false;
     }
 
-    protected abstract void onYesClicked();
+    protected void onYesClicked() {
+        if (actionCallback != null) {
+            actionCallback.accept(true);
+        }
+    }
 
-    protected abstract void onNoClicked();
+    protected void onNoClicked() {
+        if (actionCallback != null) {
+            actionCallback.accept(false);
+        }
+    }
 
     protected void onCancelClicked() {
-        minecraft.setScreen(parent);
+        if (cancelCallback != null) {
+            cancelCallback.run();
+        } else {
+            minecraft.setScreen(parent);
+        }
     }
 }

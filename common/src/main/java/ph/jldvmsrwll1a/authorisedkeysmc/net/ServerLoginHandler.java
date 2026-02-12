@@ -15,11 +15,17 @@ import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 
 public final class ServerLoginHandler {
+    // TODO: make this configurable
+    final boolean allowsUnregistered = true;
+    // TODO: make this configurable
+    final boolean registrationRequired = false;
+
     private final ServerLoginPacketListenerImpl listener;
     private final Connection connection;
     private final GameProfile profile;
@@ -32,13 +38,9 @@ public final class ServerLoginHandler {
     private int txId = 0;
     private Phase phase = Phase.SEND_SERVER_KEY;
     private int ticksLeft = 300;
-    private int loginAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
-    private int registerAttemptsLeft = 15; // TODO: should be however many keys can be registered at maximum
-    private boolean alreadyRegistered = false;
 
-    private Ed25519PublicKeyParameters currentLoginKey;
-    private Ed25519PublicKeyParameters currentRegistrationKey;
-    private byte[] nonce;
+    private @Nullable Ed25519PublicKeyParameters clientKey;
+    private byte @Nullable [] nonce;
 
     public ServerLoginHandler(
             @NotNull ServerLoginPacketListenerImpl listener,
@@ -67,24 +69,16 @@ public final class ServerLoginHandler {
         ticksLeft--;
 
         if (ticksLeft <= 0) {
-            if (phase.equals(Phase.WAIT_FOR_REGISTRATION) || phase.equals(Phase.WAIT_FOR_REGISTRATION_SIGNATURE)) {
+            if (phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY || phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE) {
                 listener.disconnect(Component.literal("Took too long to register!"));
             } else {
                 listener.disconnect(Component.literal("Took too long to authenticate!"));
             }
         }
 
-        switch (phase) {
-            case WAIT_FOR_CLIENT_CHALLENGE, WAIT_FOR_CLIENT_KEY, WAIT_FOR_CLIENT_SIGNATURE -> {
-                // Do nothing. We are expecting a response from the client at this time.
-            }
-            case SEND_SERVER_KEY -> {
-                send(new S2CPublicKeyPayload(serverKey));
-                transition(Phase.WAIT_FOR_CLIENT_CHALLENGE);
-            }
-            case SUCCESSFUL -> {
-                // Do nothing. We are done.
-            }
+        if (phase == Phase.SEND_SERVER_KEY) {
+            send(new S2CPublicKeyPayload(serverKey));
+            transition(Phase.WAIT_FOR_CLIENT_CHALLENGE);
         }
 
         handleMessages();
@@ -94,131 +88,111 @@ public final class ServerLoginHandler {
         while (true) {
             BaseC2SPayload payload = inbox.poll();
 
-            if (payload != null) {
-                handleMessage(payload);
-            } else {
+            if (payload == null) {
                 break;
             }
+
+            switch (payload) {
+                case C2SChallengePayload p -> handleChallenge(p);
+                case C2SIdAckPayload p -> handleAcknowledgement(p);
+                case C2SPublicKeyPayload p -> handleKey(p);
+                case C2SSignaturePayload p -> handleSignature(p);
+                case C2SRefuseRegistrationPayload p -> handleRegistrationRefusal(p);
+                default ->
+                        throw new IllegalArgumentException("Unknown C2S payload type of %s!"
+                                .formatted(payload.getClass().getName()));
+            }
         }
     }
 
-    private void handleMessage(BaseC2SPayload payload) {
-        switch (payload) {
-            case C2SChallengePayload challengePayload -> {
-                Validate.validState(
-                        phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE),
-                        "Received client challenge but wasn't expecting one!");
+    private void handleChallenge(C2SChallengePayload payload) {
+        Validate.validState(
+                phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE),
+                "Received client challenge but wasn't expecting one!");
 
-                send(S2CSignaturePayload.fromSigningChallenge(signingKey, challengePayload, sessionHash));
-                transition(Phase.WAIT_FOR_CLIENT_KEY);
-            }
-            case C2SPublicKeyPayload keyPayload -> {
-                if (phase.equals(Phase.WAIT_FOR_CLIENT_KEY)) {
-                    currentLoginKey = keyPayload.key;
+        send(S2CSignaturePayload.fromSigningChallenge(signingKey, payload, sessionHash));
+        transition(Phase.WAIT_FOR_ACK);
+    }
 
-                    if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(profile.id())) {
-                        alreadyRegistered = true;
+    private void handleAcknowledgement(C2SIdAckPayload payload) {
+        Validate.validState(
+                phase.equals(Phase.WAIT_FOR_ACK),
+                "Received acknowledgement but wasn't expecting it!");
 
-                        if (AuthorisedKeysModCore.USER_KEYS.userHasKey(profile.id(), currentLoginKey)) {
-                            createAndSendChallenge();
-                        } else {
-                            loginAttemptsLeft--;
-                            if (loginAttemptsLeft <= 0) {
-                                listener.disconnect(Component.translatable(
-                                        "authorisedkeysmc.error.too-many-authentication-attempts"));
-                            }
-
-                            send(new S2CKeyRejectedPayload());
-                            transition(Phase.WAIT_FOR_CLIENT_KEY);
-                        }
-                    } else {
-                        // TODO: add config to disallow users without keys.
-                        createAndSendChallenge();
-                    }
-                } else if (phase.equals(Phase.WAIT_FOR_REGISTRATION)) {
-                    currentRegistrationKey = keyPayload.key;
-
-                    if (Arrays.equals(currentRegistrationKey.getEncoded(), currentLoginKey.getEncoded())) {
-                        // We already know that the client has possession of this key.
-                        AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), currentRegistrationKey);
-                        Constants.LOG.info("Successfully registered {}'s key!", profile.name());
-                        transition(Phase.SUCCESSFUL);
-                    } else {
-                        S2CChallengePayload challenge = new S2CChallengePayload();
-                        nonce = challenge.getNonce();
-                        send(challenge);
-                        transition(Phase.WAIT_FOR_REGISTRATION_SIGNATURE);
-                    }
-                } else {
-                    throw new IllegalStateException("Received client public key but wasn't expecting one!");
-                }
-            }
-            case C2SSignaturePayload signaturePayload -> {
-                if (phase.equals(Phase.WAIT_FOR_CLIENT_SIGNATURE)) {
-                    if (signaturePayload.verify(currentLoginKey, nonce, sessionHash, false)) {
-                        if (alreadyRegistered) {
-                            Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
-                            transition(Phase.SUCCESSFUL);
-                        } else {
-                            ticksLeft += 300;
-
-                            send(new S2CRegistrationRequestPayload());
-                            transition(Phase.WAIT_FOR_REGISTRATION);
-                        }
-                    } else {
-                        loginAttemptsLeft--;
-                        if (loginAttemptsLeft <= 0) {
-                            listener.disconnect(
-                                    Component.translatable("authorisedkeysmc.error.too-many-authentication-attempts"));
-                        }
-
-                        send(new S2CKeyRejectedPayload());
-                        transition(Phase.WAIT_FOR_CLIENT_KEY);
-                    }
-                } else if (phase.equals(Phase.WAIT_FOR_REGISTRATION_SIGNATURE)) {
-                    if (signaturePayload.verify(currentRegistrationKey, nonce, sessionHash, true)) {
-                        AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), currentRegistrationKey);
-                        Constants.LOG.info("Successfully registered {}'s key!", profile.name());
-                        transition(Phase.SUCCESSFUL);
-                    } else {
-                        registerAttemptsLeft--;
-                        if (registerAttemptsLeft <= 0) {
-                            listener.disconnect(
-                                    Component.translatable("authorisedkeysmc.error.too-many-registration-attempts"));
-                        }
-
-                        send(new S2CKeyRejectedPayload());
-                        transition(Phase.WAIT_FOR_REGISTRATION);
-                    }
-                } else {
-                    throw new IllegalStateException("Received client signature but wasn't expecting one!");
-                }
-            }
-            case C2SRefuseRegistrationPayload ignored -> {
-                Validate.validState(phase.equals(Phase.WAIT_FOR_REGISTRATION), "Received bogus registration refusal.");
-
-                // TODO: add a configuration option for this.
-                if (false) {
-                    Constants.LOG.info("{} refuses to register!", profile.name());
-                    listener.disconnect(Component.translatable("authorisedkeysmc.error.registration-mandatory"));
-
-                    return;
-                }
-
-                Constants.LOG.warn("{} has successfully logged in but is unregistered!", profile.name());
-                transition(Phase.SUCCESSFUL);
-            }
-            default ->
-                throw new IllegalArgumentException("Unknown base query answer payload type of %s!"
-                        .formatted(payload.getClass().getName()));
+        if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(profile.id())) {
+            send(new S2CAuthenticationRequestPayload());
+            transition(Phase.WAIT_FOR_CLIENT_AUTHENTICATION_KEY);
+        } else if (allowsUnregistered) {
+            send(new S2CRegistrationRequestPayload(registrationRequired));
+            transition(Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY);
+        } else {
+            listener.disconnect(Component.translatable("authorisedkeysmc.error.must-preregister"));
         }
     }
 
-    private void createAndSendChallenge() {
-        S2CChallengePayload challenge = new S2CChallengePayload();
-        nonce = challenge.getNonce();
-        send(challenge);
-        transition(Phase.WAIT_FOR_CLIENT_SIGNATURE);
+    private void handleKey(C2SPublicKeyPayload payload) {
+        clientKey = payload.key;
+
+        if (phase == Phase.WAIT_FOR_CLIENT_AUTHENTICATION_KEY) {
+            if (!AuthorisedKeysModCore.USER_KEYS.userHasKey(profile.id(), clientKey)) {
+                listener.disconnect(Component.translatable("authorisedkeysmc.error.key-rejected"));
+
+                return;
+            }
+
+            S2CChallengePayload challenge = new S2CChallengePayload();
+            nonce = challenge.getNonce();
+            send(challenge);
+            transition(Phase.WAIT_FOR_CLIENT_AUTHENTICATION_SIGNATURE);
+        } else if (phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY) {
+            S2CChallengePayload challenge = new S2CChallengePayload();
+            nonce = challenge.getNonce();
+            send(challenge);
+            transition(Phase.WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE);
+        } else {
+            throw new IllegalStateException("Received client public key but wasn't expecting one!");
+        }
+    }
+
+    private void handleSignature(C2SSignaturePayload payload) {
+        Validate.notNull(nonce, "Received client signature for a non-existent challenge.");
+
+        if (phase == Phase.WAIT_FOR_CLIENT_AUTHENTICATION_SIGNATURE) {
+            if (!payload.verify(clientKey, nonce, sessionHash, false)) {
+                listener.disconnect(Component.translatable("authorisedkeysmc.error.invalid-signature"));
+
+                return;
+            }
+
+            Constants.LOG.info("Successfully verified {}'s identity!", profile.name());
+            transition(Phase.SUCCESSFUL);
+        } else if (phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE) {
+            if (!payload.verify(clientKey, nonce, sessionHash, true)) {
+                listener.disconnect(Component.translatable("authorisedkeysmc.error.invalid-signature"));
+
+                return;
+            }
+
+            AuthorisedKeysModCore.USER_KEYS.bindKey(profile.id(), profile.id(), clientKey);
+            Constants.LOG.info("Successfully registered {}'s key!", profile.name());
+            transition(Phase.SUCCESSFUL);
+        } else {
+            throw new IllegalStateException("Received client signature but wasn't expecting one!");
+        }
+    }
+
+    private void handleRegistrationRefusal(C2SRefuseRegistrationPayload payload) {
+        Validate.validState(phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY, "Received bogus registration refusal.");
+
+        if (registrationRequired) {
+            Constants.LOG.info("{} refuses to register!", profile.name());
+            listener.disconnect(Component.translatable("authorisedkeysmc.error.registration-mandatory"));
+
+            return;
+        }
+
+        Constants.LOG.warn("{} has successfully logged in but is unregistered!", profile.name());
+        transition(Phase.SUCCESSFUL);
     }
 
     private synchronized void send(CustomQueryPayload payload) {
@@ -233,16 +207,6 @@ public final class ServerLoginHandler {
         this.phase = phase;
     }
 
-    private enum Phase {
-        SEND_SERVER_KEY,
-        WAIT_FOR_CLIENT_CHALLENGE,
-        WAIT_FOR_CLIENT_KEY,
-        WAIT_FOR_CLIENT_SIGNATURE,
-        WAIT_FOR_REGISTRATION,
-        WAIT_FOR_REGISTRATION_SIGNATURE,
-        SUCCESSFUL,
-    }
-
     public class Sender {
         public void receive(@NotNull BaseC2SPayload payload) {
             inbox.add(payload);
@@ -253,6 +217,7 @@ public final class ServerLoginHandler {
             BaseC2SPayload base =
                     switch (kind) {
                         case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
+                        case ID_ACK -> new C2SIdAckPayload();
                         case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
                         case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
                         case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
@@ -267,5 +232,24 @@ public final class ServerLoginHandler {
 
             receive(buf);
         }
+    }
+
+    private enum Phase {
+        /// When sending host key.
+        SEND_SERVER_KEY,
+        /// After host key is sent and waiting for client to challenge us.
+        WAIT_FOR_CLIENT_CHALLENGE,
+        /// After signature is sent and waiting for an acknowledgement.
+        WAIT_FOR_ACK,
+        /// After sending authentication request and waiting for client's key.
+        WAIT_FOR_CLIENT_AUTHENTICATION_KEY,
+        /// After sending registration request and waiting for client's key.
+        WAIT_FOR_CLIENT_REGISTRATION_KEY,
+        /// After challenging client for authentication and waiting for response.
+        WAIT_FOR_CLIENT_AUTHENTICATION_SIGNATURE,
+        /// After challenging client for authentication and waiting for response.
+        WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE,
+        /// Nothing more to do.
+        SUCCESSFUL,
     }
 }

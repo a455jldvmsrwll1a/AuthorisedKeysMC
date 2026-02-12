@@ -1,18 +1,23 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.net;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
+
 import java.io.IOException;
-import java.nio.file.InvalidPathException;
 import java.util.*;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
+import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
@@ -21,28 +26,24 @@ import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
+import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ConnectionAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public final class ClientLoginHandler {
     private final Minecraft minecraft;
-    private final ClientHandshakePacketListenerImpl listener;
     private final Connection connection;
+    private final EventLoop nettyLoop;
     private final Consumer<Component> updateStatus;
+    private final @Nullable ServerData serverData;
 
-    private byte @Nullable [] sessionHash;
-
-    private Ed25519PublicKeyParameters serverKey;
-    private byte[] nonce;
-
-    private LoadedKeypair keypair;
-    private String keyName;
-    private Queue<String> remainingKeys;
-    private String[] allSecretKeyNames;
-
-    boolean serverVerified = false;
-    boolean registering;
-
-    private volatile int txId = -1;
+    private volatile byte @Nullable [] sessionHash;
+    private @Nullable Ed25519PublicKeyParameters hostKey;
+    private byte @Nullable [] c2sNonce;
+    private @Nullable S2CChallengePayload s2cChallenge;
+    private @Nullable volatile LoadedKeypair keypair;
+    private Phase phase = Phase.HELLO;
+    private int txId = -1;
 
     public ClientLoginHandler(
             Minecraft minecraft,
@@ -50,9 +51,11 @@ public final class ClientLoginHandler {
             Connection connection,
             Consumer<Component> updateStatus) {
         this.minecraft = minecraft;
-        this.listener = listener;
         this.connection = connection;
+        this.nettyLoop =
+                ((ConnectionAccessorMixin) connection).getNettyChannel().eventLoop();
         this.updateStatus = updateStatus;
+        this.serverData = ((ClientHandshakePacketListenerAccessorMixin) listener).getServerData();
     }
 
     public boolean disconnected() {
@@ -64,16 +67,20 @@ public final class ClientLoginHandler {
     }
 
     public Optional<String> getServerName() {
-        return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData())
-                .map(data -> data.name);
+        return serverData != null ? Optional.of(serverData.name) : Optional.empty();
     }
 
     public Optional<String> getHostAddress() {
-        return Optional.ofNullable(((ClientHandshakePacketListenerAccessorMixin) listener).getServerData())
-                .map(data -> data.ip);
+        return serverData != null ? Optional.of(serverData.ip) : Optional.empty();
+    }
+
+    public Optional<LoadedKeypair> getKeypair() {
+        return Optional.ofNullable(keypair);
     }
 
     public void setSessionHash(byte @NotNull [] hash) {
+        Validate.isTrue(sessionHash == null, "Session hash was set twice.");
+
         sessionHash = hash;
     }
 
@@ -84,236 +91,279 @@ public final class ClientLoginHandler {
     }
 
     public void handleRawMessage(FriendlyByteBuf buf, int txId) {
-        QueryPayloadType kind = BaseS2CPayload.peekPayloadType(buf);
-        BaseS2CPayload base =
-                switch (kind) {
-                    case SERVER_KEY -> new S2CPublicKeyPayload(buf);
-                    case CLIENT_CHALLENGE_RESPONSE -> new S2CSignaturePayload(buf);
-                    case SERVER_CHALLENGE -> new S2CChallengePayload(buf);
-                    case SERVER_KEY_REJECTION -> new S2CKeyRejectedPayload();
-                    case REGISTRATION_REQUEST -> new S2CRegistrationRequestPayload();
-                };
-
-        handleMessage(base, txId);
-    }
-
-    public void handleMessage(BaseS2CPayload payload, int txId) {
         this.txId = txId;
 
-        switch (payload) {
-            case S2CPublicKeyPayload serverKeyPayload -> {
-                serverKey = serverKeyPayload.key;
-
-                Ed25519PublicKeyParameters knownKey = getHostAddress()
-                        .map(address -> AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(address))
-                        .orElse(null);
-
-                if (knownKey == null) {
-                    minecraft.execute(() -> {
-                        Screen screen = UnknownServerKeyWarningScreen.create(this, serverKey);
-                        minecraft.setScreen(screen);
-                    });
-                } else if (!Arrays.equals(knownKey.getEncoded(), serverKey.getEncoded())) {
-                    minecraft.execute(() -> {
-                        Screen screen = WrongServerKeyWarningScreen.create(this, knownKey, serverKey);
-                        minecraft.setScreen(screen);
-                    });
-                } else {
-                    sendServerChallenge();
-                }
-            }
-            case S2CSignaturePayload serverSignaturePayload -> {
-                if (serverKey == null) {
-                    var err = "Got a challenge response signature from the server before its key could be known!";
-                    Constants.LOG.error(err);
-                    this.connection.disconnect(Component.literal(err));
-
-                    return;
-                }
-
-                if (nonce == null) {
-                    var err = "Got a bogus challenge response from the server!";
-                    Constants.LOG.error(err);
-                    this.connection.disconnect(Component.literal(err));
-
-                    return;
-                }
-
-                if (!serverSignaturePayload.verify(serverKey, nonce, sessionHash)) {
-                    Constants.LOG.warn("Failed to verify signature from server!");
-                    this.connection.disconnect(Component.translatable("authorisedkeysmc.error.server-auth-fail"));
-
-                    return;
-                }
-
-                serverVerified = true;
-
-                tryAcquireNextSecretKey();
-                sendPublicKeyForAuthentication();
-            }
-            case S2CChallengePayload challengePayload -> {
-                ensureServerVerified();
-
-                if (sessionHash == null) {
-                    throw new IllegalStateException(
-                            "Session hash is null. This is impossible as encryption is required.");
-                }
-
-                AuthorisedKeysModClient.CACHED_KEYS.decryptKeypair(keypair);
-
-                if (keypair.requiresDecryption()) {
-                    minecraft.execute(() -> {
-                        Screen screen = new PasswordPromptScreen(minecraft.screen, keypair, processedKeypair -> {
-                            if (processedKeypair.requiresDecryption()) {
-                                tryAcquireNextSecretKey();
-                            } else {
-                                keypair = processedKeypair;
-
-                                var c2s = C2SSignaturePayload.fromSigningChallenge(
-                                        keypair.getDecryptedPrivate(), challengePayload, sessionHash, registering);
-                                this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
-                                this.updateStatus.accept(
-                                        Component.translatable("authorisedkeysmc.status.waiting-verdict"));
-                            }
-                        });
-
-                        minecraft.setScreen(screen);
-                    });
-                } else {
-                    var c2s = C2SSignaturePayload.fromSigningChallenge(
-                            keypair.getDecryptedPrivate(), challengePayload, sessionHash, registering);
-                    this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, c2s));
-                    this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
-                }
-            }
-            case S2CKeyRejectedPayload ignored -> {
-                tryAcquireNextSecretKey();
-
-                this.connection.send(
-                        new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
-                this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.key-rejected"));
-            }
-            case S2CRegistrationRequestPayload ignored -> {
-                registering = true;
-
-                minecraft.execute(() -> {
-                    LoginRegistrationScreen screen = LoginRegistrationScreen.create(this, keyName, keypair.getPublic());
-                    minecraft.setScreen(screen);
-                });
-            }
-            default ->
-                throw new IllegalArgumentException("Unknown base query payload type of %s!"
-                        .formatted(payload.getClass().getName()));
+        QueryPayloadType kind = BaseS2CPayload.peekPayloadType(buf);
+        switch (kind) {
+            case SERVER_KEY -> handleServerKey(new S2CPublicKeyPayload(buf));
+            case CLIENT_CHALLENGE_RESPONSE -> handleServerSignature(new S2CSignaturePayload(buf));
+            case SERVER_CHALLENGE -> handleChallenge(new S2CChallengePayload(buf));
+            case AUTHENTICATION_REQUEST -> handleAuthenticationRequest(new S2CAuthenticationRequestPayload(buf));
+            case REGISTRATION_REQUEST -> handleRegistrationRequest(new S2CRegistrationRequestPayload(buf));
         }
     }
 
-    public void sendServerChallenge() {
-        C2SChallengePayload challengePayload = new C2SChallengePayload();
-        nonce = challengePayload.getNonce();
+    private void handleServerKey(S2CPublicKeyPayload payload) {
+        Validate.validState(phase == Phase.HELLO, "Received unexpected server key.");
 
-        this.connection.send(new ServerboundCustomQueryAnswerPacket(txId, challengePayload));
-        this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.verifying"));
-    }
+        hostKey = payload.key;
 
-    public void sendPublicKeyForAuthentication() {
-        ensureServerVerified();
+        Ed25519PublicKeyParameters knownKey = getHostAddress()
+                .map(address -> AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(address))
+                .orElse(null);
 
-        if (!connection.isEncrypted()) {
-            throw new IllegalStateException("Encryption must be enabled.");
-        }
-
-        Constants.LOG.info("Sending pubkey for authentication: {}", keypair.getTextualPublic());
-        this.connection.send(
-                new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
-
-        this.updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-for-challenge"));
-    }
-
-    public void confirmRegistration() {
-        ensureServerVerified();
-
-        getServerName().ifPresent(name -> {
-            Constants.LOG.info("addKeyForServer({}, {})", name, keyName);
-            AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(name, keyName);
-        });
-
-        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
-        connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SPublicKeyPayload(keypair.getPublic())));
-        updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
-    }
-
-    public void refuseRegistration() {
-        Constants.LOG.info("Refusing to register!");
-
-        connection.send(new ServerboundCustomQueryAnswerPacket(txId, new C2SRefuseRegistrationPayload()));
-        updateStatus.accept(Component.translatable("authorisedkeysmc.status.refusing-to-register"));
-    }
-
-    public void ensureServerVerified() {
-        if (!serverVerified) {
-            throw new IllegalStateException("The server is requesting us to authenticate, but we haven't yet verified its identity.");
+        if (knownKey == null) {
+            showScreen(UnknownServerKeyWarningScreen.create(this, payload.key, this::onHostKeyAction));
+        } else if (!KeyUtil.areNullableKeysEqual(knownKey, payload.key)) {
+            showScreen(WrongServerKeyWarningScreen.create(this, knownKey, payload.key, this::onHostKeyAction));
+        } else {
+            acceptKeyAndSendChallenge();
         }
     }
 
-    public void cancelLogin() {
-        Constants.LOG.info("Cancelled log-in!");
-        connection.disconnect(Component.translatable("connect.aborted"));
-    }
+    private void handleServerSignature(S2CSignaturePayload payload) {
+        Validate.validState(phase == Phase.VERIFY_SERVER, "Received unexpected server signature.");
 
-    private void tryAcquireNextSecretKey() {
-        if (acquireNextSecretKey()) {
+        if (hostKey == null) {
+            var err = "Got a challenge response signature from the server before its key could be known!";
+            Constants.LOG.error(err);
+            connection.disconnect(Component.literal(err));
+
             return;
         }
 
-        Constants.LOG.warn("No keys available to authenticate.");
-        connection.disconnect(Component.translatable("connect.aborted"));
+        if (c2sNonce == null) {
+            var err = "Got a bogus challenge response from the server!";
+            Constants.LOG.error(err);
+            connection.disconnect(Component.literal(err));
 
-        minecraft.execute(() -> {
-            if (allSecretKeyNames == null) {
-                allSecretKeyNames = new String[0];
+            return;
+        }
+
+        if (!payload.verify(hostKey, c2sNonce, sessionHash)) {
+            Constants.LOG.warn("Failed to verify signature from server!");
+            connection.disconnect(Component.translatable("authorisedkeysmc.error.server-auth-fail"));
+
+            return;
+        }
+
+        Constants.LOG.info("Successfully verified the server's identity.");
+
+        respond(new C2SIdAckPayload());
+        transition(Phase.AWAIT_REQUEST);
+    }
+
+    private void handleAuthenticationRequest(S2CAuthenticationRequestPayload payload) {
+        Validate.validState(connection.isEncrypted(), "Encryption must be enabled.");
+        Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected authentication request.");
+
+        acquireKeypair();
+
+        LoadedKeypair keypair = this.keypair;
+        Validate.validState(keypair != null, "Missing key pair.");
+
+        Constants.LOG.info(
+                "AKMC: Presenting the \"{}\" public key for authentication: {}",
+                keypair.getName(),
+                keypair.getTextualPublic());
+
+        respond(new C2SPublicKeyPayload(keypair.getPublic()));
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-for-challenge"));
+
+        transition(Phase.AWAIT_LOGIN_CHALLENGE);
+    }
+
+    private void handleRegistrationRequest(S2CRegistrationRequestPayload payload) {
+        Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected registration request.");
+
+        Constants.LOG.info("registration required = {}", payload.registrationRequired());
+
+        acquireKeypair();
+
+        transition(Phase.AWAIT_REGISTRATION_DECISION);
+        showScreen(LoginRegistrationScreen.create(this, this::onRegistrationAction, this::cancelLogin));
+    }
+
+    private void handleChallenge(S2CChallengePayload payload) {
+        LoadedKeypair keypair = this.keypair;
+        byte[] sessionHash = this.sessionHash;
+
+        Validate.validState(
+                phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
+                "Received unexpected challenge.");
+        Validate.validState(sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
+        Validate.validState(keypair != null, "Missing key pair.");
+
+        s2cChallenge = payload;
+
+        if (!AuthorisedKeysModClient.CACHED_KEYS.decryptKeypair(keypair)) {
+            showScreen(new PasswordPromptScreen(minecraft.screen, keypair, this::onPrivateKeyDecrypted));
+
+            return;
+        }
+
+        sendChallengeResponse();
+    }
+
+    private void onHostKeyAction(boolean shouldContinue) {
+        nettyLoop.execute(() -> {
+            if (shouldContinue) {
+                acceptKeyAndSendChallenge();
+            } else {
+                cancelLogin();
             }
-            NoKeysLeftErrorScreen screen = NoKeysLeftErrorScreen.create(allSecretKeyNames);
-            minecraft.setScreen(screen);
         });
     }
 
-    private boolean acquireNextSecretKey() {
-        keypair = null;
-        keyName = null;
-
-        if (remainingKeys == null) {
-            // temporary
-            Optional<String> serverName = getServerName();
-            List<String> keyNames;
-            if (serverName.isPresent()) {
-                String kn = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(serverName.get());
-                if (kn == null) {
-                    return false;
-                }
-                keyNames = List.of(kn);
+    private void onRegistrationAction(boolean shouldRegister) {
+        nettyLoop.execute(() -> {
+            if (shouldRegister) {
+                confirmRegistration();
             } else {
-                return false;
+                refuseRegistration();
             }
+        });
+    }
 
-            remainingKeys = new ArrayDeque<>(keyNames);
-            allSecretKeyNames = keyNames.toArray(new String[0]);
+    private void onPrivateKeyDecrypted(LoadedKeypair decryptedKeypair) {
+        nettyLoop.execute(() -> {
+            byte[] sessionHash = this.sessionHash;
+
+            Validate.validState(
+                    phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
+                    "Received unexpected challenge.");
+            Validate.validState(
+                    sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
+            Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
+
+            keypair = decryptedKeypair;
+
+            if (decryptedKeypair.requiresDecryption()) {
+                cancelLogin();
+            } else {
+                sendChallengeResponse();
+            }
+        });
+    }
+
+    private void sendChallengeResponse() {
+        byte[] sessionHash = this.sessionHash;
+        LoadedKeypair keypair = this.keypair;
+
+        Validate.validState(
+                phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
+                "Received unexpected challenge.");
+        Validate.validState(
+                sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
+        Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
+        Validate.validState(keypair != null, "Missing key pair.");
+        Validate.validState(!keypair.requiresDecryption(), "Key pair has not been decrypted.");
+
+        respond(C2SSignaturePayload.fromSigningChallenge(
+                keypair.getDecryptedPrivate(),
+                s2cChallenge,
+                sessionHash,
+                phase == Phase.AWAIT_REGISTRATION_CHALLENGE));
+
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
+        transition(Phase.AWAIT_VERDICT);
+    }
+
+    private void acceptKeyAndSendChallenge() {
+        Validate.validState(phase == Phase.HELLO, "Tried to send bogus server challenge.");
+
+        getHostAddress().ifPresent(address -> AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(address, hostKey));
+
+        C2SChallengePayload challengePayload = new C2SChallengePayload();
+        c2sNonce = challengePayload.getNonce();
+
+        respond(challengePayload);
+        transition(Phase.VERIFY_SERVER);
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.verifying"));
+    }
+
+    private void confirmRegistration() {
+        LoadedKeypair keypair = this.keypair;
+
+        Validate.validState(
+                phase == Phase.AWAIT_REGISTRATION_DECISION, "Confirming non-existent registration request.");
+        Validate.validState(keypair != null, "Missing key pair.");
+
+        getServerName().ifPresent(name -> {
+            Constants.LOG.info("addKeyForServer({}, {})", name, keypair.getName());
+            AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(name, keypair.getName());
+        });
+
+        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
+        respond(new C2SPublicKeyPayload(keypair.getPublic()));
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
+    }
+
+    private void refuseRegistration() {
+        Validate.validState(phase == Phase.AWAIT_REGISTRATION_DECISION, "Refusing non-existent registration request.");
+
+        Constants.LOG.info("AKMC: Refusing to register!");
+
+        respond(new C2SRefuseRegistrationPayload());
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.refusing-to-register"));
+    }
+
+    private void cancelLogin() {
+        Constants.LOG.info("AKMC: Log-in canceled by user.");
+        connection.disconnect(Component.translatable("connect.aborted"));
+
+        showScreen(new JoinMultiplayerScreen(new TitleScreen()));
+    }
+
+    private void acquireKeypair() {
+        Optional<String> name = getServerName();
+
+        if (name.isEmpty()) {
+            throw new IllegalStateException("No server name????");
         }
 
-        while (keypair == null) {
-            keyName = remainingKeys.poll();
-            if (keyName == null) {
-                // Queue was emptied.
-                return false;
-            }
+        String keyName = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(name.get());
 
-            try {
-                keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
-            } catch (InvalidPathException | IOException e) {
-                Constants.LOG.error("Could not load the \"{}\" key: {}", keyName, e);
-            }
+        if (keyName == null) {
+            throw new IllegalStateException("No key assigned for server \"%s\".".formatted(name.get()));
         }
 
-        Constants.LOG.info("Trying the \"{}\" key.", keyName);
-        return true;
+        try {
+            keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not load the \"%s\" key pair.".formatted(keyName), e);
+        }
+    }
+
+    private void showScreen(@Nullable Screen screen) {
+        minecraft.executeBlocking(() -> minecraft.setScreen(screen));
+    }
+
+    private void transition(Phase next) {
+        Constants.LOG.info("{} -> {}", phase, next);
+        Validate.validState(nettyLoop.inEventLoop(), "Changing phase in the wrong thread!");
+
+        phase = next;
+    }
+
+    private void respond(BaseC2SPayload payload) {
+        connection.send(new ServerboundCustomQueryAnswerPacket(txId, payload));
+    }
+
+    private enum Phase {
+        /// While waiting for server key packet.
+        HELLO,
+        /// While waiting for server's signature.
+        VERIFY_SERVER,
+        /// After acknowledging server key and waiting for login or registration.
+        AWAIT_REQUEST,
+        /// After receiving registration request and waiting for user input.
+        AWAIT_REGISTRATION_DECISION,
+        /// After sending our key for authentication.
+        AWAIT_LOGIN_CHALLENGE,
+        /// After sending our key for registration.
+        AWAIT_REGISTRATION_CHALLENGE,
+        /// After sending challenge response.
+        AWAIT_VERDICT,
     }
 }

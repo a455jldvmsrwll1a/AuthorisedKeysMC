@@ -1,11 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.apache.commons.lang3.function.BooleanConsumer;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
@@ -14,37 +13,17 @@ public class UnknownServerKeyWarningScreen extends SimpleYesNoCancelScreen {
             .withStyle(ChatFormatting.BOLD)
             .withStyle(ChatFormatting.GOLD);
 
-    private final Ed25519PublicKeyParameters serverKey;
-
-    public UnknownServerKeyWarningScreen(
-            ClientLoginHandler loginHandler, Component prompt, Ed25519PublicKeyParameters serverKey) {
-        super(loginHandler, TITLE, prompt);
-        this.serverKey = serverKey;
+    public UnknownServerKeyWarningScreen(Screen parent, Component prompt, BooleanConsumer action) {
+        super(parent, TITLE, prompt, action, null);
     }
 
     public static UnknownServerKeyWarningScreen create(
-            ClientLoginHandler loginHandler, Ed25519PublicKeyParameters serverKey) {
-        String name = loginHandler.getServerName().orElse("<no name>");
+            ClientLoginHandler context, Ed25519PublicKeyParameters serverKey, BooleanConsumer action) {
+        Screen parent = context.getMinecraft().screen;
+        String name = context.getServerName().orElse("<no name>");
         String keyStr = Base64Util.encode(serverKey.getEncoded());
         Component prompt = Component.translatable("authorisedkeysmc.screen.unknown-server-key.prompt", name, keyStr);
 
-        return new UnknownServerKeyWarningScreen(loginHandler, prompt, serverKey);
-    }
-
-    @Override
-    protected void onYesClicked() {
-        minecraft.setScreen(parent);
-
-        loginHandler
-                .getHostAddress()
-                .ifPresent(address -> AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(address, serverKey));
-
-        loginHandler.sendServerChallenge();
-    }
-
-    @Override
-    protected void onNoClicked() {
-        loginHandler.cancelLogin();
-        minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        return new UnknownServerKeyWarningScreen(parent, prompt, action);
     }
 }

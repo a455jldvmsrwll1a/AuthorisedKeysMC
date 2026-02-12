@@ -8,6 +8,7 @@
   "client": [
     "ClientHandshakePacketListenerAccessorMixin",
     "ClientLoginMixin",
+    "ConnectionAccessorMixin",
     "CustomQueryPacketMixin",
     "TitleScreenMixin"
   ],

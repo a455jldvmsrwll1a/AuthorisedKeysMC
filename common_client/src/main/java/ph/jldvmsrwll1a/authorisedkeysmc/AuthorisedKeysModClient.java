@@ -29,7 +29,8 @@ public class AuthorisedKeysModClient {
         if (!hasShownFirstRunScreen && KEY_PAIRS.retrieveKeyNamesFromDisk().isEmpty()) {
             hasShownFirstRunScreen = true;
 
-            minecraft.execute(() -> minecraft.setScreen(new FirstRunScreen(parent != null ? parent : new TitleScreen())));
+            minecraft.execute(
+                    () -> minecraft.setScreen(new FirstRunScreen(parent != null ? parent : new TitleScreen())));
             return true;
         }
 
