@@ -2,7 +2,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc.net;
 
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
@@ -71,7 +70,8 @@ public final class ServerLoginHandler {
         ticksLeft--;
 
         if (ticksLeft <= 0) {
-            if (phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY || phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE) {
+            if (phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY
+                    || phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_SIGNATURE) {
                 listener.disconnect(Component.literal("Took too long to register!"));
             } else {
                 listener.disconnect(Component.literal("Took too long to authenticate!"));
@@ -102,8 +102,8 @@ public final class ServerLoginHandler {
                 case C2SSignaturePayload p -> handleSignature(p);
                 case C2SRefuseRegistrationPayload p -> handleRegistrationRefusal(p);
                 default ->
-                        throw new IllegalArgumentException("Unknown C2S payload type of %s!"
-                                .formatted(payload.getClass().getName()));
+                    throw new IllegalArgumentException("Unknown C2S payload type of %s!"
+                            .formatted(payload.getClass().getName()));
             }
         }
     }
@@ -116,17 +116,14 @@ public final class ServerLoginHandler {
 
     private void handleChallenge(C2SChallengePayload payload) {
         Validate.validState(
-                phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE),
-                "Received client challenge but wasn't expecting one!");
+                phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
 
         send(S2CSignaturePayload.fromSigningChallenge(signingKey, payload, sessionHash));
         transition(Phase.WAIT_FOR_ACK);
     }
 
     private void handleAcknowledgement(C2SIdAckPayload payload) {
-        Validate.validState(
-                phase.equals(Phase.WAIT_FOR_ACK),
-                "Received acknowledgement but wasn't expecting it!");
+        Validate.validState(phase.equals(Phase.WAIT_FOR_ACK), "Received acknowledgement but wasn't expecting it!");
 
         if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(profile.id())) {
             send(new S2CAuthenticationRequestPayload());

@@ -30,7 +30,8 @@ public final class ServerInfoScreen extends BaseScreen {
     private static final Component USE_KEY_LABEL = Component.translatable("authorisedkeysmc.screen.server.use-key");
     private static final Component NO_USED_KEY_LABEL =
             Component.translatable("authorisedkeysmc.screen.server.no-used-key");
-    private static final Component FORGET_LABEL = Component.translatable("authorisedkeysmc.button.forget").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
+    private static final Component FORGET_LABEL =
+            Component.translatable("authorisedkeysmc.button.forget").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     private static final Tooltip COPY_KEY_TOOLTIP =
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.share-key"));
     private static final Tooltip UNKNOWN_HOST_KEY_TOOLTIP =

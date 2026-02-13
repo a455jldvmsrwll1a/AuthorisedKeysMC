@@ -10,15 +10,19 @@ public final class LoginRegistrationScreen extends SimpleYesNoCancelScreen {
     private static final Component TITLE = Component.translatable("authorisedkeysmc.screen.registration.title")
             .withStyle(ChatFormatting.BOLD)
             .withStyle(ChatFormatting.GREEN);
-    private static final Component PREAMBLE_LABEL = Component.translatable("authorisedkeysmc.screen.registration.preamble");
-    private static final Component OFFLINE_WARN_LABEL = Component.translatable("authorisedkeysmc.screen.registration.offline-warn").withStyle(ChatFormatting.GOLD);
+    private static final Component PREAMBLE_LABEL =
+            Component.translatable("authorisedkeysmc.screen.registration.preamble");
+    private static final Component OFFLINE_WARN_LABEL = Component.translatable(
+                    "authorisedkeysmc.screen.registration.offline-warn")
+            .withStyle(ChatFormatting.GOLD);
     private static final Component PROMPT_LABEL = Component.translatable("authorisedkeysmc.screen.registration.prompt");
 
     public LoginRegistrationScreen(Screen parent, Component prompt, BooleanConsumer action, Runnable onCancel) {
         super(parent, TITLE, prompt, action, onCancel);
     }
 
-    public static LoginRegistrationScreen create(Screen parent, boolean usingVanillaAuthentication, BooleanConsumer action, Runnable onCancel) {
+    public static LoginRegistrationScreen create(
+            Screen parent, boolean usingVanillaAuthentication, BooleanConsumer action, Runnable onCancel) {
         MutableComponent prompt = PREAMBLE_LABEL.copy();
 
         if (!usingVanillaAuthentication) {

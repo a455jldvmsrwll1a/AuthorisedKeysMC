@@ -5,7 +5,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.toasts.SystemToast;
-import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -22,7 +21,8 @@ public class PortalScreen extends BaseScreen {
     private static final Component CONFIG_LABEL = Component.translatable("authorisedkeysmc.button.configuration");
     private static final Component RELOAD_LABEL = Component.translatable("authorisedkeysmc.button.reload");
     private static final Component RELOADED_LABEL = Component.translatable("authorisedkeysmc.toast.mod-reloaded");
-    private static final Tooltip RELOAD_TOOLTIP = Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.reload-mod"));
+    private static final Tooltip RELOAD_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.reload-mod"));
 
     private static final int BUTTON_WIDTH = 160;
     private static final int SHORT_BUTTON_WIDTH = BUTTON_WIDTH / 2 - 2;
@@ -56,11 +56,10 @@ public class PortalScreen extends BaseScreen {
                 .tooltip(Tooltip.create(Component.literal("Work in progress!")))
                 .bounds(width / 2 + 2, yCentre + STRIDE, SHORT_BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
-        addRenderableWidget(
-                Button.builder(RELOAD_LABEL, this::onReloadButtonPressed)
-                        .tooltip(RELOAD_TOOLTIP)
-                        .bounds(width / 2 - 80, yCentre + STRIDE, SHORT_BUTTON_WIDTH, BUTTON_HEIGHT)
-                        .build());
+        addRenderableWidget(Button.builder(RELOAD_LABEL, this::onReloadButtonPressed)
+                .tooltip(RELOAD_TOOLTIP)
+                .bounds(width / 2 - 80, yCentre + STRIDE, SHORT_BUTTON_WIDTH, BUTTON_HEIGHT)
+                .build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(width / 2 - BUTTON_WIDTH / 2, height - BUTTON_HEIGHT - 20, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
@@ -76,10 +75,6 @@ public class PortalScreen extends BaseScreen {
     private void onReloadButtonPressed(Button button) {
         AuthorisedKeysModClient.readFiles();
 
-        SystemToast.addOrUpdate(
-                minecraft.getToastManager(),
-                RELOADED_TOAST,
-                RELOADED_LABEL,
-                null);
+        SystemToast.addOrUpdate(minecraft.getToastManager(), RELOADED_TOAST, RELOADED_LABEL, null);
     }
 }

@@ -31,9 +31,11 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
     @Shadow
     @Final
     private Consumer<Component> updateStatus;
+
     @Shadow
     @Final
     private Minecraft minecraft;
+
     @Unique
     private volatile @Nullable ClientLoginHandler authorisedKeysMC$loginHandler;
 
@@ -42,16 +44,20 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
         Validate.validState(authorisedKeysMC$loginHandler == null, "Login handler already spawned.");
 
         authorisedKeysMC$loginHandler = new ClientLoginHandler(
-                minecraft, (ClientHandshakePacketListenerImpl) (Object) this, packet.shouldAuthenticate(), connection, updateStatus);
+                minecraft,
+                (ClientHandshakePacketListenerImpl) (Object) this,
+                packet.shouldAuthenticate(),
+                connection,
+                updateStatus);
     }
 
     @WrapOperation(
             method = "handleHello",
             at =
-            @At(
-                    value = "INVOKE",
-                    target =
-                            "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/util/Crypt;digestData(Ljava/lang/String;Ljava/security/PublicKey;Ljavax/crypto/SecretKey;)[B"))
     private byte[] extractSessionHash(
             String serverId, PublicKey publicKey, SecretKey secretKey, Operation<byte[]> original) {
         byte[] hash = original.call(serverId, publicKey, secretKey);

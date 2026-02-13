@@ -1,5 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -11,9 +13,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.gui.FirstRunScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KeyUses;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KnownHosts;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class AuthorisedKeysModClient {
     public static final ExecutorService WORKER_EXECUTOR = Executors.newSingleThreadExecutor(r -> {

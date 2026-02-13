@@ -2,7 +2,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc.net;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -94,7 +93,8 @@ public final class ClientLoginHandler {
     public void handleLoginFinished() {
         getServerName().ifPresent(serverName -> {
             if (keyWasSelectedManually && keypair != null) {
-                Constants.LOG.info("AKMC: Assigning the \"{}\" key pair to server \"{}\".", keypair.getName(), serverName);
+                Constants.LOG.info(
+                        "AKMC: Assigning the \"{}\" key pair to server \"{}\".", keypair.getName(), serverName);
                 AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, keypair.getName());
             }
         });
@@ -213,7 +213,8 @@ public final class ClientLoginHandler {
         Constants.LOG.info("registration required = {}", payload.registrationRequired());
 
         transition(Phase.AWAIT_REGISTRATION_DECISION);
-        showScreen(LoginRegistrationScreen.create(originalScreen, usingVanillaAuthentication, this::onRegistrationAction, this::cancelLogin));
+        showScreen(LoginRegistrationScreen.create(
+                originalScreen, usingVanillaAuthentication, this::onRegistrationAction, this::cancelLogin));
     }
 
     private void handleChallenge(S2CChallengePayload payload) {
@@ -321,7 +322,8 @@ public final class ClientLoginHandler {
     }
 
     private void sendRegistrationKey() {
-        Validate.validState(phase == Phase.AWAIT_REGISTRATION_DECISION, "Should not send registration key at this time.");
+        Validate.validState(
+                phase == Phase.AWAIT_REGISTRATION_DECISION, "Should not send registration key at this time.");
         Validate.notNull(keypair, "sendRegistrationKey(): Missing keypair.");
 
         Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
@@ -335,17 +337,13 @@ public final class ClientLoginHandler {
         Validate.validState(
                 phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
                 "Received unexpected challenge.");
-        Validate.validState(
-                sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
+        Validate.validState(sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
         Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
         Validate.notNull(keypair, "Missing key pair.");
         Validate.validState(!keypair.requiresDecryption(), "Key pair has not been decrypted.");
 
         respond(C2SSignaturePayload.fromSigningChallenge(
-                keypair.getDecryptedPrivate(),
-                s2cChallenge,
-                sessionHash,
-                phase == Phase.AWAIT_REGISTRATION_CHALLENGE));
+                keypair.getDecryptedPrivate(), s2cChallenge, sessionHash, phase == Phase.AWAIT_REGISTRATION_CHALLENGE));
 
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
         transition(Phase.AWAIT_VERDICT);
