@@ -12,11 +12,21 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KeyUses;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KnownHosts;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class AuthorisedKeysModClient {
+    public static final ExecutorService WORKER_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "AKMC Worker Thread");
+        thread.setDaemon(true);
+
+        return thread;
+    });
+
+    public static final PrivateKeyCache CACHED_KEYS = new PrivateKeyCache();
     public static ClientKeyPairs KEY_PAIRS;
     public static KnownHosts KNOWN_HOSTS;
     public static KeyUses KEY_USES;
-    public static PrivateKeyCache CACHED_KEYS;
 
     private static boolean initialised = false;
     private static boolean hasShownFirstRunScreen = false;
@@ -28,7 +38,6 @@ public class AuthorisedKeysModClient {
         KEY_PAIRS = new ClientKeyPairs();
         KNOWN_HOSTS = new KnownHosts();
         KEY_USES = new KeyUses();
-        CACHED_KEYS = new PrivateKeyCache();
 
         initialised = true;
     }

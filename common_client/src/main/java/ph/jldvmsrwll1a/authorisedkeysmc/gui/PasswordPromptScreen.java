@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -167,22 +168,27 @@ public class PasswordPromptScreen extends BaseScreen {
     }
 
     protected void decryptKey() {
-        minecraft.setScreenAndShow(new GenericMessageScreen(WAITING_LABEL));
+        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
-        if (keypair.decrypt(passwordEdit.getValue().toCharArray())) {
-            if (cacheDecryptedKey) {
+        char[] password = passwordEdit.getValue().toCharArray();
+        AuthorisedKeysModClient.WORKER_EXECUTOR.execute(() -> {
+            boolean successful = keypair.decrypt(password);
+            Arrays.fill(password, '\0');
+
+            if (successful && cacheDecryptedKey) {
                 AuthorisedKeysModClient.CACHED_KEYS.cacheKey(keypair);
             }
 
-            minecraft.setScreen(parent);
-            onClose();
-
-            return;
-        }
-
-        errorText.visible = true;
-        passwordEdit.setValue("");
-        minecraft.setScreen(this);
+            minecraft.execute(() -> {
+                if (successful) {
+                    onClose();
+                } else {
+                    errorText.visible = true;
+                    passwordEdit.setValue("");
+                    minecraft.setScreen(this);
+                }
+            });
+        });
     }
 
     private int elementWidth() {
