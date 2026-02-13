@@ -9,10 +9,7 @@ import java.time.Instant;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
@@ -35,7 +32,6 @@ import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 /**
  * Keypair that may or may not be encrypted.
@@ -44,20 +40,20 @@ public class LoadedKeypair {
     private final @NonNull String name;
     private Instant modificationTime;
 
-    private @Nullable Ed25519PublicKeyParameters publicKey;
-    private @Nullable Ed25519PrivateKeyParameters privateKey;
+    private @Nullable AkPublicKey publicKey;
+    private @Nullable AkPrivateKey privateKey;
     private @Nullable PKCS8EncryptedPrivateKeyInfo encryptedInfo;
 
     public LoadedKeypair(
             @NonNull String name,
             @NonNull Instant modificationTime,
-            @NonNull Ed25519PrivateKeyParameters privateKey,
-            @Nullable Ed25519PublicKeyParameters publicKey) {
+            @NonNull AkPrivateKey privateKey,
+            @Nullable AkPublicKey publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
 
         this.privateKey = privateKey;
-        this.publicKey = publicKey != null ? publicKey : privateKey.generatePublicKey();
+        this.publicKey = publicKey != null ? publicKey : privateKey.derivePublicKey();
         this.encryptedInfo = null;
     }
 
@@ -65,7 +61,7 @@ public class LoadedKeypair {
             @NonNull String name,
             @NonNull Instant modificationTime,
             @NonNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
-            @Nullable Ed25519PublicKeyParameters publicKey) {
+            @Nullable AkPublicKey publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
 
@@ -93,13 +89,13 @@ public class LoadedKeypair {
      * used by users and stored in files.
      */
     public @NonNull String getTextualPublic() {
-        return Base64Util.encode(getPublic().getEncoded());
+        return getPublic().toString();
     }
 
     /**
      * Get the public key of this keypair. The keypair's private key must already be unencrypted or this will throw.
      */
-    public @NonNull Ed25519PublicKeyParameters getPublic() {
+    public @NonNull AkPublicKey getPublic() {
         if (publicKey != null) {
             return publicKey;
         } else {
@@ -111,7 +107,7 @@ public class LoadedKeypair {
     /**
      * Get the private key of this keypair. The keypair must already be decrypted or this will throw.
      */
-    public @NonNull Ed25519PrivateKeyParameters getDecryptedPrivate() {
+    public @NonNull AkPrivateKey getDecryptedPrivate() {
         if (privateKey != null) {
             return privateKey;
         } else if (encryptedInfo != null) {
@@ -134,12 +130,10 @@ public class LoadedKeypair {
      * Care should be taken if the new private key is different from the current encrypted private key.
      * @param secret The new private key.
      */
-    public void setPrivateKey(@NonNull Ed25519PrivateKeyParameters secret) {
-        Ed25519PublicKeyParameters newPublicKey = secret.generatePublicKey();
+    public void setPrivateKey(@NonNull AkPrivateKey secret) {
+        AkPublicKey newPublicKey = secret.derivePublicKey();
 
-        if (publicKey != null
-                && !Arrays.areEqual(
-                        publicKey.getEncoded(), secret.generatePublicKey().getEncoded())) {
+        if (publicKey != null && !publicKey.equals(newPublicKey)) {
             throw new IllegalStateException("Provided private key does not match the current public key.");
         }
 
@@ -164,7 +158,7 @@ public class LoadedKeypair {
             AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
 
             if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                setPrivateKey(edPri);
+                setPrivateKey(new AkPrivateKey(edPri.getEncoded()));
 
                 return true;
             } else {
@@ -192,7 +186,7 @@ public class LoadedKeypair {
         Validate.validState(privateKey != null, "Decrypted private key not available.");
 
         try {
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey);
+            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey.getInternal());
 
             JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder =
                     new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
@@ -240,13 +234,14 @@ public class LoadedKeypair {
         if (encryptedInfo != null) {
             privatePem = new PemObject("ENCRYPTED PRIVATE KEY", encryptedInfo.getEncoded());
         } else if (privateKey != null) {
-            PrivateKeyInfo pki = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey);
+            PrivateKeyInfo pki = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey.getInternal());
             privatePem = new PemObject("PRIVATE KEY", pki.getEncoded());
         } else {
             throw new IllegalStateException("Degenerate keypair has no private key");
         }
 
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getPublic());
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
+                getPublic().getInternal());
         PemObject publicPem = new PemObject("PUBLIC KEY", spki.getEncoded());
 
         try (PemWriter writer = new PemWriter(new FileWriter(path.toFile()))) {
@@ -262,12 +257,8 @@ public class LoadedKeypair {
      * @return The newly created keypair.
      */
     public static @NonNull LoadedKeypair generate(@NonNull SecureRandom random, @NonNull String name) {
-        Ed25519KeyPairGenerator generator = new Ed25519KeyPairGenerator();
-        generator.init(new Ed25519KeyGenerationParameters(random));
-
-        AsymmetricCipherKeyPair kp = generator.generateKeyPair();
-        Ed25519PrivateKeyParameters privateKey = (Ed25519PrivateKeyParameters) kp.getPrivate();
-        Ed25519PublicKeyParameters publicKey = (Ed25519PublicKeyParameters) kp.getPublic();
+        AkPrivateKey privateKey = new AkPrivateKey(random);
+        AkPublicKey publicKey = privateKey.derivePublicKey();
 
         Instant now = Instant.now();
 
@@ -283,8 +274,8 @@ public class LoadedKeypair {
     public static LoadedKeypair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
-        Ed25519PrivateKeyParameters privateKey = null;
-        Ed25519PublicKeyParameters publicKey = null;
+        AkPrivateKey privateKey = null;
+        AkPublicKey publicKey = null;
         PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = null;
 
         try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
@@ -300,7 +291,7 @@ public class LoadedKeypair {
                         AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
 
                         if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                            privateKey = edPri;
+                            privateKey = new AkPrivateKey(edPri.getEncoded());
                         } else {
                             throw new IllegalArgumentException("expected a private key of type %s but found a %s"
                                     .formatted(
@@ -314,7 +305,7 @@ public class LoadedKeypair {
                         AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
 
                         if (key instanceof Ed25519PublicKeyParameters edPub) {
-                            publicKey = edPub;
+                            publicKey = new AkPublicKey(edPub.getEncoded());
                         } else {
                             throw new IllegalArgumentException("expected a public key of type %s but found a %s"
                                     .formatted(

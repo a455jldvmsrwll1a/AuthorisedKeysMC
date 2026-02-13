@@ -17,17 +17,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ConnectionAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public final class ClientLoginHandler {
     private static final int KEEPALIVE_INTERVAL_TICKS = 500;
@@ -40,7 +39,7 @@ public final class ClientLoginHandler {
     private final boolean usingVanillaAuthentication;
 
     private byte @Nullable [] sessionHash;
-    private @Nullable Ed25519PublicKeyParameters hostKey;
+    private @Nullable AkPublicKey hostKey;
     private byte @Nullable [] c2sNonce;
     private @Nullable S2CChallengePayload s2cChallenge;
     private @Nullable LoadedKeypair keypair;
@@ -149,13 +148,13 @@ public final class ClientLoginHandler {
 
         hostKey = payload.key;
 
-        Ed25519PublicKeyParameters knownKey = getHostAddress()
+        AkPublicKey knownKey = getHostAddress()
                 .map(address -> AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(address))
                 .orElse(null);
 
         if (knownKey == null) {
             showScreen(UnknownServerKeyWarningScreen.create(this, payload.key, this::onHostKeyAction));
-        } else if (!KeyUtil.areNullableKeysEqual(knownKey, payload.key)) {
+        } else if (!knownKey.equals(payload.key)) {
             showScreen(WrongServerKeyWarningScreen.create(this, knownKey, payload.key, this::onHostKeyAction));
         } else {
             acceptKeyAndSendChallenge();

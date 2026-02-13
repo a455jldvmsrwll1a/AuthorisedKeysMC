@@ -12,10 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public class UserKeys {
     private final ConcurrentHashMap<UUID, List<UserKey>> userKeysMap = new ConcurrentHashMap<>();
@@ -33,21 +32,21 @@ public class UserKeys {
         return !userKeys.isEmpty();
     }
 
-    public boolean userHasKey(UUID playerId, Ed25519PublicKeyParameters key) {
+    public boolean userHasKey(UUID playerId, AkPublicKey key) {
         List<UserKey> userKeys = userKeysMap.get(playerId);
         if (userKeys == null) {
             return false;
         }
 
-        return userKeys.stream().anyMatch(userKey -> KeyUtil.areNullableKeysEqual(userKey.key, key));
+        return userKeys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
     }
 
-    public boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, Ed25519PublicKeyParameters key) {
+    public boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
         final Boolean[] dirty = {false};
 
         userKeysMap.compute(playerId, (uuid, userKeys) -> {
             List<UserKey> newKeys = userKeys != null ? userKeys : new ArrayList<>();
-            boolean found = newKeys.stream().anyMatch(entry -> KeyUtil.areNullableKeysEqual(entry.key, key));
+            boolean found = newKeys.stream().anyMatch(entry -> AkPublicKey.nullableEqual(entry.key, key));
 
             if (!found) {
                 dirty[0] = true;
@@ -79,7 +78,7 @@ public class UserKeys {
         return dirty[0];
     }
 
-    public boolean unbindKey(UUID playerId, Ed25519PublicKeyParameters key) {
+    public boolean unbindKey(UUID playerId, AkPublicKey key) {
         final Boolean[] dirty = {false};
 
         userKeysMap.compute(playerId, (uuid, userKeys) -> {
@@ -87,10 +86,10 @@ public class UserKeys {
                 return null;
             }
 
-            if (userKeys.removeIf(userKey -> KeyUtil.areNullableKeysEqual(userKey.key, key))) {
+            if (userKeys.removeIf(userKey -> AkPublicKey.nullableEqual(userKey.key, key))) {
                 dirty[0] = true;
 
-                Constants.LOG.info("Key {} has been unbound from {}.", Base64Util.encode(key.getEncoded()), playerId);
+                Constants.LOG.info("Key {} has been unbound from {}.", key.toString(), playerId);
 
                 if (userKeys.isEmpty()) {
                     return null;
@@ -120,7 +119,7 @@ public class UserKeys {
                 List<UserKey> keys = entry.keys.stream()
                         .map(jsonEntry -> {
                             UserKey userKey = new UserKey();
-                            userKey.key = new Ed25519PublicKeyParameters(Base64Util.decode(jsonEntry.key));
+                            userKey.key = new AkPublicKey(jsonEntry.key);
                             userKey.issuingPlayer = jsonEntry.issued_by;
                             userKey.registrationTime = jsonEntry.time_added;
 
@@ -170,7 +169,7 @@ public class UserKeys {
     }
 
     private static class UserKey {
-        Ed25519PublicKeyParameters key;
+        AkPublicKey key;
 
         @Nullable
         UUID issuingPlayer;

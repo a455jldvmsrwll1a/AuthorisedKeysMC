@@ -19,10 +19,12 @@ import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPrivateKey;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public class ServerKeypair {
-    public Ed25519PublicKeyParameters publicKey;
-    public Ed25519PrivateKeyParameters secretKey;
+    public AkPublicKey publicKey;
+    public AkPrivateKey secretKey;
 
     public ServerKeypair() {
         try {
@@ -47,8 +49,8 @@ public class ServerKeypair {
                     AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
 
                     if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                        secretKey = edPri;
-                        publicKey = edPri.generatePublicKey();
+                        secretKey = new AkPrivateKey(edPri.getEncoded());
+                        publicKey = secretKey.derivePublicKey();
 
                         Constants.LOG.info("Loaded existing server keypair.");
                         return;
@@ -93,10 +95,10 @@ public class ServerKeypair {
             generator.init(new Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()));
 
             AsymmetricCipherKeyPair kp = generator.generateKeyPair();
-            secretKey = (Ed25519PrivateKeyParameters) kp.getPrivate();
-            publicKey = (Ed25519PublicKeyParameters) kp.getPublic();
+            secretKey = new AkPrivateKey(((Ed25519PrivateKeyParameters) kp.getPrivate()).getEncoded());
+            publicKey = new AkPublicKey(((Ed25519PublicKeyParameters) kp.getPublic()).getEncoded());
 
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(secretKey);
+            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(kp.getPrivate());
 
             PemObject privatePem = new PemObject("PRIVATE KEY", privateKeyInfo.getEncoded());
 

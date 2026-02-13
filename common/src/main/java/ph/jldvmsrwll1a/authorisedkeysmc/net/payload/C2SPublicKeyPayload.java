@@ -2,15 +2,14 @@ package ph.jldvmsrwll1a.authorisedkeysmc.net.payload;
 
 import net.minecraft.network.FriendlyByteBuf;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.bouncycastle.math.ec.rfc8032.Ed25519;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public final class C2SPublicKeyPayload extends BaseC2SPayload {
-    private static final int KEY_BYTES_LENGTH = Ed25519.PUBLIC_KEY_SIZE;
+    private static final int KEY_BYTES_LENGTH = AkPublicKey.ENCODED_LENGTH;
 
-    public final Ed25519PublicKeyParameters key;
+    public final AkPublicKey key;
 
-    public C2SPublicKeyPayload(Ed25519PublicKeyParameters key) {
+    public C2SPublicKeyPayload(AkPublicKey key) {
         super(QueryAnswerPayloadType.CLIENT_KEY);
         this.key = key;
     }
@@ -22,7 +21,7 @@ public final class C2SPublicKeyPayload extends BaseC2SPayload {
         Validate.validState(
                 buf.readableBytes() == KEY_BYTES_LENGTH, "Encoded public key is not %s bytes long!", KEY_BYTES_LENGTH);
         buf.readBytes(KEY_BYTES_LENGTH).readBytes(bytes);
-        key = new Ed25519PublicKeyParameters(bytes);
+        key = new AkPublicKey(bytes);
     }
 
     @Override

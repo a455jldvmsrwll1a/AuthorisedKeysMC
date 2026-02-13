@@ -9,27 +9,26 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public class KnownHosts {
-    private final ConcurrentHashMap<String, Ed25519PublicKeyParameters> knownHosts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AkPublicKey> knownHosts = new ConcurrentHashMap<>();
 
     public KnownHosts() {
         read();
     }
 
-    public @Nullable Ed25519PublicKeyParameters getHostKey(String hostAddress) {
+    public @Nullable AkPublicKey getHostKey(String hostAddress) {
         return knownHosts.get(hostAddress);
     }
 
-    public void setHostKey(String hostAddress, @Nullable Ed25519PublicKeyParameters key) {
-        Ed25519PublicKeyParameters old = knownHosts.get(hostAddress);
-        if (!KeyUtil.areNullableKeysEqual(old, key)) {
+    public void setHostKey(String hostAddress, @Nullable AkPublicKey key) {
+        AkPublicKey old = knownHosts.get(hostAddress);
+
+        if (!AkPublicKey.nullableEqual(old, key)) {
             if (key != null) {
                 knownHosts.put(hostAddress, key);
             } else {
@@ -48,7 +47,7 @@ public class KnownHosts {
 
             knownHosts.clear();
             entries.forEach(entry -> {
-                Ed25519PublicKeyParameters key = new Ed25519PublicKeyParameters(Base64Util.decode(entry.host_key));
+                AkPublicKey key = new AkPublicKey(entry.host_key);
                 knownHosts.put(entry.address, key);
             });
         } catch (FileNotFoundException ignored) {
@@ -66,7 +65,7 @@ public class KnownHosts {
 
             ArrayList<HostJsonEntry> out = new ArrayList<>();
             for (var entry : knownHosts.entrySet()) {
-                Ed25519PublicKeyParameters key = entry.getValue();
+                AkPublicKey key = entry.getValue();
                 out.add(new HostJsonEntry(entry.getKey(), key));
             }
 
@@ -80,8 +79,8 @@ public class KnownHosts {
     }
 
     private record HostJsonEntry(String address, @Nullable String host_key) {
-        private HostJsonEntry(String address, @Nullable Ed25519PublicKeyParameters host_key) {
-            this(address, host_key == null ? null : Base64Util.encode(host_key.getEncoded()));
+        private HostJsonEntry(String address, @Nullable AkPublicKey host_key) {
+            this(address, host_key == null ? null : host_key.toString());
         }
     }
 }

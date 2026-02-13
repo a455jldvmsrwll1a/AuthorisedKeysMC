@@ -4,7 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.function.BooleanConsumer;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
@@ -18,7 +18,7 @@ public class UnknownServerKeyWarningScreen extends SimpleYesNoCancelScreen {
     }
 
     public static UnknownServerKeyWarningScreen create(
-            ClientLoginHandler context, Ed25519PublicKeyParameters serverKey, BooleanConsumer action) {
+            ClientLoginHandler context, AkPublicKey serverKey, BooleanConsumer action) {
         Screen parent = context.getMinecraft().screen;
         String name = context.getServerName().orElse("<no name>");
         String keyStr = Base64Util.encode(serverKey.getEncoded());

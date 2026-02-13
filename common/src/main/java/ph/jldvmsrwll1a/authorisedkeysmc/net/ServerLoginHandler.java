@@ -11,12 +11,12 @@ import net.minecraft.network.protocol.login.custom.CustomQueryAnswerPayload;
 import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPrivateKey;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 
 public final class ServerLoginHandler {
@@ -33,14 +33,14 @@ public final class ServerLoginHandler {
     private final byte[] sessionHash;
     private final ConcurrentLinkedQueue<BaseC2SPayload> inbox;
 
-    private final Ed25519PrivateKeyParameters signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
-    private final Ed25519PublicKeyParameters serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
+    private final AkPrivateKey signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
+    private final AkPublicKey serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
 
     private int txId = 0;
     private Phase phase = Phase.SEND_SERVER_KEY;
     private int ticksLeft = loginTimeoutTicks;
 
-    private @Nullable Ed25519PublicKeyParameters clientKey;
+    private @Nullable AkPublicKey clientKey;
     private byte @Nullable [] nonce;
 
     public ServerLoginHandler(

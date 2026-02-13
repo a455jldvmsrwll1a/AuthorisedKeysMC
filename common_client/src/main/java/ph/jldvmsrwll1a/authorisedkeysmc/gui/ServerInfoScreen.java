@@ -10,12 +10,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public final class ServerInfoScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;
@@ -72,8 +71,8 @@ public final class ServerInfoScreen extends BaseScreen {
 
         this.parent = parent;
 
-        Ed25519PublicKeyParameters hostKey = AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(server.ip);
-        hostKeyLabel = hostKey != null ? Component.literal(Base64Util.encode(hostKey.getEncoded())) : UNKNOWN_KEY_LABEL;
+        AkPublicKey hostKey = AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(server.ip);
+        hostKeyLabel = hostKey != null ? Component.literal(hostKey.toString()) : UNKNOWN_KEY_LABEL;
         hostKeyIsKnown = hostKey != null;
 
         AuthorisedKeysModClient.KEY_USES.read();
