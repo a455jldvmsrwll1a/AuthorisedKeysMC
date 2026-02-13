@@ -56,6 +56,7 @@ public abstract class TitleScreenMixin extends Screen {
 
     /// Redirect "Multiplayer" button in the title screen.
     @WrapOperation(
+            require = 0,
             method = "lambda$createNormalMenuOptions$10",
             at =
                     @At(
