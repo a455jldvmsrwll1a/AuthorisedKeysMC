@@ -366,7 +366,6 @@ public final class ClientLoginHandler {
     private void confirmRegistration() {
         Validate.validState(
                 phase == Phase.AWAIT_REGISTRATION_DECISION, "Confirming non-existent registration request.");
-        Validate.notNull(keypair, "Missing key pair.");
 
         showScreen(new KeySelectionScreen(originalScreen, this::onRegistrationKeySelected));
     }
