@@ -80,6 +80,7 @@
     "authorisedkeysmc.screen.select-key.title": "Select Key Pair",
     "authorisedkeysmc.screen.select-key.prompt": "Select a key pair to use for this server.",
     "authorisedkeysmc.screen.select-key.no-keys": "Select a key pair to view its properties.\n\nIf you do not have any, create one in the \"Manage Keys\" section.",
+    "authorisedkeysmc.screen.join-select-key.prompt": "You do not have a \"default\" key pair. Select a key pair to use for this server.",
     "authorisedkeysmc.status.waiting-verdict": "Waiting for authentication verdict...",
     "authorisedkeysmc.status.verifying": "Verifying server's identity...",
     "authorisedkeysmc.status.waiting-for-challenge": "Waiting for signature challenge from the server...",

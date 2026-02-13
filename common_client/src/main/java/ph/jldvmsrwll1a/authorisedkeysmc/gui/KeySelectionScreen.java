@@ -41,6 +41,8 @@ public class KeySelectionScreen extends BaseScreen {
     private final GridLayout contentLayout;
     private final Consumer<@Nullable String> consumer;
 
+    protected final Component promptComponent;
+
     private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
     private List<String> keyNames;
@@ -56,10 +58,15 @@ public class KeySelectionScreen extends BaseScreen {
     private boolean needsLayout = true;
 
     public KeySelectionScreen(Screen parent, Consumer<@Nullable String> consumer) {
+        this(parent, consumer, PROMPT_LABEL);
+    }
+
+    public KeySelectionScreen(Screen parent, Consumer<@Nullable String> consumer, Component prompt) {
         super(TITLE_LABEL);
 
         this.parent = parent;
         this.consumer = consumer;
+        this.promptComponent = prompt;
 
         rootLayout = new HeaderAndFooterLayout(this);
         contentLayout = new GridLayout();
@@ -89,7 +96,7 @@ public class KeySelectionScreen extends BaseScreen {
         inspectorScroller = new ScrollableLayout(minecraft, inspectorLayout, inspectorLayout.getHeight());
         inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
 
-        StringWidget promptWidget = new StringWidget(PROMPT_LABEL, font);
+        StringWidget promptWidget = new StringWidget(promptComponent, font);
         promptWidget.setMaxWidth(Math.round(MIN_TOTAL_WIDTH * width), StringWidget.TextOverflow.SCROLLING);
         rowHelper.addChild(promptWidget, 2);
         rowHelper.addChild(SpacerElement.height(5), 2);
@@ -285,7 +292,7 @@ public class KeySelectionScreen extends BaseScreen {
         return rootLayout.getContentHeight() - 24 - font.lineHeight;
     }
 
-    public void recalculateLayoutIfNeeded() {
+    private void recalculateLayoutIfNeeded() {
         if (needsLayout) {
             needsLayout = false;
 
@@ -293,7 +300,7 @@ public class KeySelectionScreen extends BaseScreen {
         }
     }
 
-    public void forceRecalculateLayout() {
+    private void forceRecalculateLayout() {
         contentLayout.setY(rootLayout.getHeaderHeight() + 4);
         keySelectionList.updateSizeAndPosition(
                 getWidthLeft(), getScrollListHeight(), contentLayout.getX(), rootLayout.getHeaderHeight() + 26);
