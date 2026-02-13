@@ -27,10 +27,7 @@ public abstract class TitleScreenMixin extends Screen {
     private boolean fading;
 
     @Unique
-    private int authorisedKeysMC$buttonX;
-
-    @Unique
-    private int authorisedKeysMC$buttonY;
+    private Button authorisedKeysMC$button;
 
     @Unique
     private int authorisedKeysMC$fadeColour;
@@ -41,17 +38,16 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "createNormalMenuOptions", at = @At("RETURN"))
     private void addModButton(int y, int spacingY, CallbackInfoReturnable<Integer> ci) {
-        authorisedKeysMC$buttonX = this.width / 2 - 100 - spacingY;
-        authorisedKeysMC$buttonY = y;
-
-        addRenderableWidget(Button.builder(Component.empty(), button -> {
+        Button button = Button.builder(Component.empty(), btn -> {
                     if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(
                             minecraft, new PortalScreen(minecraft.screen))) {
                         minecraft.setScreen(new PortalScreen(minecraft.screen));
                     }
                 })
-                .bounds(authorisedKeysMC$buttonX, authorisedKeysMC$buttonY, 20, 20)
-                .build());
+                .bounds(this.width / 2 - 100 - spacingY, y, 20, 20)
+                .build();
+
+        authorisedKeysMC$button = addRenderableWidget(button);
     }
 
     /// Redirect "Multiplayer" button in the title screen.
@@ -71,21 +67,16 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "render", at = @At("RETURN"))
     private void renderIcon(GuiGraphics gui, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        Identifier texture = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "textures/gui/main-menu.png");
+        if (authorisedKeysMC$button == null) {
+            return;
+        }
 
+        final Identifier texture = Constants.modId("textures/gui/main-menu.png");
+        int x = authorisedKeysMC$button.getX() + 2;
+        int y = authorisedKeysMC$button.getY() + 2;
         int colour = fading ? authorisedKeysMC$fadeColour : 0xFFFFFFFF;
-        gui.blit(
-                RenderPipelines.GUI_TEXTURED,
-                texture,
-                authorisedKeysMC$buttonX + 2,
-                authorisedKeysMC$buttonY + 2,
-                0,
-                0,
-                16,
-                16,
-                16,
-                16,
-                colour);
+
+        gui.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0, 0, 16, 16, 16, 16, colour);
     }
 
     @WrapOperation(
