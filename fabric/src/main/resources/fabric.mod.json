@@ -8,17 +8,22 @@
         "${mod_author}"
     ],
     "contact": {
-        "sources": "https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC"
+        "sources": "https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC",
+        "issues": "https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC/issues",
+        "homepage": "https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",
     "environment": "*",
     "entrypoints": {
         "main": [
-          "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMC"
+            "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMC"
         ],
         "client": [
-          "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMCClient"
+            "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMCClient"
+        ],
+        "modmenu": [
+            "ph.jldvmsrwll1a.authorisedkeysmc.ModMenuIntegration"
         ]
     },
     "mixins": [
@@ -34,7 +39,15 @@
     },
     "accessWidener": "${mod_id}.accesswidener",
     "suggests": {
-        "another-mod": "*"
+        "modmenu": ">=${modmenu_version}"
+    },
+    "custom": {
+        "modmenu": {
+            "links": {
+                "modmenu.website": "https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC"
+            },
+            "update_checker": false
+        }
     }
 }
   
