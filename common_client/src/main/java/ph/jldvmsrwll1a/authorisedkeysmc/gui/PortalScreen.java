@@ -52,10 +52,8 @@ public class PortalScreen extends BaseScreen {
                 Button.builder(SERVERS_LABEL, button -> minecraft.setScreen(new ServerManagementScreen(this)))
                         .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre, BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build());
-        addRenderableWidget(Button.builder(
-                        CONFIG_LABEL,
-                        button -> minecraft.setScreen(
-                                new ErrorScreen(Component.literal("not yet implemented"), Component.empty())))
+        Button configBtn = addRenderableWidget(Button.builder(CONFIG_LABEL, button -> {})
+                .tooltip(Tooltip.create(Component.literal("Work in progress!")))
                 .bounds(width / 2 + 2, yCentre + STRIDE, SHORT_BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
         addRenderableWidget(
@@ -66,6 +64,8 @@ public class PortalScreen extends BaseScreen {
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(width / 2 - BUTTON_WIDTH / 2, height - BUTTON_HEIGHT - 20, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
+
+        configBtn.active = false;
     }
 
     @Override
