@@ -227,10 +227,10 @@ public final class ServerLoginHandler {
                     switch (kind) {
                         case PING -> new C2SPingPayload(buf);
                         case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
-                        case ID_ACK -> new C2SIdAckPayload();
+                        case ID_ACK -> new C2SIdAckPayload(buf);
                         case CLIENT_KEY -> new C2SPublicKeyPayload(buf);
                         case SERVER_CHALLENGE_RESPONSE -> new C2SSignaturePayload(buf);
-                        case WONT_REGISTER -> new C2SRefuseRegistrationPayload();
+                        case WONT_REGISTER -> new C2SRefuseRegistrationPayload(buf);
                     };
 
             receive(base);

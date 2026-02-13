@@ -7,6 +7,10 @@ public class C2SRefuseRegistrationPayload extends BaseC2SPayload {
         super(QueryAnswerPayloadType.WONT_REGISTER);
     }
 
+    public C2SRefuseRegistrationPayload(FriendlyByteBuf buf) {
+        super(buf, QueryAnswerPayloadType.WONT_REGISTER);
+    }
+
     @Override
     protected void writeData(FriendlyByteBuf buf) {
         // Empty.

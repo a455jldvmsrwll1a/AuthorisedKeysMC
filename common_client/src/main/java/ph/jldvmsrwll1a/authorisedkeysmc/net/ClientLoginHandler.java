@@ -121,12 +121,17 @@ public final class ClientLoginHandler {
 
         QueryPayloadType kind = BaseS2CPayload.peekPayloadType(buf);
         switch (kind) {
+            case PONG -> handlePong(new S2CPongPayload(buf));
             case SERVER_KEY -> handleServerKey(new S2CPublicKeyPayload(buf));
             case CLIENT_CHALLENGE_RESPONSE -> handleServerSignature(new S2CSignaturePayload(buf));
             case SERVER_CHALLENGE -> handleChallenge(new S2CChallengePayload(buf));
             case AUTHENTICATION_REQUEST -> handleAuthenticationRequest(new S2CAuthenticationRequestPayload(buf));
             case REGISTRATION_REQUEST -> handleRegistrationRequest(new S2CRegistrationRequestPayload(buf));
         }
+    }
+
+    private void handlePong(S2CPongPayload payload) {
+        // Do nothing.
     }
 
     private void handleServerKey(S2CPublicKeyPayload payload) {
