@@ -9,9 +9,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 public record RetainedQueryAnswerPayload(FriendlyByteBuf buf, Consumer<FriendlyByteBuf> encoder)
         implements CustomQueryAnswerPayload {
     public RetainedQueryAnswerPayload(FriendlyByteBuf contents) {
-        this(contents, inBuf -> {
-            Constants.LOG.warn("RetainedAnswerQueryPayload no-op encoder called.");
-        });
+        this(contents, inBuf -> Constants.LOG.warn("RetainedAnswerQueryPayload no-op encoder called."));
     }
 
     @Override

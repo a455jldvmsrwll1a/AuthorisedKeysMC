@@ -5,14 +5,12 @@ import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.*;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
 import org.apache.commons.lang3.Validate;
@@ -38,7 +36,6 @@ public final class KeyManagementScreen extends BaseScreen {
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
     private final GridLayout contentLayout;
-    private final ServerList serverList;
 
     private final int scrollHeight = (font.lineHeight + 2) * 5 - font.lineHeight;
 
@@ -64,9 +61,6 @@ public final class KeyManagementScreen extends BaseScreen {
 
         rootLayout = new HeaderAndFooterLayout(this);
         contentLayout = new GridLayout();
-
-        serverList = new ServerList(Minecraft.getInstance());
-        serverList.load();
     }
 
     protected void init() {

@@ -96,14 +96,14 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
     }
 
     @Override
-    protected void renderListBackground(GuiGraphics gui) {
+    protected void renderListBackground(@NonNull GuiGraphics gui) {
         if (!borderless) {
             super.renderListBackground(gui);
         }
     }
 
     @Override
-    protected void renderListSeparators(GuiGraphics gui) {
+    protected void renderListSeparators(@NonNull GuiGraphics gui) {
         if (!borderless) {
             super.renderListSeparators(gui);
         }
