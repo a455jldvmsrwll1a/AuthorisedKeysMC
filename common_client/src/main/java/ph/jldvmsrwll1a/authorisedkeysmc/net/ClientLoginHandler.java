@@ -31,6 +31,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.KeyUtil;
 
 public final class ClientLoginHandler {
+    private static final int KEEPALIVE_INTERVAL_TICKS = 500;
     private final Minecraft minecraft;
     private final Screen originalScreen;
     private final Connection connection;
@@ -45,6 +46,7 @@ public final class ClientLoginHandler {
     private @Nullable volatile LoadedKeypair keypair;
     private Phase phase = Phase.HELLO;
     private int txId = -1;
+    private int ticksUntilPing = KEEPALIVE_INTERVAL_TICKS;
 
     public ClientLoginHandler(
             Minecraft minecraft,
@@ -58,6 +60,8 @@ public final class ClientLoginHandler {
                 ((ConnectionAccessorMixin) connection).getNettyChannel().eventLoop();
         this.updateStatus = updateStatus;
         this.serverData = ((ClientHandshakePacketListenerAccessorMixin) listener).getServerData();
+
+        AuthorisedKeysModClient.setLoginHandler(this);
     }
 
     public boolean disconnected() {
@@ -86,9 +90,23 @@ public final class ClientLoginHandler {
         sessionHash = hash;
     }
 
+    public void handleLoginFinished() {
+        Constants.LOG.info("AKMC: log-in finished successfully.");
+        handleDisconnection();
+    }
+
     public void handleDisconnection() {
-        if (minecraft.screen != originalScreen) {
-            showScreen(originalScreen);
+        resetScreen();
+        AuthorisedKeysModClient.clearLoginHandler();
+    }
+
+    public void tick() {
+        ticksUntilPing--;
+
+        if (ticksUntilPing <= 0) {
+            ticksUntilPing = KEEPALIVE_INTERVAL_TICKS;
+
+            respond(new C2SPingPayload());
         }
     }
 
@@ -321,6 +339,12 @@ public final class ClientLoginHandler {
         connection.disconnect(Component.translatable("connect.aborted"));
 
         showScreen(new JoinMultiplayerScreen(new TitleScreen()));
+    }
+
+    private void resetScreen() {
+        if (minecraft.screen != originalScreen) {
+            showScreen(originalScreen);
+        }
     }
 
     private void acquireKeypair() {

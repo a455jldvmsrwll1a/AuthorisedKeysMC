@@ -22,6 +22,8 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 
 public final class ServerLoginHandler {
     // TODO: make this configurable
+    final int loginTimeoutTicks = 1200;
+    // TODO: make this configurable
     final boolean allowsUnregistered = true;
     // TODO: make this configurable
     final boolean registrationRequired = false;
@@ -37,7 +39,7 @@ public final class ServerLoginHandler {
 
     private int txId = 0;
     private Phase phase = Phase.SEND_SERVER_KEY;
-    private int ticksLeft = 300;
+    private int ticksLeft = loginTimeoutTicks;
 
     private @Nullable Ed25519PublicKeyParameters clientKey;
     private byte @Nullable [] nonce;
@@ -93,6 +95,7 @@ public final class ServerLoginHandler {
             }
 
             switch (payload) {
+                case C2SPingPayload p -> handlePing(p);
                 case C2SChallengePayload p -> handleChallenge(p);
                 case C2SIdAckPayload p -> handleAcknowledgement(p);
                 case C2SPublicKeyPayload p -> handleKey(p);
@@ -103,6 +106,12 @@ public final class ServerLoginHandler {
                                 .formatted(payload.getClass().getName()));
             }
         }
+    }
+
+    private void handlePing(C2SPingPayload payload) {
+        Constants.LOG.info("AKMC: {}: got ping!", profile.name());
+
+        send(new S2CPongPayload());
     }
 
     private void handleChallenge(C2SChallengePayload payload) {
@@ -216,6 +225,7 @@ public final class ServerLoginHandler {
             QueryAnswerPayloadType kind = BaseC2SPayload.peekPayloadType(buf);
             BaseC2SPayload base =
                     switch (kind) {
+                        case PING -> new C2SPingPayload(buf);
                         case CLIENT_CHALLENGE -> new C2SChallengePayload(buf);
                         case ID_ACK -> new C2SIdAckPayload();
                         case CLIENT_KEY -> new C2SPublicKeyPayload(buf);

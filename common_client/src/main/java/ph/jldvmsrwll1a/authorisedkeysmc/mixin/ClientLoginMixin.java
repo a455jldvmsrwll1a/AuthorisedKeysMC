@@ -9,10 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.login.ClientLoginPacketListener;
-import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import net.minecraft.network.protocol.login.ClientboundHelloPacket;
-import net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket;
+import net.minecraft.network.protocol.login.*;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -89,6 +86,15 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
 
         if (handler != null) {
             handler.handleDisconnection();
+        }
+    }
+
+    @Inject(method = "handleLoginFinished", at = @At("HEAD"))
+    private void clearHandlerWhenDone(ClientboundLoginFinishedPacket packet, CallbackInfo ci) {
+        ClientLoginHandler handler = authorisedKeysMC$loginHandler;
+
+        if (handler != null) {
+            handler.handleLoginFinished();
         }
     }
 }

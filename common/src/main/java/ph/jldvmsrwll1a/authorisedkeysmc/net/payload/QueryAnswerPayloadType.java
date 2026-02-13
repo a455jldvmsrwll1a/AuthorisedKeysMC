@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.net.payload;
 
 public enum QueryAnswerPayloadType {
+    PING,
     CLIENT_CHALLENGE,
     ID_ACK,
     CLIENT_KEY,
