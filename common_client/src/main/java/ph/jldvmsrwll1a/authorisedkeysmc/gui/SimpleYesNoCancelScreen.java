@@ -69,7 +69,7 @@ public abstract class SimpleYesNoCancelScreen extends BaseScreen {
 
     @Override
     protected final void repositionElements() {
-        promptWidget.setMaxWidth(width);
+        promptWidget.setMaxWidth(Math.min(width - 50, 400));
 
         layout.arrangeElements();
         FrameLayout.centerInRectangle(layout, getRectangle());
