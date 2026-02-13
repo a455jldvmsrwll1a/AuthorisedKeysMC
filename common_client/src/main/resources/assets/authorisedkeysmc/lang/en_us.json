@@ -1,6 +1,6 @@
 {
     "authorisedkeysmc.button.create-key": "New Key Pair",
-    "authorisedkeysmc.button.configuration": "Configure Settings",
+    "authorisedkeysmc.button.configuration": "Settings",
     "authorisedkeysmc.button.confirm": "Confirm",
     "authorisedkeysmc.button.copy-key": "Share",
     "authorisedkeysmc.button.delete-key": "Delete",
@@ -15,6 +15,7 @@
     "authorisedkeysmc.button.password-change": "Change Password",
     "authorisedkeysmc.button.password-remove": "Remove Password",
     "authorisedkeysmc.button.proceed": "Proceed",
+    "authorisedkeysmc.button.reload": "Reload",
     "authorisedkeysmc.button.reload-keys": "Reload Key List",
     "authorisedkeysmc.button.reload-servers": "Reload Server List",
     "authorisedkeysmc.button.forget": "X",
@@ -89,6 +90,7 @@
     "authorisedkeysmc.status.registering": "Registering your public key...",
     "authorisedkeysmc.status.refusing-to-register": "Refusing to register...",
     "authorisedkeysmc.toast.key-shared": "Copied to clipboard!",
+    "authorisedkeysmc.toast.mod-reloaded": "Reloaded the mod state!",
     "authorisedkeysmc.tooltip.forget": "Forget the current selection.",
     "authorisedkeysmc.tooltip.set-password": "Set, update, or erase this key pair's password",
     "authorisedkeysmc.tooltip.must-select-key": "Select a key pair first.\n\nYou will also be prompted to select one if you try to join.",
@@ -96,5 +98,6 @@
     "authorisedkeysmc.tooltip.unknown-host-key": "Not yet known.\n\nTry joining the server first.",
     "authorisedkeysmc.tooltip.share-key": "Copy the shareable public key to the clipboard.",
     "authorisedkeysmc.tooltip.backup-key": "Make a back-up of this key pair to a file or the clipboard.",
-    "authorisedkeysmc.tooltip.delete-key": "Delete this key pair."
+    "authorisedkeysmc.tooltip.delete-key": "Delete this key pair.",
+    "authorisedkeysmc.tooltip.reload-mod": "Reload files and config.\n\nUseful if you manually edited the mod files."
 }

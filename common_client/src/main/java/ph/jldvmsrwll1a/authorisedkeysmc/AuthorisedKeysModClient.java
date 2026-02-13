@@ -42,6 +42,13 @@ public class AuthorisedKeysModClient {
         initialised = true;
     }
 
+    public static void readFiles() {
+        Validate.validState(initialised, "AKMC client core not yet initialised.");
+
+        KNOWN_HOSTS.read();
+        KEY_USES.read();
+    }
+
     public static void setLoginHandler(ClientLoginHandler handler) {
         Minecraft.getInstance().executeBlocking(() -> {
             if (currentLogin != null && !currentLogin.disconnected()) {
