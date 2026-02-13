@@ -1,4 +1,4 @@
-package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
+package ph.jldvmsrwll1a.authorisedkeysmc.key;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
 public class ClientKeyPairs {

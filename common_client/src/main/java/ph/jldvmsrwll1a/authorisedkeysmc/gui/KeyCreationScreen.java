@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.ClientKeyPairs;
+import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
 public class KeyCreationScreen extends BaseScreen {
