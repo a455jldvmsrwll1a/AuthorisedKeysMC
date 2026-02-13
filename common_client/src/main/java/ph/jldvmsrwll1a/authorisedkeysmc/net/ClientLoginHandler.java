@@ -350,6 +350,7 @@ public final class ClientLoginHandler {
 
     private void acceptKeyAndSendChallenge() {
         Validate.validState(phase == Phase.HELLO, "Tried to send bogus server challenge.");
+        Validate.notNull(hostKey, "Trying to send server challenge before host key is known.");
 
         getHostAddress().ifPresent(address -> AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(address, hostKey));
 

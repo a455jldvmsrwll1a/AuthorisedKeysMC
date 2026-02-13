@@ -173,7 +173,7 @@ public final class ServerInfoScreen extends BaseScreen {
         }
 
         if (forgetHostKey) {
-            AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(serverAddress, null);
+            AuthorisedKeysModClient.KNOWN_HOSTS.clearHostKey(serverAddress);
         }
 
         minecraft.setScreen(parent);

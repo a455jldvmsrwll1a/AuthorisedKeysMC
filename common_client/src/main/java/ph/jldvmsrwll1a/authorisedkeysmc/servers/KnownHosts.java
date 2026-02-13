@@ -25,16 +25,18 @@ public class KnownHosts {
         return knownHosts.get(hostAddress);
     }
 
-    public void setHostKey(String hostAddress, @Nullable AkPublicKey key) {
-        AkPublicKey old = knownHosts.get(hostAddress);
+    public void setHostKey(String hostAddress, AkPublicKey newKey) {
+        AkPublicKey currentKey = knownHosts.get(hostAddress);
 
-        if (!AkPublicKey.nullableEqual(old, key)) {
-            if (key != null) {
-                knownHosts.put(hostAddress, key);
-            } else {
-                knownHosts.remove(hostAddress);
-            }
+        if (!newKey.equals(currentKey)) {
+            knownHosts.put(hostAddress, newKey);
 
+            write();
+        }
+    }
+
+    public void clearHostKey(String hostAddress) {
+        if (knownHosts.remove(hostAddress) != null) {
             write();
         }
     }
@@ -78,9 +80,9 @@ public class KnownHosts {
         Constants.LOG.debug("Wrote {} known hosts to disk.", knownHosts.size());
     }
 
-    private record HostJsonEntry(String address, @Nullable String host_key) {
-        private HostJsonEntry(String address, @Nullable AkPublicKey host_key) {
-            this(address, host_key == null ? null : host_key.toString());
+    private record HostJsonEntry(String address, String host_key) {
+        private HostJsonEntry(String address, AkPublicKey host_key) {
+            this(address, host_key.toString());
         }
     }
 }
