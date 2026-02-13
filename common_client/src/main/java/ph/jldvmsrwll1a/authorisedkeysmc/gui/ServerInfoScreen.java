@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class ServerInfoScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;
@@ -216,7 +216,7 @@ public final class ServerInfoScreen extends BaseScreen {
 
         if (usedKeyName != null) {
             try {
-                LoadedKeypair keyPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(usedKeyName);
+                AkKeyPair keyPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(usedKeyName);
                 usedKeyLabel = Component.literal(keyPair.getName());
                 usedKeyString = keyPair.getTextualPublic();
             } catch (IllegalStateException | IOException e) {

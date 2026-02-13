@@ -13,7 +13,7 @@ public class PrivateKeyCache {
      * Insert the private key of the keypair in the cache.
      * @param keypair The keypair with the private key to cache. Must already be decrypted.
      */
-    public void cacheKey(@NonNull LoadedKeypair keypair) {
+    public void cacheKey(@NonNull AkKeyPair keypair) {
         try {
             CACHED_KEYS.put(keypair.getPublic(), keypair.getDecryptedPrivate());
         } catch (IllegalStateException e) {
@@ -26,7 +26,7 @@ public class PrivateKeyCache {
      * @param keypair The keypair to "decrypt". The public key must be known.
      * @return {@code true} if it was able to retrieve the private key, or it was already decrypted in the first place. Otherwise, returns {@code false} and leaves {@code keypair} unmodified.
      */
-    public boolean decryptKeypair(@NonNull LoadedKeypair keypair) {
+    public boolean decryptKeypair(@NonNull AkKeyPair keypair) {
         if (!keypair.requiresDecryption()) {
             return true;
         }

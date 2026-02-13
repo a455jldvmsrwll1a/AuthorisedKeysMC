@@ -41,15 +41,15 @@ public class ClientKeyPairs {
         return names;
     }
 
-    public @NotNull LoadedKeypair loadFromFile(@NotNull String name) throws IOException, InvalidPathException {
-        return LoadedKeypair.fromFile(fromKeyName(name), name);
+    public @NotNull AkKeyPair loadFromFile(@NotNull String name) throws IOException, InvalidPathException {
+        return AkKeyPair.fromFile(fromKeyName(name), name);
     }
 
     public void generate(@NotNull String name, char @Nullable [] password) throws InvalidPathException {
         Path path = fromKeyName(name);
 
         try {
-            LoadedKeypair generated = LoadedKeypair.generate(SecureRandom.getInstanceStrong(), name);
+            AkKeyPair generated = AkKeyPair.generate(SecureRandom.getInstanceStrong(), name);
 
             if (password != null) {
                 generated.encrypt(password);
@@ -63,7 +63,7 @@ public class ClientKeyPairs {
         Constants.LOG.info("Generated new keypair \"{}\".", name);
     }
 
-    public void deleteKeyFile(@NotNull LoadedKeypair keypair) {
+    public void deleteKeyFile(@NotNull AkKeyPair keypair) {
         deleteKeyFile(keypair.getName());
     }
 

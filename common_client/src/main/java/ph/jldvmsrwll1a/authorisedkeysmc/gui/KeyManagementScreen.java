@@ -18,7 +18,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class KeyManagementScreen extends BaseScreen {
     private static final float WIDTH_LEFT = 4.0f / 11.0f;
@@ -49,7 +49,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private Button deleteButton;
     private Button passwordButton;
 
-    private @Nullable LoadedKeypair currentKeypair;
+    private @Nullable AkKeyPair currentKeypair;
     private @Nullable String keyName;
 
     private boolean needsLayout = true;
@@ -322,7 +322,7 @@ public final class KeyManagementScreen extends BaseScreen {
         }
 
         try {
-            LoadedKeypair newPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+            AkKeyPair newPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
 
             if (newPair.requiresDecryption()) {
                 minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(

@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Keypair that may or may not be encrypted.
  */
-public class LoadedKeypair {
+public class AkKeyPair {
     private final @NonNull String name;
     private Instant modificationTime;
 
@@ -44,7 +44,7 @@ public class LoadedKeypair {
     private @Nullable AkPrivateKey privateKey;
     private @Nullable PKCS8EncryptedPrivateKeyInfo encryptedInfo;
 
-    public LoadedKeypair(
+    public AkKeyPair(
             @NonNull String name,
             @NonNull Instant modificationTime,
             @NonNull AkPrivateKey privateKey,
@@ -57,7 +57,7 @@ public class LoadedKeypair {
         this.encryptedInfo = null;
     }
 
-    public LoadedKeypair(
+    public AkKeyPair(
             @NonNull String name,
             @NonNull Instant modificationTime,
             @NonNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
@@ -256,13 +256,13 @@ public class LoadedKeypair {
      * @param name A label for the key.
      * @return The newly created keypair.
      */
-    public static @NonNull LoadedKeypair generate(@NonNull SecureRandom random, @NonNull String name) {
+    public static @NonNull AkKeyPair generate(@NonNull SecureRandom random, @NonNull String name) {
         AkPrivateKey privateKey = new AkPrivateKey(random);
         AkPublicKey publicKey = privateKey.derivePublicKey();
 
         Instant now = Instant.now();
 
-        return new LoadedKeypair(name, now, privateKey, publicKey);
+        return new AkKeyPair(name, now, privateKey, publicKey);
     }
 
     /**
@@ -271,7 +271,7 @@ public class LoadedKeypair {
      * @return The loaded keypair.
      * @throws IOException May fail to read the file.
      */
-    public static LoadedKeypair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
+    public static AkKeyPair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
         AkPrivateKey privateKey = null;
@@ -318,9 +318,9 @@ public class LoadedKeypair {
         }
 
         if (privateKey != null) {
-            return new LoadedKeypair(name, modificationTime, privateKey, publicKey);
+            return new AkKeyPair(name, modificationTime, privateKey, publicKey);
         } else if (encryptedPrivateKeyInfo != null) {
-            return new LoadedKeypair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
+            return new AkKeyPair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
         } else {
             throw new IllegalArgumentException("File contains no valid data.");
         }

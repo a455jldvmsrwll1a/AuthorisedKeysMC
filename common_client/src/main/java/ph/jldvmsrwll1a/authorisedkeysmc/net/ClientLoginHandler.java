@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.*;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ClientHandshakePacketListenerAccessorMixin;
 import ph.jldvmsrwll1a.authorisedkeysmc.mixin.ConnectionAccessorMixin;
@@ -42,7 +42,7 @@ public final class ClientLoginHandler {
     private @Nullable AkPublicKey hostKey;
     private byte @Nullable [] c2sNonce;
     private @Nullable S2CChallengePayload s2cChallenge;
-    private @Nullable LoadedKeypair keypair;
+    private @Nullable AkKeyPair keypair;
     private Phase phase = Phase.HELLO;
     private int txId = -1;
     private int ticksUntilPing = KEEPALIVE_INTERVAL_TICKS;
@@ -254,7 +254,7 @@ public final class ClientLoginHandler {
         });
     }
 
-    private void onPrivateKeyDecrypted(LoadedKeypair decryptedKeypair) {
+    private void onPrivateKeyDecrypted(AkKeyPair decryptedKeypair) {
         nettyLoop.execute(() -> {
             byte[] sessionHash = this.sessionHash;
 

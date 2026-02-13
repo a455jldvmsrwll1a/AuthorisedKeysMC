@@ -19,7 +19,7 @@ import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public class PasswordPromptScreen extends BaseScreen {
     protected static final int BUTTON_WIDTH = 74;
@@ -45,8 +45,8 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
 
     protected final Screen parent;
-    protected final LoadedKeypair keypair;
-    protected final Consumer<@NonNull LoadedKeypair> callback;
+    protected final AkKeyPair keypair;
+    protected final Consumer<@NonNull AkKeyPair> callback;
     protected final LinearLayout rootLayout;
     protected final AtomicBoolean showPassword = new AtomicBoolean(false);
 
@@ -56,7 +56,7 @@ public class PasswordPromptScreen extends BaseScreen {
     protected MultiLineTextWidget cacheText;
     protected boolean cacheDecryptedKey = false;
 
-    public PasswordPromptScreen(Screen parent, LoadedKeypair keypair, Consumer<@NonNull LoadedKeypair> callback) {
+    public PasswordPromptScreen(Screen parent, AkKeyPair keypair, Consumer<@NonNull AkKeyPair> callback) {
         super(TITLE_LABEL);
 
         Validate.isTrue(keypair.requiresDecryption(), "requesting password for an unencrypted key");

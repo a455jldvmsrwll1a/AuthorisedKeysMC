@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.LoadedKeypair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.confirm-key.title")
@@ -29,8 +29,8 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
 
     public PasswordConfirmPromptScreen(
             Screen parent,
-            LoadedKeypair keypair,
-            Consumer<@NonNull LoadedKeypair> callback,
+            AkKeyPair keypair,
+            Consumer<@NonNull AkKeyPair> callback,
             Consumer<@Nullable String> newKeycallback) {
         super(parent, keypair, callback);
 
