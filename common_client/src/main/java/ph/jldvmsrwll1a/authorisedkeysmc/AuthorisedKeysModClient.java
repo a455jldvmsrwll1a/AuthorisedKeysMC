@@ -75,7 +75,9 @@ public class AuthorisedKeysModClient {
     }
 
     public static void tick() {
-        Validate.validState(initialised, "AKMC client core not yet initialised.");
+        if (!initialised) {
+            return;
+        }
 
         if (currentLogin != null) {
             currentLogin.tick();
