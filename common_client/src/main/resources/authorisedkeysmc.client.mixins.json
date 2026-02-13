@@ -10,6 +10,7 @@
     "ClientLoginMixin",
     "ConnectionAccessorMixin",
     "CustomQueryPacketMixin",
+    "ManageServerScreenMixin",
     "TitleScreenMixin"
   ],
   "server": [],
