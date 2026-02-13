@@ -30,6 +30,7 @@ public final class ServerInfoScreen extends BaseScreen {
     private static final Component USE_KEY_LABEL = Component.translatable("authorisedkeysmc.screen.server.use-key");
     private static final Component NO_USED_KEY_LABEL =
             Component.translatable("authorisedkeysmc.screen.server.no-used-key");
+    private static final Component FORGET_LABEL = Component.translatable("authorisedkeysmc.button.forget").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     private static final Tooltip COPY_KEY_TOOLTIP =
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.share-key"));
     private static final Tooltip UNKNOWN_HOST_KEY_TOOLTIP =
@@ -38,6 +39,8 @@ public final class ServerInfoScreen extends BaseScreen {
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.select-key"));
     private static final Tooltip MUST_SELECT_KEY_TOOLTIP =
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.must-select-key"));
+    private static final Tooltip FORGET_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.forget"));
 
     private final Screen parent;
     private final LinearLayout rootLayout;
@@ -45,14 +48,18 @@ public final class ServerInfoScreen extends BaseScreen {
     private final boolean hostKeyIsKnown;
     private final @Nullable String originalUsedKeyName;
     private final String serverName;
+    private final String serverAddress;
 
     private @Nullable String usedKeyName;
     private @Nullable String usedKeyString;
     private boolean dirty = false;
+    private boolean forgetHostKey = false;
 
     private MultiLineTextWidget preambleText;
     private Button hostKeyField;
     private Button usedKeyField;
+    private Button hostKeyForgetBtn;
+    private Button usedKeyForgetBtn;
 
     public ServerInfoScreen(Screen parent, ServerData server) {
         super(Component.translatable("authorisedkeysmc.screen.server.title", server.name)
@@ -60,6 +67,7 @@ public final class ServerInfoScreen extends BaseScreen {
 
         rootLayout = LinearLayout.vertical().spacing(4);
         serverName = server.name;
+        serverAddress = server.ip;
 
         this.parent = parent;
 
@@ -75,29 +83,35 @@ public final class ServerInfoScreen extends BaseScreen {
     protected void init() {
         preambleText = new MultiLineTextWidget(PREAMBLE_LABEL, font);
 
+        LinearLayout hostKeyRow = LinearLayout.horizontal().spacing(4);
+
         Tooltip hostKeyTooltip = hostKeyIsKnown ? COPY_KEY_TOOLTIP : UNKNOWN_HOST_KEY_TOOLTIP;
         hostKeyField = Button.builder(hostKeyLabel, this::onHostKeyFieldPressed)
                 .tooltip(hostKeyTooltip)
                 .width(elementWidth())
                 .build();
-        hostKeyField.active = hostKeyIsKnown;
 
-        LinearLayout keyLayout = LinearLayout.horizontal().spacing(4);
+        hostKeyRow.addChild(hostKeyField);
+        hostKeyForgetBtn = hostKeyRow.addChild(Button.builder(FORGET_LABEL, this::onForgetHostKeyButtonPressed)
+                .tooltip(FORGET_TOOLTIP)
+                .width(20)
+                .build());
 
-        usedKeyField = Button.builder(NO_USED_KEY_LABEL, this::onUsedKeyNameFieldPressed)
-                .width(elementWidth() - 20 - 4)
-                .build();
-        usedKeyField.active = false;
-
-        keyLayout.addChild(usedKeyField);
-        keyLayout.addChild(Button.builder(SELECT_LABEL, this::onSelectButtonPressed)
+        LinearLayout usedKeyRow = LinearLayout.horizontal().spacing(4);
+        usedKeyRow.addChild(Button.builder(SELECT_LABEL, this::onSelectButtonPressed)
                 .tooltip(SELECT_KEY_TOOLTIP)
+                .width(20)
+                .build());
+        usedKeyField = usedKeyRow.addChild(Button.builder(NO_USED_KEY_LABEL, this::onUsedKeyNameFieldPressed)
+                .width(elementWidth() - 48)
+                .build());
+        usedKeyForgetBtn = usedKeyRow.addChild(Button.builder(FORGET_LABEL, this::onForgetUsedKeyButtonPressed)
+                .tooltip(FORGET_TOOLTIP)
                 .width(20)
                 .build());
 
         LinearLayout buttonLayout = LinearLayout.horizontal().spacing(4);
         buttonLayout.defaultCellSetting().paddingTop(16);
-
         buttonLayout.addChild(Button.builder(CommonComponents.GUI_DONE, this::onDoneButtonPressed)
                 .width(BUTTON_WIDTH)
                 .build());
@@ -110,14 +124,17 @@ public final class ServerInfoScreen extends BaseScreen {
 
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(new StringWidget(HOST_KEY_LABEL, font));
-        rootLayout.addChild(hostKeyField);
+        rootLayout.addChild(hostKeyRow);
 
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(new StringWidget(USE_KEY_LABEL, font));
-        rootLayout.addChild(keyLayout);
+        rootLayout.addChild(usedKeyRow);
 
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(buttonLayout);
+
+        hostKeyField.active = hostKeyIsKnown;
+        hostKeyForgetBtn.active = hostKeyIsKnown;
 
         setUsedKey(originalUsedKeyName);
 
@@ -128,8 +145,8 @@ public final class ServerInfoScreen extends BaseScreen {
     @Override
     protected void repositionElements() {
         preambleText.setMaxWidth(elementWidth());
-        hostKeyField.setWidth(elementWidth());
-        usedKeyField.setWidth(elementWidth() - 20 - 4);
+        hostKeyField.setWidth(elementWidth() - 24);
+        usedKeyField.setWidth(elementWidth() - 48);
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());
@@ -155,11 +172,28 @@ public final class ServerInfoScreen extends BaseScreen {
             AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, usedKeyName);
         }
 
+        if (forgetHostKey) {
+            AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(serverAddress, null);
+        }
+
         minecraft.setScreen(parent);
     }
 
     private void onSelectButtonPressed(Button button) {
         minecraft.setScreen(new KeySelectionScreen(this, this::onKeySelected));
+    }
+
+    private void onForgetHostKeyButtonPressed(Button button) {
+        // a bit hacky
+        forgetHostKey = true;
+        hostKeyField.setMessage(UNKNOWN_KEY_LABEL);
+        hostKeyField.setTooltip(UNKNOWN_HOST_KEY_TOOLTIP);
+        hostKeyField.active = false;
+        hostKeyForgetBtn.active = false;
+    }
+
+    private void onForgetUsedKeyButtonPressed(Button button) {
+        setUsedKey(null);
     }
 
     private void onKeySelected(String keyName) {
@@ -196,6 +230,10 @@ public final class ServerInfoScreen extends BaseScreen {
             usedKeyField.active = usedKeyName != null;
             usedKeyField.setMessage(usedKeyLabel);
             usedKeyField.setTooltip(usedKeyString != null ? COPY_KEY_TOOLTIP : MUST_SELECT_KEY_TOOLTIP);
+        }
+
+        if (usedKeyForgetBtn != null) {
+            usedKeyForgetBtn.active = usedKeyName != null;
         }
     }
 
