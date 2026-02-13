@@ -53,7 +53,7 @@ public abstract class ManageServerScreenMixin extends Screen {
             return;
         }
 
-        Identifier texture = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "textures/gui/main-menu.png");
+        Identifier texture = Constants.modId("textures/gui/main-menu.png");
         gui.blit(RenderPipelines.GUI_TEXTURED, texture, width / 2 - 122, height / 4 + 74, 0, 0, 16, 16, 16, 16);
     }
 }
