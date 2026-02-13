@@ -99,7 +99,8 @@ public final class ClientLoginHandler {
             }
         });
 
-        handleDisconnection();
+        resetScreen();
+        AuthorisedKeysModClient.clearLoginHandler();
 
         Constants.LOG.info("AKMC: log-in finished successfully.");
     }
