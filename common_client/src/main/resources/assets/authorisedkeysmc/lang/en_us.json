@@ -33,7 +33,7 @@
     "authorisedkeysmc.screen.unknown-server-key.title": "Unknown Host Key",
     "authorisedkeysmc.screen.unknown-server-key.prompt": "The server on the IP address of %1$s has this public key:\n\n%2$s\n\nYou should check that this public key is correct.\n\nDo you wish to continue?\nIf so, the public key will be remembered for future log-ins.",
     "authorisedkeysmc.screen.wrong-server-key.title": "Host Key has Changed!",
-    "authorisedkeysmc.screen.wrong-server-key.prompt": "The public key of %1$s doesn't match the public key on record!\n\nLast known: %2$s\nWhat was received: %3$s\n\nEither the server simply got a new public key, purposefully or not, or your connection might be intercepted (MiTM attack).Double check that the new public key is correct.\n\nIf you continue, the new public key will be kept.\nDo you wish to continue?",
+    "authorisedkeysmc.screen.wrong-server-key.prompt": "The public key of %1$s doesn't match the public key on record!\n\nLast known: §7%2$s§r\nWhat was received: §c%3$s§r\n\nEither the server simply got a new public key, purposefully or not, or your connection might be intercepted (MiTM attack).\n\n§6Double check that the new public key is correct.§r\n\nIf you continue, the new public key will be kept.\nDo you wish to continue?",
     "authorisedkeysmc.screen.config.title": "Key Pair Management",
     "authorisedkeysmc.screen.config.keys.title": "Key Pairs",
     "authorisedkeysmc.screen.config.keys.list-header": "Key List",
