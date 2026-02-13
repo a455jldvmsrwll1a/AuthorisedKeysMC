@@ -42,7 +42,7 @@ public abstract class ClientLoginMixin implements ClientLoginPacketListener {
         Validate.validState(authorisedKeysMC$loginHandler == null, "Login handler already spawned.");
 
         authorisedKeysMC$loginHandler = new ClientLoginHandler(
-                minecraft, (ClientHandshakePacketListenerImpl) (Object) this, connection, updateStatus);
+                minecraft, (ClientHandshakePacketListenerImpl) (Object) this, packet.shouldAuthenticate(), connection, updateStatus);
     }
 
     @WrapOperation(

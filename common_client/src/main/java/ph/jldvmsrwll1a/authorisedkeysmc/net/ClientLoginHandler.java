@@ -38,19 +38,22 @@ public final class ClientLoginHandler {
     private final EventLoop nettyLoop;
     private final Consumer<Component> updateStatus;
     private final @Nullable ServerData serverData;
+    private final boolean usingVanillaAuthentication;
 
-    private volatile byte @Nullable [] sessionHash;
+    private byte @Nullable [] sessionHash;
     private @Nullable Ed25519PublicKeyParameters hostKey;
     private byte @Nullable [] c2sNonce;
     private @Nullable S2CChallengePayload s2cChallenge;
-    private @Nullable volatile LoadedKeypair keypair;
+    private @Nullable LoadedKeypair keypair;
     private Phase phase = Phase.HELLO;
     private int txId = -1;
     private int ticksUntilPing = KEEPALIVE_INTERVAL_TICKS;
+    private boolean keyWasSelectedManually = false;
 
     public ClientLoginHandler(
             Minecraft minecraft,
             ClientHandshakePacketListenerImpl listener,
+            boolean didVanillaAuthentication,
             Connection connection,
             Consumer<Component> updateStatus) {
         this.minecraft = minecraft;
@@ -60,6 +63,7 @@ public final class ClientLoginHandler {
                 ((ConnectionAccessorMixin) connection).getNettyChannel().eventLoop();
         this.updateStatus = updateStatus;
         this.serverData = ((ClientHandshakePacketListenerAccessorMixin) listener).getServerData();
+        this.usingVanillaAuthentication = didVanillaAuthentication;
 
         AuthorisedKeysModClient.setLoginHandler(this);
     }
@@ -80,19 +84,24 @@ public final class ClientLoginHandler {
         return serverData != null ? Optional.of(serverData.ip) : Optional.empty();
     }
 
-    public Optional<LoadedKeypair> getKeypair() {
-        return Optional.ofNullable(keypair);
-    }
-
     public void setSessionHash(byte @NotNull [] hash) {
-        Validate.isTrue(sessionHash == null, "Session hash was set twice.");
+        Validate.isTrue(nettyLoop.inEventLoop(), "Setting session hash in the wrong thread.");
+        Validate.validState(sessionHash == null, "Session hash was set twice.");
 
         sessionHash = hash;
     }
 
     public void handleLoginFinished() {
-        Constants.LOG.info("AKMC: log-in finished successfully.");
+        getServerName().ifPresent(serverName -> {
+            if (keyWasSelectedManually && keypair != null) {
+                Constants.LOG.info("AKMC: Assigning the \"{}\" key pair to server \"{}\".", keypair.getName(), serverName);
+                AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, keypair.getName());
+            }
+        });
+
         handleDisconnection();
+
+        Constants.LOG.info("AKMC: log-in finished successfully.");
     }
 
     public void handleDisconnection() {
@@ -188,20 +197,13 @@ public final class ClientLoginHandler {
         Validate.validState(connection.isEncrypted(), "Encryption must be enabled.");
         Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected authentication request.");
 
-        acquireKeypair();
+        if (!loadSavedKeyPair()) {
+            showScreen(new KeySelectionScreen(originalScreen, this::onAuthenticationKeySelected));
 
-        LoadedKeypair keypair = this.keypair;
-        Validate.validState(keypair != null, "Missing key pair.");
+            return;
+        }
 
-        Constants.LOG.info(
-                "AKMC: Presenting the \"{}\" public key for authentication: {}",
-                keypair.getName(),
-                keypair.getTextualPublic());
-
-        respond(new C2SPublicKeyPayload(keypair.getPublic()));
-        updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-for-challenge"));
-
-        transition(Phase.AWAIT_LOGIN_CHALLENGE);
+        sendAuthenticationKey();
     }
 
     private void handleRegistrationRequest(S2CRegistrationRequestPayload payload) {
@@ -209,21 +211,16 @@ public final class ClientLoginHandler {
 
         Constants.LOG.info("registration required = {}", payload.registrationRequired());
 
-        acquireKeypair();
-
         transition(Phase.AWAIT_REGISTRATION_DECISION);
-        showScreen(LoginRegistrationScreen.create(this, this::onRegistrationAction, this::cancelLogin));
+        showScreen(LoginRegistrationScreen.create(originalScreen, usingVanillaAuthentication, this::onRegistrationAction, this::cancelLogin));
     }
 
     private void handleChallenge(S2CChallengePayload payload) {
-        LoadedKeypair keypair = this.keypair;
-        byte[] sessionHash = this.sessionHash;
-
         Validate.validState(
                 phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
                 "Received unexpected challenge.");
         Validate.validState(sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
-        Validate.validState(keypair != null, "Missing key pair.");
+        Validate.notNull(keypair, "handleChallenge(): Missing key pair.");
 
         s2cChallenge = payload;
 
@@ -277,17 +274,70 @@ public final class ClientLoginHandler {
         });
     }
 
-    private void sendChallengeResponse() {
-        byte[] sessionHash = this.sessionHash;
-        LoadedKeypair keypair = this.keypair;
+    private void onAuthenticationKeySelected(@Nullable String keyName) {
+        nettyLoop.execute(() -> {
+            keyWasSelectedManually = true;
 
+            if (keyName == null) {
+                cancelLogin();
+
+                return;
+            }
+
+            loadKeyPair(keyName);
+            sendAuthenticationKey();
+        });
+    }
+
+    private void onRegistrationKeySelected(@Nullable String keyName) {
+        nettyLoop.execute(() -> {
+            keyWasSelectedManually = true;
+
+            if (keyName == null) {
+                cancelLogin();
+
+                return;
+            }
+
+            loadKeyPair(keyName);
+            sendRegistrationKey();
+        });
+    }
+
+    private void sendAuthenticationKey() {
+        Validate.validState(phase == Phase.AWAIT_REQUEST, "Should not send authentication key at this time.");
+        Validate.notNull(keypair, "sendAuthenticationKey(): Missing key pair.");
+
+        Constants.LOG.info(
+                "AKMC: Presenting the \"{}\" public key for authentication: {}",
+                keypair.getName(),
+                keypair.getTextualPublic());
+
+        respond(new C2SPublicKeyPayload(keypair.getPublic()));
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-for-challenge"));
+
+        transition(Phase.AWAIT_LOGIN_CHALLENGE);
+    }
+
+    private void sendRegistrationKey() {
+        Validate.validState(phase == Phase.AWAIT_REGISTRATION_DECISION, "Should not send registration key at this time.");
+        Validate.notNull(keypair, "sendRegistrationKey(): Missing keypair.");
+
+        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
+        respond(new C2SPublicKeyPayload(keypair.getPublic()));
+        updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
+
+        transition(Phase.AWAIT_REGISTRATION_CHALLENGE);
+    }
+
+    private void sendChallengeResponse() {
         Validate.validState(
                 phase == Phase.AWAIT_LOGIN_CHALLENGE || phase == Phase.AWAIT_REGISTRATION_CHALLENGE,
                 "Received unexpected challenge.");
         Validate.validState(
                 sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
         Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
-        Validate.validState(keypair != null, "Missing key pair.");
+        Validate.notNull(keypair, "Missing key pair.");
         Validate.validState(!keypair.requiresDecryption(), "Key pair has not been decrypted.");
 
         respond(C2SSignaturePayload.fromSigningChallenge(
@@ -314,20 +364,17 @@ public final class ClientLoginHandler {
     }
 
     private void confirmRegistration() {
-        LoadedKeypair keypair = this.keypair;
-
         Validate.validState(
                 phase == Phase.AWAIT_REGISTRATION_DECISION, "Confirming non-existent registration request.");
-        Validate.validState(keypair != null, "Missing key pair.");
+        Validate.notNull(keypair, "Missing key pair.");
 
-        getServerName().ifPresent(name -> {
-            Constants.LOG.info("addKeyForServer({}, {})", name, keypair.getName());
-            AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(name, keypair.getName());
-        });
+        if (!loadSavedKeyPair()) {
+            showScreen(new KeySelectionScreen(originalScreen, this::onRegistrationKeySelected));
 
-        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
-        respond(new C2SPublicKeyPayload(keypair.getPublic()));
-        updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
+            return;
+        }
+
+        sendRegistrationKey();
     }
 
     private void refuseRegistration() {
@@ -337,6 +384,8 @@ public final class ClientLoginHandler {
 
         respond(new C2SRefuseRegistrationPayload());
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.refusing-to-register"));
+
+        transition(Phase.AWAIT_VERDICT);
     }
 
     private void cancelLogin() {
@@ -352,19 +401,23 @@ public final class ClientLoginHandler {
         }
     }
 
-    private void acquireKeypair() {
+    private boolean loadSavedKeyPair() {
         Optional<String> name = getServerName();
-
         if (name.isEmpty()) {
-            throw new IllegalStateException("No server name????");
+            return false;
         }
 
         String keyName = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(name.get());
-
         if (keyName == null) {
-            throw new IllegalStateException("No key assigned for server \"%s\".".formatted(name.get()));
+            return false;
         }
 
+        loadKeyPair(keyName);
+
+        return true;
+    }
+
+    private void loadKeyPair(String keyName) {
         try {
             keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
         } catch (IOException e) {
