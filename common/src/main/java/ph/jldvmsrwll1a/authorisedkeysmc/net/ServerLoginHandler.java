@@ -33,9 +33,6 @@ public final class ServerLoginHandler {
     private final byte[] sessionHash;
     private final ConcurrentLinkedQueue<BaseC2SPayload> inbox;
 
-    private final AkPrivateKey signingKey = AuthorisedKeysModCore.SERVER_KEYPAIR.secretKey;
-    private final AkPublicKey serverKey = AuthorisedKeysModCore.SERVER_KEYPAIR.publicKey;
-
     private int txId = 0;
     private Phase phase = Phase.SEND_SERVER_KEY;
     private int ticksLeft = loginTimeoutTicks;
@@ -79,7 +76,7 @@ public final class ServerLoginHandler {
         }
 
         if (phase == Phase.SEND_SERVER_KEY) {
-            send(new S2CPublicKeyPayload(serverKey));
+            send(new S2CPublicKeyPayload(AuthorisedKeysModCore.SERVER_KEYPAIR.getPublic()));
             transition(Phase.WAIT_FOR_CLIENT_CHALLENGE);
         }
 
@@ -118,7 +115,7 @@ public final class ServerLoginHandler {
         Validate.validState(
                 phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
 
-        send(S2CSignaturePayload.fromSigningChallenge(signingKey, payload, sessionHash));
+        send(S2CSignaturePayload.fromSigningChallenge(AuthorisedKeysModCore.SERVER_KEYPAIR.getDecryptedPrivate(), payload, sessionHash));
         transition(Phase.WAIT_FOR_ACK);
     }
 
