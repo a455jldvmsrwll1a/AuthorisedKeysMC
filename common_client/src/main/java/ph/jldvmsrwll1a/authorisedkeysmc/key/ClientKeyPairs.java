@@ -20,7 +20,7 @@ public class ClientKeyPairs {
     }
 
     public static Path fromKeyName(@NotNull String name) throws InvalidPathException {
-        return ValidPath.makePath(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR, name, ".pem");
+        return ValidPath.makePath(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR, name, Constants.KEY_PAIR_EXTENSION);
     }
 
     public List<String> retrieveKeyNamesFromDisk() {
@@ -31,8 +31,8 @@ public class ClientKeyPairs {
             for (Path path : dirEntries) {
                 String name = path.getFileName().toString();
 
-                if (name.endsWith(".pem") && Files.isRegularFile(path)) {
-                    names.add(name.substring(0, name.length() - 4));
+                if (name.endsWith(Constants.KEY_PAIR_EXTENSION) && Files.isRegularFile(path)) {
+                    names.add(name.substring(0, name.length() - Constants.KEY_PAIR_EXTENSION.length()));
                 }
             }
         } catch (IOException e) {

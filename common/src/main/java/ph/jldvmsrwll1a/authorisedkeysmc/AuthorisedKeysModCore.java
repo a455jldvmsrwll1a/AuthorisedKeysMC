@@ -32,8 +32,6 @@ public class AuthorisedKeysModCore {
         Constants.LOG.info("UUID_REMAPS_PATH: {}", FILE_PATHS.UUID_REMAPS_PATH);
         Constants.LOG.info("HISTORY_PATH: {}", FILE_PATHS.HISTORY_PATH);
         Constants.LOG.info("SERVER_SECRET_PATH: {}", FILE_PATHS.SERVER_SECRET_PATH);
-
-        Security.addProvider(new BouncyCastleProvider());
     }
 
     private static void initialiseServerKeyPair() {
@@ -45,7 +43,7 @@ public class AuthorisedKeysModCore {
             }
 
             Constants.LOG.info("Loaded existing server key pair.");
-        } catch (IOException ignored) {
+        } catch (Exception ignored) {
             Constants.LOG.warn("Could not find existing server key pair!");
 
             try {

@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 
@@ -12,8 +13,18 @@ public final class AkPrivateKey {
         parameters = new Ed25519PrivateKeyParameters(random);
     }
 
+    public AkPrivateKey(ByteBuffer buffer) {
+        byte[] bytes = new byte[LENGTH];
+        buffer.get(bytes);
+        parameters = new Ed25519PrivateKeyParameters(bytes);
+    }
+
     public AkPrivateKey(byte[] bytes) {
         parameters = new Ed25519PrivateKeyParameters(bytes);
+    }
+
+    public void write(ByteBuffer buffer) {
+        buffer.put(parameters.getEncoded());
     }
 
     public AkPublicKey derivePublicKey() {

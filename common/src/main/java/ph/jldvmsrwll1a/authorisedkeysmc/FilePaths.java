@@ -37,6 +37,6 @@ public class FilePaths {
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
         UUID_REMAPS_PATH = MOD_DIR.resolve("uuid_remaps.json");
         HISTORY_PATH = MOD_DIR.resolve("history.json");
-        SERVER_SECRET_PATH = MOD_DIR.resolve("server_secret.pem");
+        SERVER_SECRET_PATH = MOD_DIR.resolve("server_secret%s".formatted(Constants.KEY_PAIR_EXTENSION));
     }
 }

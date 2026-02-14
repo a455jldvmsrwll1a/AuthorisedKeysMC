@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
@@ -30,6 +31,15 @@ public final class AkPublicKey {
         hash = Arrays.hashCode(bytes);
     }
 
+    public AkPublicKey(ByteBuffer buffer) {
+        byte[] bytes = new byte[ENCODED_LENGTH];
+        buffer.get(bytes);
+
+        parameters = new Ed25519PublicKeyParameters(bytes);
+        encodedBytes = bytes;
+        hash = Arrays.hashCode(bytes);
+    }
+
     public AkPublicKey(byte[] bytes) {
         parameters = new Ed25519PublicKeyParameters(bytes);
         encodedBytes = bytes;
@@ -46,6 +56,10 @@ public final class AkPublicKey {
 
     public byte[] getEncoded() {
         return encodedBytes;
+    }
+
+    public void write(ByteBuffer buffer) {
+        buffer.put(getEncoded());
     }
 
     @Override

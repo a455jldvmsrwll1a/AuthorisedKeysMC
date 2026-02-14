@@ -1,37 +1,17 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PKCS8Generator;
-import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
-import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
-import org.bouncycastle.operator.InputDecryptorProvider;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.OutputEncryptor;
-import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
-import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfoBuilder;
-import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
-import org.bouncycastle.util.io.pem.PemWriter;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 /**
  * Keypair that may or may not be encrypted.
@@ -42,7 +22,7 @@ public class AkKeyPair {
 
     private @Nullable AkPublicKey publicKey;
     private @Nullable AkPrivateKey privateKey;
-    private @Nullable PKCS8EncryptedPrivateKeyInfo encryptedInfo;
+    private @Nullable AkEncryptedKey encryptedKey;
 
     public AkKeyPair(
             @NonNull String name,
@@ -54,20 +34,20 @@ public class AkKeyPair {
 
         this.privateKey = privateKey;
         this.publicKey = publicKey != null ? publicKey : privateKey.derivePublicKey();
-        this.encryptedInfo = null;
+        this.encryptedKey = null;
     }
 
     public AkKeyPair(
             @NonNull String name,
             @NonNull Instant modificationTime,
-            @NonNull PKCS8EncryptedPrivateKeyInfo encryptedInfo,
+            @NonNull AkEncryptedKey encryptedKey,
             @Nullable AkPublicKey publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
 
         this.privateKey = null;
         this.publicKey = publicKey;
-        this.encryptedInfo = encryptedInfo;
+        this.encryptedKey = encryptedKey;
     }
 
     /**
@@ -110,7 +90,7 @@ public class AkKeyPair {
     public @NonNull AkPrivateKey getDecryptedPrivate() {
         if (privateKey != null) {
             return privateKey;
-        } else if (encryptedInfo != null) {
+        } else if (encryptedKey != null) {
             throw new IllegalStateException("private key has likely not yet been decrypted");
         } else {
             throw new IllegalStateException("Degenerate keypair does not contain any data.");
@@ -121,7 +101,7 @@ public class AkKeyPair {
      * Does this keypair need to be decrypted in order to be usable?
      */
     public boolean requiresDecryption() {
-        return privateKey == null && encryptedInfo != null;
+        return privateKey == null && encryptedKey != null;
     }
 
     /**
@@ -150,32 +130,15 @@ public class AkKeyPair {
      * @return {@code true} if successful.
      */
     public boolean decrypt(char @NonNull [] password) {
-        Validate.validState(encryptedInfo != null, "Not an encrypted private key.");
+        Validate.validState(encryptedKey != null, "Not an encrypted private key.");
 
         try {
-            InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password);
-            PrivateKeyInfo pki = encryptedInfo.decryptPrivateKeyInfo(decryptorProvider);
-            AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pki);
-
-            if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                setPrivateKey(new AkPrivateKey(edPri.getEncoded()));
-
-                return true;
-            } else {
-                throw new IllegalArgumentException("Expected a %s but found a %s!"
-                        .formatted(
-                                Ed25519PublicKeyParameters.class.getName(),
-                                key.getClass().getName()));
-            }
-        } catch (OperatorCreationException | IOException e) {
-            throw new RuntimeException(e);
-        } catch (PKCSException e) {
-            // Nothing.
+            encryptedKey.decrypt(password).ifPresent(this::setPrivateKey);
         } finally {
             Arrays.fill(password, '\0');
         }
 
-        return false;
+        return !requiresDecryption();
     }
 
     /**
@@ -186,18 +149,8 @@ public class AkKeyPair {
         Validate.validState(privateKey != null, "Decrypted private key not available.");
 
         try {
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey.getInternal());
-
-            JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder =
-                    new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
-            encryptorBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-            encryptorBuilder.setRandom(new SecureRandom());
-            encryptorBuilder.setIterationCount(2_000_000);
-            encryptorBuilder.setPassword(password);
-            OutputEncryptor encryptor = encryptorBuilder.build();
-
-            encryptedInfo = new PKCS8EncryptedPrivateKeyInfoBuilder(privateKeyInfo).build(encryptor);
-        } catch (OperatorCreationException | IOException e) {
+            encryptedKey = new AkEncryptedKey(SecureRandom.getInstanceStrong(), privateKey, password);
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         } finally {
             Arrays.fill(password, '\0');
@@ -212,10 +165,7 @@ public class AkKeyPair {
     }
 
     /**
-     * Emit a PEM file containing both the private key and the public key.
-     * <p>
-     * An {@code ENCRYPTED PRIVATE KEY} PEM object will be emitted if the keypair contains an encrypted private key.
-     * Otherwise, it will emit a {@code PRIVATE KEY} PEM object instead.
+     * Write key pair information to a file on {@code outPath}.
      * @param outPath The file path to write to.
      * @throws IOException May fail to write the file.
      */
@@ -230,23 +180,27 @@ public class AkKeyPair {
             // Don't care.
         }
 
-        PemObject privatePem;
-        if (encryptedInfo != null) {
-            privatePem = new PemObject("ENCRYPTED PRIVATE KEY", encryptedInfo.getEncoded());
+        ByteBuffer outBuffer = ByteBuffer.allocate(4096);
+        outBuffer.putInt(Constants.KEY_PAIR_HEADER);
+        outBuffer.putShort(Constants.KEY_PAIR_VERSION);
+
+        if (encryptedKey != null && publicKey != null) {
+            outBuffer.putShort((short) 1);
+            publicKey.write(outBuffer);
+            encryptedKey.write(outBuffer);
         } else if (privateKey != null) {
-            PrivateKeyInfo pki = PrivateKeyInfoFactory.createPrivateKeyInfo(privateKey.getInternal());
-            privatePem = new PemObject("PRIVATE KEY", pki.getEncoded());
+            outBuffer.putShort((short) 0);
+            privateKey.write(outBuffer);
         } else {
             throw new IllegalStateException("Degenerate keypair has no private key");
         }
 
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
-                getPublic().getInternal());
-        PemObject publicPem = new PemObject("PUBLIC KEY", spki.getEncoded());
+        try (FileChannel channel = FileChannel.open(outPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            outBuffer.flip();
 
-        try (PemWriter writer = new PemWriter(new FileWriter(path.toFile()))) {
-            writer.writeObject(privatePem);
-            writer.writeObject(publicPem);
+            while (outBuffer.hasRemaining()) {
+                int len = channel.write(outBuffer);
+            }
         }
     }
 
@@ -266,7 +220,7 @@ public class AkKeyPair {
     }
 
     /**
-     * Loads a keypair from a PEM file.
+     * Loads a key pair from a file.
      * @param name A label for the key.
      * @return The loaded keypair.
      * @throws IOException May fail to read the file.
@@ -274,55 +228,36 @@ public class AkKeyPair {
     public static AkKeyPair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
-        AkPrivateKey privateKey = null;
-        AkPublicKey publicKey = null;
-        PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = null;
+        ByteBuffer inBuffer = ByteBuffer.allocate(4096);
 
-        try (PemReader reader = new PemReader(new FileReader(path.toFile()))) {
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             while (true) {
-                PemObject pem = reader.readPemObject();
-
-                if (pem == null) {
+                if (channel.read(inBuffer) < 0)
                     break;
-                }
-
-                switch (pem.getType()) {
-                    case "PRIVATE KEY" -> {
-                        AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pem.getContent());
-
-                        if (key instanceof Ed25519PrivateKeyParameters edPri) {
-                            privateKey = new AkPrivateKey(edPri.getEncoded());
-                        } else {
-                            throw new IllegalArgumentException("expected a private key of type %s but found a %s"
-                                    .formatted(
-                                            Ed25519PrivateKeyParameters.class.getName(),
-                                            key.getClass().getName()));
-                        }
-                    }
-                    case "ENCRYPTED PRIVATE KEY" ->
-                        encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(pem.getContent());
-                    case "PUBLIC KEY" -> {
-                        AsymmetricKeyParameter key = PublicKeyFactory.createKey(pem.getContent());
-
-                        if (key instanceof Ed25519PublicKeyParameters edPub) {
-                            publicKey = new AkPublicKey(edPub.getEncoded());
-                        } else {
-                            throw new IllegalArgumentException("expected a public key of type %s but found a %s"
-                                    .formatted(
-                                            Ed25519PublicKeyParameters.class.getName(),
-                                            key.getClass().getName()));
-                        }
-                    }
-                }
             }
+
+            inBuffer.flip();
         }
 
-        if (privateKey != null) {
-            return new AkKeyPair(name, modificationTime, privateKey, publicKey);
-        } else if (encryptedPrivateKeyInfo != null) {
-            return new AkKeyPair(name, modificationTime, encryptedPrivateKeyInfo, publicKey);
+        int header = inBuffer.getInt();
+        Validate.isTrue(header == Constants.KEY_PAIR_HEADER, "Header mismatch: expected 0x%x, got 0x%x.", Constants.KEY_PAIR_HEADER, header);
+
+        short version = inBuffer.getShort();
+        Validate.isTrue(version == Constants.KEY_PAIR_VERSION, "Version mismatch: expected %s, got %s.", Constants.KEY_PAIR_VERSION, version);
+
+        short flags = inBuffer.getShort();
+
+        if (flags == 1) {
+            AkPublicKey publicKey = new AkPublicKey(inBuffer);
+            AkEncryptedKey encryptedKey = new AkEncryptedKey(inBuffer);
+
+            return new AkKeyPair(name, modificationTime, encryptedKey, publicKey);
+        } else if (flags == 0) {
+            AkPrivateKey privateKey = new AkPrivateKey(inBuffer);
+
+            return new AkKeyPair(name, modificationTime, privateKey, null);
         } else {
-            throw new IllegalArgumentException("File contains no valid data.");
+            throw new IllegalArgumentException("Unknown flags value: %x".formatted(flags));
         }
     }
 }
