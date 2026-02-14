@@ -89,7 +89,6 @@ dependencies {
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 
     shadow ("org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}")
-    shadow ("org.bouncycastle:bcpkix-jdk18on:${bouncycastle_version}")
 }
 
 publishing {

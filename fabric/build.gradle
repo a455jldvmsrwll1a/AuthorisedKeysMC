@@ -32,11 +32,8 @@ dependencies {
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
     api 'org.bouncycastle:bcprov-jdk18on:1.83'
-    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
-    api 'org.bouncycastle:bcpkix-jdk18on:1.83'
 
     include 'org.bouncycastle:bcprov-jdk18on:1.83'
-    include 'org.bouncycastle:bcpkix-jdk18on:1.83'
 }
 
 loom {

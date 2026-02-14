@@ -55,11 +55,6 @@ dependencies {
             strictly "${bouncycastle_version}"
         }
     }
-    jarJar(implementation(group: 'org.bouncycastle', name: 'bcpkix-jdk18on', version: "${bouncycastle_version}")) {
-        version {
-            strictly "${bouncycastle_version}"
-        }
-    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }

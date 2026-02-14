@@ -33,8 +33,6 @@ dependencies {
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
     compileOnly "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
-    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
-    compileOnly "org.bouncycastle:bcpkix-jdk18on:${bouncycastle_version}"
 }
 
 configurations {
