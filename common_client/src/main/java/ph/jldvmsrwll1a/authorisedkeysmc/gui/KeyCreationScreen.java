@@ -302,7 +302,7 @@ public class KeyCreationScreen extends BaseScreen {
                 AuthorisedKeysModClient.KEY_PAIRS.generate(
                         currentName, passwordCheckbox.selected() ? currentPassword.toCharArray() : null);
             } catch (Exception e) {
-                Constants.LOG.error("Failed to generate keypair: {}", e.getMessage());
+                Constants.LOG.error("Failed to generate keypair: {}", e);
                 minecraft.execute(() -> minecraft.setScreen(new ErrorScreen(
                         Component.translatable("authorisedkeysmc.error.generation-fail"),
                         Component.literal(e.getMessage()))));
@@ -325,7 +325,7 @@ public class KeyCreationScreen extends BaseScreen {
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
         Path keysDir = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
-        String format = "%s%s%s%s%s%s.pem".formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName);
+        String format = "%s%s%s%s%s%s%s".formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);
     }
