@@ -6,15 +6,19 @@ import static net.minecraft.commands.Commands.literal;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import java.util.List;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
+import net.minecraft.commands.arguments.UuidArgument;
+import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public final class ModCommands {
@@ -39,7 +43,18 @@ public final class ModCommands {
                 .then(literal("unbind")
                         .then(argument("key", StringArgumentType.string())
                                 .suggests(new SelfKeysSuggestions())
-                                .executes(ModCommands::unbind))));
+                                .executes(ModCommands::unbind)))
+                .then(literal("id")
+                        .requires(ModCommands::admin)
+                        .then(argument("id", UuidArgument.uuid())
+                                .suggests(new RegisteredUserIdSuggestions())
+                                .executes(ModCommands::idInfo)
+                                .then(literal("bind")
+                                        .then(argument("key", StringArgumentType.string())
+                                                .executes(ModCommands::idBind)))
+                                .then(literal("unbind")
+                                        .then(argument("key", StringArgumentType.string())
+                                                .executes(ModCommands::idUnbind))))));
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
@@ -79,11 +94,6 @@ public final class ModCommands {
         return SUCCESS;
     }
 
-    private static int bind(CommandContext<CommandSourceStack> context) {
-
-        return SUCCESS;
-    }
-
     private static int unbind(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = context.getSource().getPlayer();
         if (player == null) {
@@ -117,6 +127,117 @@ public final class ModCommands {
             reply(context, Component.literal("You have no such key.").withStyle(ChatFormatting.RED));
             return ERROR;
         }
+    }
+
+    private static int idInfo(CommandContext<CommandSourceStack> context) {
+        UUID id = UuidArgument.getUuid(context, "id");
+
+        List<UserKeys.UserKey> keys = AuthorisedKeysModCore.USER_KEYS.getUserKeys(id);
+
+        if (keys == null || keys.isEmpty()) {
+            reply(
+                    context,
+                    Component.literal("No user by that UUID is on record.").withStyle(ChatFormatting.GRAY));
+
+            return SUCCESS;
+        }
+
+        ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayer(id);
+
+        MutableComponent message = Component.empty();
+        message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
+        message.append(" key");
+        if (keys.size() != 1) {
+            message.append("s");
+        }
+        message.append(" belong");
+        if (keys.size() == 1) {
+            message.append("s");
+        }
+        message.append(" to ");
+        if (player == null) {
+            message.append(id.toString());
+        } else {
+            message.append(player.getDisplayName());
+        }
+        if (keys.isEmpty()) {
+            message.append(".");
+        } else {
+            message.append(":");
+        }
+        keys.forEach(key -> {
+            message.append("\n");
+
+            String keyString = key.key.toString();
+            message.append(Component.literal(keyString)
+                    .withStyle(ChatFormatting.GOLD)
+                    .withStyle(Style.EMPTY
+                            .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
+        });
+
+        reply(context, message);
+
+        return SUCCESS;
+    }
+
+    private static int idBind(CommandContext<CommandSourceStack> context) {
+        UUID id = UuidArgument.getUuid(context, "id");
+        String encodedKey = StringArgumentType.getString(context, "key");
+
+        AkPublicKey key;
+
+        try {
+            key = new AkPublicKey(encodedKey);
+        } catch (IllegalArgumentException e) {
+            context.getSource()
+                    .sendFailure(
+                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
+            return ERROR;
+        }
+
+        ServerPlayer player = context.getSource().getPlayer();
+        UUID issuer = player != null ? player.getUUID() : null;
+
+        if (AuthorisedKeysModCore.USER_KEYS.bindKey(id, issuer, key)) {
+            reply(context, Component.literal("Key was successfully bound!"));
+
+            return SUCCESS;
+        } else {
+            reply(context, Component.literal("This user already has that key.").withStyle(ChatFormatting.RED));
+
+            return ERROR;
+        }
+    }
+
+    private static int idUnbind(CommandContext<CommandSourceStack> context) {
+        UUID id = UuidArgument.getUuid(context, "id");
+        String encodedKey = StringArgumentType.getString(context, "key");
+
+        AkPublicKey key;
+
+        try {
+            key = new AkPublicKey(encodedKey);
+        } catch (IllegalArgumentException e) {
+            context.getSource()
+                    .sendFailure(
+                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
+            return ERROR;
+        }
+
+        if (AuthorisedKeysModCore.USER_KEYS.unbindKey(id, key)) {
+            reply(context, "Key was successfully unbound!");
+
+            return SUCCESS;
+        } else {
+            reply(context, Component.literal("No such key or user.").withStyle(ChatFormatting.RED));
+            return ERROR;
+        }
+    }
+
+    private static int b44werwrsse4ind(CommandContext<CommandSourceStack> context) {
+
+        return SUCCESS;
     }
 
     private static boolean admin(CommandSourceStack source) {
