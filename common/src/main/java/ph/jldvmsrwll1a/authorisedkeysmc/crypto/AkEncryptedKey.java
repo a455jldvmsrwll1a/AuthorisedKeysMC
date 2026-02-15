@@ -1,5 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Random;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
@@ -7,12 +12,6 @@ import org.bouncycastle.crypto.modes.ChaCha20Poly1305;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 import org.bouncycastle.crypto.params.KeyParameter;
-
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Random;
 
 public class AkEncryptedKey {
     private static final int KDF_SALT_LENGTH = 32;
@@ -135,7 +134,8 @@ public class AkEncryptedKey {
         engine.init(false, aeadParams);
 
         int outputSize = engine.getOutputSize(OUTPUT_LENGTH);
-        Validate.validState(outputSize == PLAINTEXT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
+        Validate.validState(
+                outputSize == PLAINTEXT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
 
         int head = engine.processBytes(cipherText, 0, OUTPUT_LENGTH, plaintext, 0);
         head += engine.doFinal(plaintext, head);
@@ -158,7 +158,8 @@ public class AkEncryptedKey {
         engine.init(true, aeadParams);
 
         int outputSize = engine.getOutputSize(AkPrivateKey.LENGTH);
-        Validate.validState(outputSize == OUTPUT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
+        Validate.validState(
+                outputSize == OUTPUT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
 
         int head = engine.processBytes(plaintext, 0, PLAINTEXT_LENGTH, cipherText, 0);
 

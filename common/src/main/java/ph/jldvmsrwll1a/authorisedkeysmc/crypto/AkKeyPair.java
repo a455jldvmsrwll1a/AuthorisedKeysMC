@@ -232,18 +232,25 @@ public class AkKeyPair {
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             while (true) {
-                if (channel.read(inBuffer) < 0)
-                    break;
+                if (channel.read(inBuffer) < 0) break;
             }
 
             inBuffer.flip();
         }
 
         int header = inBuffer.getInt();
-        Validate.isTrue(header == Constants.KEY_PAIR_HEADER, "Header mismatch: expected 0x%x, got 0x%x.", Constants.KEY_PAIR_HEADER, header);
+        Validate.isTrue(
+                header == Constants.KEY_PAIR_HEADER,
+                "Header mismatch: expected 0x%x, got 0x%x.",
+                Constants.KEY_PAIR_HEADER,
+                header);
 
         short version = inBuffer.getShort();
-        Validate.isTrue(version == Constants.KEY_PAIR_VERSION, "Version mismatch: expected %s, got %s.", Constants.KEY_PAIR_VERSION, version);
+        Validate.isTrue(
+                version == Constants.KEY_PAIR_VERSION,
+                "Version mismatch: expected %s, got %s.",
+                Constants.KEY_PAIR_VERSION,
+                version);
 
         short flags = inBuffer.getShort();
 

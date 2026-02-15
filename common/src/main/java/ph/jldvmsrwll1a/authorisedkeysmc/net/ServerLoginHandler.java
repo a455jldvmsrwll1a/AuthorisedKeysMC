@@ -114,7 +114,8 @@ public final class ServerLoginHandler {
         Validate.validState(
                 phase.equals(Phase.WAIT_FOR_CLIENT_CHALLENGE), "Received client challenge but wasn't expecting one!");
 
-        send(S2CSignaturePayload.fromSigningChallenge(AuthorisedKeysModCore.SERVER_KEYPAIR.getDecryptedPrivate(), payload, sessionHash));
+        send(S2CSignaturePayload.fromSigningChallenge(
+                AuthorisedKeysModCore.SERVER_KEYPAIR.getDecryptedPrivate(), payload, sessionHash));
         transition(Phase.WAIT_FOR_ACK);
     }
 
