@@ -19,13 +19,6 @@ import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.payload.*;
 
 public final class ServerLoginHandler {
-    // TODO: make this configurable
-    final int loginTimeoutTicks = 1200;
-    // TODO: make this configurable
-    final boolean allowsUnregistered = true;
-    // TODO: make this configurable
-    final boolean registrationRequired = false;
-
     private final ServerLoginPacketListenerImpl listener;
     private final Connection connection;
     private final GameProfile profile;
@@ -34,7 +27,7 @@ public final class ServerLoginHandler {
 
     private int txId = 0;
     private Phase phase = Phase.SEND_SERVER_KEY;
-    private int ticksLeft = loginTimeoutTicks;
+    private int ticksLeft = AuthorisedKeysModCore.CONFIG.loginTimeoutTicks;
 
     private @Nullable AkPublicKey clientKey;
     private byte @Nullable [] nonce;
@@ -125,8 +118,8 @@ public final class ServerLoginHandler {
         if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(profile.id())) {
             send(new S2CAuthenticationRequestPayload());
             transition(Phase.WAIT_FOR_CLIENT_AUTHENTICATION_KEY);
-        } else if (allowsUnregistered) {
-            send(new S2CRegistrationRequestPayload(registrationRequired));
+        } else if (AuthorisedKeysModCore.CONFIG.allowRegistration) {
+            send(new S2CRegistrationRequestPayload(AuthorisedKeysModCore.CONFIG.registrationRequired));
             transition(Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY);
         } else {
             listener.disconnect(Component.translatable("authorisedkeysmc.error.must-preregister"));
@@ -187,7 +180,7 @@ public final class ServerLoginHandler {
     private void handleRegistrationRefusal(C2SRefuseRegistrationPayload payload) {
         Validate.validState(phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY, "Received bogus registration refusal.");
 
-        if (registrationRequired) {
+        if (AuthorisedKeysModCore.CONFIG.registrationRequired) {
             Constants.LOG.info("{} refuses to register!", profile.name());
             listener.disconnect(Component.translatable("authorisedkeysmc.error.registration-mandatory"));
 
