@@ -12,10 +12,12 @@ public class AuthorisedKeysModCore {
     public static FilePaths FILE_PATHS;
     public static AkKeyPair SERVER_KEYPAIR;
     public static UserKeys USER_KEYS;
+    public static ServerConfig CONFIG;
 
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
+        CONFIG = new ServerConfig();
 
         reload();
         initialiseServerKeyPair();
@@ -23,6 +25,7 @@ public class AuthorisedKeysModCore {
 
     public static void reload() {
         USER_KEYS = new UserKeys();
+        CONFIG.read();
 
         Constants.LOG.info("AKMC: loaded server files!");
     }
