@@ -9,12 +9,14 @@ public final class ServerConfig {
     public int loginTimeoutTicks;
     public boolean registrationRequired;
     public boolean allowRegistration;
+    public boolean skipOnlineAccounts;
 
     public void reset() {
         enforcing = true;
         loginTimeoutTicks = 1200;
         registrationRequired = false;
         allowRegistration = true;
+        skipOnlineAccounts = false;
     }
 
     public void read() {
@@ -65,6 +67,15 @@ public final class ServerConfig {
             throw new IllegalStateException("Invalid boolean for allow_registration");
         }
 
+        String skipOnlineAccountsStr = props.getProperty("skip_online_accounts").strip();
+        if (skipOnlineAccountsStr.equalsIgnoreCase("true")) {
+            skipOnlineAccounts = true;
+        } else if (skipOnlineAccountsStr.equalsIgnoreCase("false")) {
+            skipOnlineAccounts = false;
+        } else {
+            throw new IllegalStateException("Invalid boolean for skip_online_accounts");
+        }
+
         Constants.LOG.info("AKMC: successfully loaded server config.");
     }
 
@@ -86,6 +97,8 @@ public final class ServerConfig {
             writer.write(registrationRequired ? "true\n" : "false\n");
             writer.write("allow_registration = ");
             writer.write(allowRegistration ? "true\n" : "false\n");
+            writer.write("skip_online_accounts = ");
+            writer.write(skipOnlineAccounts ? "true\n" : "false\n");
         } catch (RuntimeException | IOException e) {
             throw new RuntimeException(e);
         }

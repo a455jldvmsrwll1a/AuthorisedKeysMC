@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import java.net.SocketAddress;
 import java.security.PublicKey;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.Connection;
@@ -86,6 +87,9 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Unique
     private boolean authorisedKeysMC$alreadyCheckedIfCanJoin = false;
 
+    @Unique
+    private boolean authorisedKeysMC$shouldUseVanillaAuthentication = false;
+
     @Inject(method = "handleHello", at = @At("HEAD"), cancellable = true)
     private void handleIncoming(ServerboundHelloPacket packet, CallbackInfo ci) {
         requestedUsername = packet.name();
@@ -118,20 +122,39 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return;
         }
 
+        if (server.usesAuthentication()) {
+            authorisedKeysMC$shouldUseVanillaAuthentication = true;
+        } else if (AuthorisedKeysModCore.CONFIG.skipOnlineAccounts) {
+            UUID uuid = packet.profileId();
+
+            if (uuid.version() == 4) {
+                UUID offlineId = UUIDUtil.createOfflinePlayerUUID(packet.name());
+
+                if (!uuid.equals(offlineId)) {
+                    // Client is *probably* not offline.
+                    authorisedKeysMC$shouldUseVanillaAuthentication = true;
+                    authorisedKeysMC$skipLogin();
+                }
+            }
+        }
+
         // Always encrypt even if server does not use authentication.
 
-        if (server.usesAuthentication()) {
+        if (authorisedKeysMC$shouldUseVanillaAuthentication) {
             Constants.LOG.info("server uses authentication");
         }
 
         platform.setLoginState(self, VanillaLoginHandlerState.ENCRYPTING);
         connection.send(new ClientboundHelloPacket(
-                "", server.getKeyPair().getPublic().getEncoded(), challenge, server.usesAuthentication()));
+                "",
+                server.getKeyPair().getPublic().getEncoded(),
+                challenge,
+                authorisedKeysMC$shouldUseVanillaAuthentication));
     }
 
     @Inject(method = "handleKey", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;start()V"), cancellable = true)
     private void handleEncryptionKey(ServerboundKeyPacket packet, CallbackInfo ci) {
-        if (!server.usesAuthentication()) {
+        if (!authorisedKeysMC$shouldUseVanillaAuthentication) {
             // Prevent the Vanilla authenticator thread from running.
             // The client has not authenticated, so we shouldn't either.
             ci.cancel();
