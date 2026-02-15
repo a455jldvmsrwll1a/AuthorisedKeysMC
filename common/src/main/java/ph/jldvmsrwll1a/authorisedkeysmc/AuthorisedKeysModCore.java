@@ -21,17 +21,6 @@ public class AuthorisedKeysModCore {
         USER_KEYS = new UserKeys();
 
         initialiseServerKeyPair();
-
-        Constants.LOG.info("MOD_DIR: {}", FILE_PATHS.MOD_DIR);
-        Constants.LOG.info("CONFIG_DIR: {}", FILE_PATHS.CONFIG_DIR);
-        Constants.LOG.info("CLIENT_CONFIG_PATH: {}", FILE_PATHS.CLIENT_CONFIG_PATH);
-        Constants.LOG.info("SERVER_CONFIG_PATH: {}", FILE_PATHS.SERVER_CONFIG_PATH);
-        Constants.LOG.info("KEY_PAIRS_DIR: {}", FILE_PATHS.KEY_PAIRS_DIR);
-        Constants.LOG.info("AUTHORISED_KEYS_PATH: {}", FILE_PATHS.AUTHORISED_KEYS_PATH);
-        Constants.LOG.info("BYPASS_LIST_PATH: {}", FILE_PATHS.BYPASS_LIST_PATH);
-        Constants.LOG.info("UUID_REMAPS_PATH: {}", FILE_PATHS.UUID_REMAPS_PATH);
-        Constants.LOG.info("HISTORY_PATH: {}", FILE_PATHS.HISTORY_PATH);
-        Constants.LOG.info("SERVER_SECRET_PATH: {}", FILE_PATHS.SERVER_SECRET_PATH);
     }
 
     private static void initialiseServerKeyPair() {
