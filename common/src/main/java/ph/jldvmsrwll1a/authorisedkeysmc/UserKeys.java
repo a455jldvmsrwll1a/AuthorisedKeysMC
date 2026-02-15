@@ -17,7 +17,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public class UserKeys {
-    private final ConcurrentHashMap<UUID, List<UserKey>> userKeysMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ArrayList<UserKey>> userKeysMap = new ConcurrentHashMap<>();
 
     public UserKeys() {
         read();
@@ -41,69 +41,54 @@ public class UserKeys {
         return userKeys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
     }
 
+    public @Nullable List<UserKey> getUserKeys(UUID playerId) {
+        return userKeysMap.get(playerId);
+    }
+
     public boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
-        final Boolean[] dirty = {false};
+        ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(playerId, k -> new ArrayList<>(1));
 
-        userKeysMap.compute(playerId, (uuid, userKeys) -> {
-            List<UserKey> newKeys = userKeys != null ? userKeys : new ArrayList<>();
-            boolean found = newKeys.stream().anyMatch(entry -> AkPublicKey.nullableEqual(entry.key, key));
-
-            if (!found) {
-                dirty[0] = true;
-
-                UserKey userKey = new UserKey();
-                userKey.key = key;
-                userKey.issuingPlayer = issuingPlayerId;
-                userKey.registrationTime = Instant.now();
-                newKeys.add(userKey);
-
-                if (issuingPlayerId == null) {
-                    Constants.LOG.info("Key {} has been bound to {}.", Base64Util.encode(key.getEncoded()), playerId);
-                } else {
-                    Constants.LOG.info(
-                            "Key {} has been bound by {} to {}.",
-                            Base64Util.encode(key.getEncoded()),
-                            issuingPlayerId,
-                            playerId);
-                }
-            }
-
-            return newKeys;
-        });
-
-        if (dirty[0]) {
-            write();
+        if (keys.stream().anyMatch(entry -> entry.key.equals(key))) {
+            return false;
         }
 
-        return dirty[0];
+        UserKey newKey = new UserKey();
+        newKey.key = key;
+        newKey.issuingPlayer = issuingPlayerId;
+        newKey.registrationTime = Instant.now();
+        keys.add(newKey);
+
+        if (issuingPlayerId == null) {
+            Constants.LOG.info("Key {} has been bound to {}.", Base64Util.encode(key.getEncoded()), playerId);
+        } else {
+            Constants.LOG.info(
+                    "Key {} has been bound by {} to {}.",
+                    Base64Util.encode(key.getEncoded()),
+                    issuingPlayerId,
+                    playerId);
+        }
+
+        write();
+
+        return true;
     }
 
     public boolean unbindKey(UUID playerId, AkPublicKey key) {
-        final Boolean[] dirty = {false};
+        ArrayList<UserKey> keys = userKeysMap.get(playerId);
 
-        userKeysMap.compute(playerId, (uuid, userKeys) -> {
-            if (userKeys == null || userKeys.isEmpty()) {
-                return null;
-            }
-
-            if (userKeys.removeIf(userKey -> AkPublicKey.nullableEqual(userKey.key, key))) {
-                dirty[0] = true;
-
-                Constants.LOG.info("Key {} has been unbound from {}.", key.toString(), playerId);
-
-                if (userKeys.isEmpty()) {
-                    return null;
-                }
-            }
-
-            return userKeys;
-        });
-
-        if (dirty[0]) {
-            write();
+        if (keys == null || keys.isEmpty()) {
+            return false;
         }
 
-        return dirty[0];
+        if (!keys.removeIf(userKey -> userKey.key.equals(key))) {
+            return false;
+        }
+
+        Constants.LOG.info("AKMC: The public key {} has been unbound from {}.", key, playerId);
+
+        write();
+
+        return true;
     }
 
     public void read() {
@@ -127,7 +112,7 @@ public class UserKeys {
                         })
                         .toList();
 
-                userKeysMap.put(entry.user, keys);
+                userKeysMap.put(entry.user, new ArrayList<>(keys));
             });
         } catch (FileNotFoundException ignored) {
             // Ignored.
@@ -168,13 +153,10 @@ public class UserKeys {
         Constants.LOG.debug("Wrote {} user entries to disk.", userKeysMap.size());
     }
 
-    private static class UserKey {
-        AkPublicKey key;
-
-        @Nullable
-        UUID issuingPlayer;
-
-        Instant registrationTime;
+    public static class UserKey {
+        public AkPublicKey key;
+        public @Nullable UUID issuingPlayer;
+        public Instant registrationTime;
     }
 
     private record UserJsonEntry(UUID user, List<UserKeyJsonEntry> keys) {}
