@@ -3,8 +3,6 @@ package ph.jldvmsrwll1a.authorisedkeysmc;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.Security;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
@@ -18,9 +16,15 @@ public class AuthorisedKeysModCore {
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
+
+        reload();
+        initialiseServerKeyPair();
+    }
+
+    public static void reload() {
         USER_KEYS = new UserKeys();
 
-        initialiseServerKeyPair();
+        Constants.LOG.info("AKMC: loaded server files!");
     }
 
     private static void initialiseServerKeyPair() {
