@@ -26,8 +26,8 @@ public class FilePaths {
         MOD_DIR = platform.getGameDirectory().resolve(MOD_DIR_NAME);
         CONFIG_DIR = platform.getConfigDirectory().resolve(MOD_DIR_NAME);
 
-        CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.toml");
-        SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.toml");
+        CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.properties");
+        SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.properties");
 
         KEY_PAIRS_DIR = MOD_DIR.resolve("secrets");
         KNOWN_HOSTS_PATH = MOD_DIR.resolve("known_hosts.json");
