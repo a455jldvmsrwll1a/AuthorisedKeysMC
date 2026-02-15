@@ -185,6 +185,14 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void tick(CallbackInfo ci) {
         if (!authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null && authenticatedProfile != null) {
+            if (!AuthorisedKeysModCore.CONFIG.enforcing) {
+                authorisedKeysMC$skipped = true;
+                Constants.LOG.warn(
+                        "Not verifying {}'s identity because the mod is on standby!", authenticatedProfile.name());
+
+                return;
+            }
+
             // Ensure that the player is actually allowed in the server as far as vanilla is concerned.
             PlayerList playerList = server.getPlayerList();
             authorisedKeysMC$disconnectReason =
