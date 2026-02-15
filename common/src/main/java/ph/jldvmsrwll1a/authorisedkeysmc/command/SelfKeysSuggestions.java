@@ -1,7 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.command;
 
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -15,7 +14,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 public final class SelfKeysSuggestions implements SuggestionProvider<CommandSourceStack> {
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
-            CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+            CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         ServerPlayer player = context.getSource().getPlayer();
 
         if (player == null) {

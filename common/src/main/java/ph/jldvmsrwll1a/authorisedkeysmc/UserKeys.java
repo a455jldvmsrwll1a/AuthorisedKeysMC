@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +44,10 @@ public class UserKeys {
 
     public @Nullable List<UserKey> getUserKeys(UUID playerId) {
         return userKeysMap.get(playerId);
+    }
+
+    public Enumeration<UUID> getUsers() {
+        return userKeysMap.keys();
     }
 
     public boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
