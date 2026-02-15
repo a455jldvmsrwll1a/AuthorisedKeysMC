@@ -25,7 +25,10 @@ public class AuthorisedKeysModCore {
 
     public static void reload() {
         USER_KEYS = new UserKeys();
-        CONFIG.read();
+
+        ServerConfig temp = new ServerConfig();
+        temp.read();
+        CONFIG = temp;
 
         Constants.LOG.info("AKMC: loaded server files!");
     }
