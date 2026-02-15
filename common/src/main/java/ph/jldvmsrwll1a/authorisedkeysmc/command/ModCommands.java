@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
@@ -70,26 +71,58 @@ public final class ModCommands {
     }
 
     private static int reload(CommandContext<CommandSourceStack> context) {
-        AuthorisedKeysModCore.reload();
+        try {
+            AuthorisedKeysModCore.reload();
+        } catch (Exception e) {
+            Constants.LOG.error("Could not run reload command: {}", e);
+            reply(
+                    context,
+                    Component.literal("Failed to reload: %s".formatted(e.toString()))
+                            .withStyle(ChatFormatting.RED));
+
+            return ERROR;
+        }
         reply(context, "Reloaded!");
 
         return SUCCESS;
     }
 
     private static int enable(CommandContext<CommandSourceStack> context) {
-        reply(
-                context,
-                Component.literal("AKMC is now ")
-                        .append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
+        if (AuthorisedKeysModCore.CONFIG.enforcing) {
+            reply(context, Component.literal("AKMC is already enforcing.").withStyle(ChatFormatting.RED));
+
+            return ERROR;
+        }
+
+        AuthorisedKeysModCore.CONFIG.enforcing = true;
+        AuthorisedKeysModCore.CONFIG.write();
+
+        context.getSource()
+                .sendSuccess(
+                        () -> Component.literal("AKMC is now ")
+                                .append(Component.literal("ENFORCING")
+                                        .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)),
+                        true);
 
         return SUCCESS;
     }
 
     private static int disable(CommandContext<CommandSourceStack> context) {
-        reply(
-                context,
-                Component.literal("AKMC is now ")
-                        .append(Component.literal("ON STANDBY").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
+        if (!AuthorisedKeysModCore.CONFIG.enforcing) {
+            reply(context, Component.literal("AKMC is already on standby.").withStyle(ChatFormatting.RED));
+
+            return ERROR;
+        }
+
+        AuthorisedKeysModCore.CONFIG.enforcing = false;
+        AuthorisedKeysModCore.CONFIG.write();
+
+        context.getSource()
+                .sendSuccess(
+                        () -> Component.literal("AKMC is now ")
+                                .append(Component.literal("ON STANDBY")
+                                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)),
+                        true);
 
         return SUCCESS;
     }
