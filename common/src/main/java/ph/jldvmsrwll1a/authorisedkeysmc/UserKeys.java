@@ -8,6 +8,7 @@ import com.mojang.util.InstantTypeAdapter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.time.Instant;
 import java.util.*;
 
@@ -106,7 +107,7 @@ public class UserKeys {
                     .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
                     .create();
             entries = gson.fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
-        } catch (FileNotFoundException ignored) {
+        } catch (FileNotFoundException | NoSuchFileException ignored) {
             // Default to an empty map.
             synchronized (this) {
                 userKeysMap = new HashMap<>();
