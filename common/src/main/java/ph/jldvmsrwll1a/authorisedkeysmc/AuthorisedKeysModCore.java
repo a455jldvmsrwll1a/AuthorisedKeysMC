@@ -7,28 +7,28 @@ import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 
-public class AuthorisedKeysModCore {
+public final class AuthorisedKeysModCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
     public static AkKeyPair SERVER_KEYPAIR;
     public static UserKeys USER_KEYS;
     public static ServerConfig CONFIG;
 
+    private AuthorisedKeysModCore() {}
+
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
         CONFIG = new ServerConfig();
+        USER_KEYS = new UserKeys();
 
         reload();
         initialiseServerKeyPair();
     }
 
-    public static void reload() {
-        USER_KEYS = new UserKeys();
-
-        ServerConfig temp = new ServerConfig();
-        temp.read();
-        CONFIG = temp;
+    public static synchronized void reload() {
+        USER_KEYS.read();
+        CONFIG = ServerConfig.fromDisk();
 
         Constants.LOG.info("AKMC: loaded server files!");
     }

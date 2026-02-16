@@ -3,28 +3,24 @@ package ph.jldvmsrwll1a.authorisedkeysmc;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.util.InstantTypeAdapter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 
 public class UserKeys {
-    private final ConcurrentHashMap<UUID, ArrayList<UserKey>> userKeysMap = new ConcurrentHashMap<>();
+    private static final Object WRITE_LOCK = new Object();
 
-    public UserKeys() {
-        read();
-    }
+    private HashMap<UUID, ArrayList<UserKey>> userKeysMap = new HashMap<>();
 
-    public boolean userHasAnyKeys(UUID playerId) {
+    public synchronized boolean userHasAnyKeys(UUID playerId) {
         List<UserKey> userKeys = userKeysMap.get(playerId);
         if (userKeys == null) {
             return false;
@@ -33,7 +29,7 @@ public class UserKeys {
         return !userKeys.isEmpty();
     }
 
-    public boolean userHasKey(UUID playerId, AkPublicKey key) {
+    public synchronized boolean userHasKey(UUID playerId, AkPublicKey key) {
         List<UserKey> userKeys = userKeysMap.get(playerId);
         if (userKeys == null) {
             return false;
@@ -42,15 +38,15 @@ public class UserKeys {
         return userKeys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
     }
 
-    public @Nullable List<UserKey> getUserKeys(UUID playerId) {
+    public synchronized @Nullable List<UserKey> getUserKeys(UUID playerId) {
         return userKeysMap.get(playerId);
     }
 
-    public Enumeration<UUID> getUsers() {
-        return userKeysMap.keys();
+    public synchronized Set<UUID> getUsers() {
+        return userKeysMap.keySet();
     }
 
-    public boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
+    public synchronized boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
         ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(playerId, k -> new ArrayList<>(1));
 
         if (keys.stream().anyMatch(entry -> entry.key.equals(key))) {
@@ -78,7 +74,7 @@ public class UserKeys {
         return true;
     }
 
-    public boolean unbindKey(UUID playerId, AkPublicKey key) {
+    public synchronized boolean unbindKey(UUID playerId, AkPublicKey key) {
         ArrayList<UserKey> keys = userKeysMap.get(playerId);
 
         if (keys == null || keys.isEmpty()) {
@@ -97,32 +93,49 @@ public class UserKeys {
     }
 
     public void read() {
+        HashMap<UUID, ArrayList<UserKey>> newMap = new HashMap<>();
+        List<UserJsonEntry> entries;
+
         try {
-            String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
+            String json;
+            synchronized (WRITE_LOCK) {
+                json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
+            }
+
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
                     .create();
-            List<UserJsonEntry> entries = gson.fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
-
-            userKeysMap.clear();
-            entries.forEach(entry -> {
-                List<UserKey> keys = entry.keys.stream()
-                        .map(jsonEntry -> {
-                            UserKey userKey = new UserKey();
-                            userKey.key = new AkPublicKey(jsonEntry.key);
-                            userKey.issuingPlayer = jsonEntry.issued_by;
-                            userKey.registrationTime = jsonEntry.time_added;
-
-                            return userKey;
-                        })
-                        .toList();
-
-                userKeysMap.put(entry.user, new ArrayList<>(keys));
-            });
+            entries = gson.fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
         } catch (FileNotFoundException ignored) {
-            // Ignored.
-        } catch (IOException e) {
+            // Default to an empty map.
+            synchronized (this) {
+                userKeysMap = new HashMap<>();
+            }
+
+            return;
+        } catch (JsonSyntaxException | IOException e) {
             Constants.LOG.error("Could not load user entries list: {}", e.toString());
+
+            throw new RuntimeException("Failed to read user keys.", e);
+        }
+
+        entries.forEach(entry -> {
+            List<UserKey> keys = entry.keys.stream()
+                    .map(jsonEntry -> {
+                        UserKey userKey = new UserKey();
+                        userKey.key = new AkPublicKey(jsonEntry.key);
+                        userKey.issuingPlayer = jsonEntry.issued_by;
+                        userKey.registrationTime = jsonEntry.time_added;
+
+                        return userKey;
+                    })
+                    .toList();
+
+            newMap.put(entry.user, new ArrayList<>(keys));
+        });
+
+        synchronized (this) {
+            userKeysMap = newMap;
         }
 
         Constants.LOG.debug("Read {} user entries from disk.", userKeysMap.size());
@@ -133,24 +146,29 @@ public class UserKeys {
             Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
 
             List<UserJsonEntry> out = new ArrayList<>();
-            for (var entry : userKeysMap.entrySet()) {
-                List<UserKey> keys = entry.getValue();
+            synchronized (this) {
+                for (var entry : userKeysMap.entrySet()) {
+                    List<UserKey> keys = entry.getValue();
 
-                out.add(new UserJsonEntry(
-                        entry.getKey(),
-                        keys.stream()
-                                .map(key -> new UserKeyJsonEntry(
-                                        Base64Util.encode(key.key.getEncoded()),
-                                        key.issuingPlayer,
-                                        key.registrationTime))
-                                .toList()));
+                    out.add(new UserJsonEntry(
+                            entry.getKey(),
+                            keys.stream()
+                                    .map(key -> new UserKeyJsonEntry(
+                                            Base64Util.encode(key.key.getEncoded()),
+                                            key.issuingPlayer,
+                                            key.registrationTime))
+                                    .toList()));
+                }
             }
 
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
                     .setPrettyPrinting()
                     .create();
-            Files.writeString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
+
+            synchronized (WRITE_LOCK) {
+                Files.writeString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

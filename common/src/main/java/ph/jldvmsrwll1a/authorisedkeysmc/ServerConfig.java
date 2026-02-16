@@ -2,107 +2,109 @@ package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Optional;
 import java.util.Properties;
 
 public final class ServerConfig {
-    public boolean enforcing;
-    public int loginTimeoutTicks;
-    public boolean registrationRequired;
-    public boolean allowRegistration;
-    public boolean skipOnlineAccounts;
+    private static final Object WRITE_LOCK = new Object();
 
-    public void reset() {
-        enforcing = true;
-        loginTimeoutTicks = 1200;
-        registrationRequired = false;
-        allowRegistration = true;
-        skipOnlineAccounts = false;
-    }
+    public volatile boolean enforcing = true;
+    public volatile int loginTimeoutTicks = 1200;
+    public volatile boolean registrationRequired = false;
+    public volatile boolean allowRegistration = true;
+    public volatile boolean skipOnlineAccounts = false;
 
-    public void read() {
+    public static ServerConfig fromDisk() {
+        ServerConfig config = new ServerConfig();
         Properties props = new Properties();
 
-        try (FileReader file = new FileReader(AuthorisedKeysModCore.FILE_PATHS.SERVER_CONFIG_PATH.toFile())) {
-            props.load(file);
-        } catch (FileNotFoundException e) {
-            reset();
-
-            return;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        synchronized (WRITE_LOCK) {
+            try (FileReader file = new FileReader(AuthorisedKeysModCore.FILE_PATHS.SERVER_CONFIG_PATH.toFile())) {
+                props.load(file);
+            } catch (FileNotFoundException e) {
+                return config;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        String enforcingStr = props.getProperty("enforcing").strip();
-        if (enforcingStr.equalsIgnoreCase("true")) {
-            enforcing = true;
-        } else if (enforcingStr.equalsIgnoreCase("false")) {
-            enforcing = false;
-        } else {
-            throw new IllegalStateException("Invalid boolean for enforcing");
-        }
+        parseBooleanStrictly(props, "enforcing").ifPresent(bool -> {
+            config.enforcing = bool;
+        });
+        parseUnsignedInteger(props, "login_timeout_ticks").ifPresent(value -> {
+            config.loginTimeoutTicks = value;
+        });
+        parseBooleanStrictly(props, "registration_required").ifPresent(bool -> {
+            config.registrationRequired = bool;
+        });
+        parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> {
+            config.allowRegistration = bool;
+        });
+        parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> {
+            config.skipOnlineAccounts = bool;
+        });
 
-        String loginTimeoutTicksStr = props.getProperty("login_timeout_ticks");
-        try {
-            loginTimeoutTicks = Integer.parseUnsignedInt(loginTimeoutTicksStr);
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("Invalid integer for login_timeout_ticks: {}", e);
-        }
-
-        String registrationRequiredStr =
-                props.getProperty("registration_required").strip();
-        if (registrationRequiredStr.equalsIgnoreCase("true")) {
-            registrationRequired = true;
-        } else if (registrationRequiredStr.equalsIgnoreCase("false")) {
-            registrationRequired = false;
-        } else {
-            throw new IllegalStateException("Invalid boolean for registration_required");
-        }
-
-        String allowRegistrationStr = props.getProperty("allow_registration").strip();
-        if (allowRegistrationStr.equalsIgnoreCase("true")) {
-            allowRegistration = true;
-        } else if (allowRegistrationStr.equalsIgnoreCase("false")) {
-            allowRegistration = false;
-        } else {
-            throw new IllegalStateException("Invalid boolean for allow_registration");
-        }
-
-        String skipOnlineAccountsStr = props.getProperty("skip_online_accounts").strip();
-        if (skipOnlineAccountsStr.equalsIgnoreCase("true")) {
-            skipOnlineAccounts = true;
-        } else if (skipOnlineAccountsStr.equalsIgnoreCase("false")) {
-            skipOnlineAccounts = false;
-        } else {
-            throw new IllegalStateException("Invalid boolean for skip_online_accounts");
-        }
-
-        Constants.LOG.info("AKMC: successfully loaded server config.");
+        return config;
     }
 
     public void write() {
+        synchronized (WRITE_LOCK) {
+            try {
+                Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.CONFIG_DIR);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try (BufferedWriter writer =
+                         new BufferedWriter(new FileWriter(AuthorisedKeysModCore.FILE_PATHS.SERVER_CONFIG_PATH.toFile()))) {
+                writer.write("# AKMC Server Configuration\n#\n");
+                writer.write("# This file is automatically generated.\n#\n\n");
+                writer.write("enforcing = ");
+                writer.write(enforcing ? "true\n" : "false\n");
+                writer.write("login_timeout_ticks = %s\n".formatted(loginTimeoutTicks));
+                writer.write("registration_required = ");
+                writer.write(registrationRequired ? "true\n" : "false\n");
+                writer.write("allow_registration = ");
+                writer.write(allowRegistration ? "true\n" : "false\n");
+                writer.write("skip_online_accounts = ");
+                writer.write(skipOnlineAccounts ? "true\n" : "false\n");
+            } catch (RuntimeException | IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            Constants.LOG.info("AKMC: wrote server config.");
+        }
+    }
+
+    private static Optional<Boolean> parseBooleanStrictly(Properties properties, String key) {
+        String value = properties.getProperty(key);
+
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        value = value.strip();
+
+        if (value.equalsIgnoreCase("true")) {
+            return Optional.of(true);
+        } else if (value.equalsIgnoreCase("false")) {
+            return Optional.of(false);
+        } else {
+            throw new IllegalStateException("Invalid boolean for property '%s'".formatted(key));
+        }
+    }
+
+    private static Optional<Integer> parseUnsignedInteger(Properties properties, String key) {
+        String value = properties.getProperty("login_timeout_ticks");
+
+        if (value == null) {
+            return Optional.empty();
+        }
+
         try {
-            Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.CONFIG_DIR);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            return Optional.of(Integer.parseUnsignedInt(value.strip()));
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Invalid unsigned integer for '%s'".formatted(key), e);
         }
-
-        try (BufferedWriter writer =
-                new BufferedWriter(new FileWriter(AuthorisedKeysModCore.FILE_PATHS.SERVER_CONFIG_PATH.toFile()))) {
-            writer.write("# AKMC Server Configuration\n#\n");
-            writer.write("# This file is automatically generated.\n#\n\n");
-            writer.write("enforcing = ");
-            writer.write(enforcing ? "true\n" : "false\n");
-            writer.write("login_timeout_ticks = %s\n".formatted(loginTimeoutTicks));
-            writer.write("registration_required = ");
-            writer.write(registrationRequired ? "true\n" : "false\n");
-            writer.write("allow_registration = ");
-            writer.write(allowRegistration ? "true\n" : "false\n");
-            writer.write("skip_online_accounts = ");
-            writer.write(skipOnlineAccounts ? "true\n" : "false\n");
-        } catch (RuntimeException | IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Constants.LOG.info("AKMC: wrote server config.");
     }
 }

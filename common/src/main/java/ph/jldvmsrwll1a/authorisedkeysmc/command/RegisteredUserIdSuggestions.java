@@ -4,8 +4,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import java.util.Enumeration;
-import java.util.UUID;
+
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
@@ -14,14 +13,11 @@ public final class RegisteredUserIdSuggestions implements SuggestionProvider<Com
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        Enumeration<UUID> users = AuthorisedKeysModCore.USER_KEYS.getUsers();
-        while (users.hasMoreElements()) {
-            UUID id = users.nextElement();
-
+        AuthorisedKeysModCore.USER_KEYS.getUsers().forEach(id -> {
             if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(id)) {
                 builder.suggest(id.toString());
             }
-        }
+        });
 
         return builder.buildFuture();
     }
