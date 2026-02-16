@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.PortalScreen;
 
@@ -39,7 +39,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Inject(method = "createNormalMenuOptions", at = @At("RETURN"))
     private void addModButton(int y, int spacingY, CallbackInfoReturnable<Integer> ci) {
         Button button = Button.builder(Component.empty(), btn -> {
-                    if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(
+                    if (!AkmcClient.maybeShowFirstRunScreen(
                             minecraft, new PortalScreen(minecraft.screen))) {
                         minecraft.setScreen(new PortalScreen(minecraft.screen));
                     }
@@ -60,7 +60,7 @@ public abstract class TitleScreenMixin extends Screen {
                             target =
                                     "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
     private void redirectToFirstRunScreen(Minecraft instance, Screen guiScreen, Operation<Void> original) {
-        if (!AuthorisedKeysModClient.maybeShowFirstRunScreen(instance, guiScreen)) {
+        if (!AkmcClient.maybeShowFirstRunScreen(instance, guiScreen)) {
             original.call(instance, guiScreen);
         }
     }

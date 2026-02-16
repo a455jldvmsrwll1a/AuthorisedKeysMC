@@ -18,7 +18,7 @@ import net.minecraft.util.FormattedCharSequence;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public class PasswordPromptScreen extends BaseScreen {
@@ -171,12 +171,12 @@ public class PasswordPromptScreen extends BaseScreen {
         minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
         char[] password = passwordEdit.getValue().toCharArray();
-        AuthorisedKeysModClient.WORKER_EXECUTOR.execute(() -> {
+        AkmcClient.WORKER_EXECUTOR.execute(() -> {
             boolean successful = keypair.decrypt(password);
             Arrays.fill(password, '\0');
 
             if (successful && cacheDecryptedKey) {
-                AuthorisedKeysModClient.CACHED_KEYS.cacheKey(keypair);
+                AkmcClient.CACHED_KEYS.cacheKey(keypair);
             }
 
             minecraft.execute(() -> {

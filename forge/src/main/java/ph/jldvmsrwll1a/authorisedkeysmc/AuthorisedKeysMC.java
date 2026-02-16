@@ -14,7 +14,7 @@ public class AuthorisedKeysMC {
         TickEvent.ClientTickEvent.Post.BUS.addListener(this::onTick);
         RegisterCommandsEvent.BUS.addListener(this::onCommandRegistration);
 
-        AuthorisedKeysModCore.init(new ForgePlatformHelper());
+        AkmcCore.init(new ForgePlatformHelper());
 
         if (FMLEnvironment.dist.isClient()) {
             new AuthorisedKeysMCClient(context);
@@ -22,7 +22,7 @@ public class AuthorisedKeysMC {
     }
 
     private void onTick(TickEvent.ClientTickEvent.Post event) {
-        AuthorisedKeysModClient.tick();
+        AkmcClient.tick();
     }
 
     private void onCommandRegistration(RegisterCommandsEvent event) {

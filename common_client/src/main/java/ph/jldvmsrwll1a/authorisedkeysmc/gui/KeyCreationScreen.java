@@ -21,8 +21,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
@@ -83,7 +83,7 @@ public class KeyCreationScreen extends BaseScreen {
         this.parent = parent;
         this.callback = callback;
 
-        existingNames = AuthorisedKeysModClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
+        existingNames = AkmcClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
         rootLayout = LinearLayout.vertical().spacing(4);
         currentName = defaultName;
     }
@@ -297,9 +297,9 @@ public class KeyCreationScreen extends BaseScreen {
 
         minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
-        AuthorisedKeysModClient.WORKER_EXECUTOR.execute(() -> {
+        AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
-                AuthorisedKeysModClient.KEY_PAIRS.generate(
+                AkmcClient.KEY_PAIRS.generate(
                         currentName, passwordCheckbox.selected() ? currentPassword.toCharArray() : null);
             } catch (Exception e) {
                 Constants.LOG.error("Failed to generate keypair: {}", e);
@@ -324,7 +324,7 @@ public class KeyCreationScreen extends BaseScreen {
 
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
-        Path keysDir = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
+        Path keysDir = AkmcCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
         String format = "%s%s%s%s%s%s%s".formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);

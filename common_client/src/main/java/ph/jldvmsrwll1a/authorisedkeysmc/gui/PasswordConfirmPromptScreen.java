@@ -10,7 +10,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
@@ -87,14 +87,14 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     @Override
     public void onClose() {
         if (keypair.requiresDecryption()) {
-            AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(keypair);
+            AkmcClient.KEY_PAIRS.deleteKeyFile(keypair);
         }
 
         super.onClose();
     }
 
     private void makeFreshKeypair() {
-        AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(keypair);
+        AkmcClient.KEY_PAIRS.deleteKeyFile(keypair);
 
         minecraft.setScreen(new KeyCreationScreen(parent, newKeyCallback, keypair.getName()));
     }

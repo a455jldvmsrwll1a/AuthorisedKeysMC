@@ -10,6 +10,6 @@ public final class AuthorisedKeysMCClient {
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, parent) -> new PortalScreen(parent)));
 
-        AuthorisedKeysModClient.init();
+        AkmcClient.init();
     }
 }

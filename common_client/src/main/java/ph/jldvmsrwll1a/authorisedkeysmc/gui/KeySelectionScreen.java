@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
@@ -149,7 +149,7 @@ public class KeySelectionScreen extends BaseScreen {
         needsLayout = true;
 
         try {
-            currentKeypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+            currentKeypair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
         } catch (InvalidPathException e) {
             Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
 
@@ -272,7 +272,7 @@ public class KeySelectionScreen extends BaseScreen {
     }
 
     private void reloadKeys() {
-        keyNames = AuthorisedKeysModClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
+        keyNames = AkmcClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
         if (keySelectionList != null) {
             keySelectionList.updateKeyNames(keyNames);
         }
@@ -310,6 +310,6 @@ public class KeySelectionScreen extends BaseScreen {
     }
 
     private List<String> getServerNamesUsingKey(String keyName) {
-        return AuthorisedKeysModClient.KEY_USES.getServersUsingKey(keyName);
+        return AkmcClient.KEY_USES.getServersUsingKey(keyName);
     }
 }

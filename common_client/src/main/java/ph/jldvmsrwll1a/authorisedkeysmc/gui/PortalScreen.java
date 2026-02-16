@@ -8,7 +8,7 @@ import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public class PortalScreen extends BaseScreen {
@@ -73,7 +73,7 @@ public class PortalScreen extends BaseScreen {
     }
 
     private void onReloadButtonPressed(Button button) {
-        AuthorisedKeysModClient.readFiles();
+        AkmcClient.readFiles();
 
         SystemToast.addOrUpdate(minecraft.getToastManager(), RELOADED_TOAST, RELOADED_LABEL, null);
     }

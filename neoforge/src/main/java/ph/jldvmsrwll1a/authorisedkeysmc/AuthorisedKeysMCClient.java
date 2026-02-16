@@ -17,10 +17,10 @@ public class AuthorisedKeysMCClient {
         container.registerExtensionPoint(IConfigScreenFactory.class, (Supplier<IConfigScreenFactory>)
                 () -> (minecraft, parent) -> new PortalScreen(parent));
 
-        AuthorisedKeysModClient.init();
+        AkmcClient.init();
     }
 
     public static void onTick(ClientTickEvent.Post event) {
-        AuthorisedKeysModClient.tick();
+        AkmcClient.tick();
     }
 }

@@ -11,7 +11,7 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
@@ -71,12 +71,12 @@ public final class ServerInfoScreen extends BaseScreen {
 
         this.parent = parent;
 
-        AkPublicKey hostKey = AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(server.ip);
+        AkPublicKey hostKey = AkmcClient.KNOWN_HOSTS.getHostKey(server.ip);
         hostKeyLabel = hostKey != null ? Component.literal(hostKey.toString()) : UNKNOWN_KEY_LABEL;
         hostKeyIsKnown = hostKey != null;
 
-        AuthorisedKeysModClient.KEY_USES.read();
-        originalUsedKeyName = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(server.name);
+        AkmcClient.KEY_USES.read();
+        originalUsedKeyName = AkmcClient.KEY_USES.getKeyNameUsedForServer(server.name);
     }
 
     @Override
@@ -169,11 +169,11 @@ public final class ServerInfoScreen extends BaseScreen {
 
     private void onDoneButtonPressed(Button button) {
         if (dirty) {
-            AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, usedKeyName);
+            AkmcClient.KEY_USES.setKeyNameUsedForServer(serverName, usedKeyName);
         }
 
         if (forgetHostKey) {
-            AuthorisedKeysModClient.KNOWN_HOSTS.clearHostKey(serverAddress);
+            AkmcClient.KNOWN_HOSTS.clearHostKey(serverAddress);
         }
 
         minecraft.setScreen(parent);
@@ -216,7 +216,7 @@ public final class ServerInfoScreen extends BaseScreen {
 
         if (usedKeyName != null) {
             try {
-                AkKeyPair keyPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(usedKeyName);
+                AkKeyPair keyPair = AkmcClient.KEY_PAIRS.loadFromFile(usedKeyName);
                 usedKeyLabel = Component.literal(keyPair.getName());
                 usedKeyString = keyPair.getTextualPublic();
             } catch (IllegalStateException | IOException e) {

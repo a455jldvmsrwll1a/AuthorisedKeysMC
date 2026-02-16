@@ -14,7 +14,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KeyUses;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KnownHosts;
 
-public class AuthorisedKeysModClient {
+public class AkmcClient {
     public static final ExecutorService WORKER_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r, "AKMC Worker Thread");
         thread.setDaemon(true);
@@ -31,7 +31,7 @@ public class AuthorisedKeysModClient {
     private static boolean hasShownFirstRunScreen = false;
     private static @Nullable ClientLoginHandler currentLogin = null;
 
-    private AuthorisedKeysModClient() {}
+    private AkmcClient() {}
 
     public static void init() {
         KEY_PAIRS = new ClientKeyPairs();

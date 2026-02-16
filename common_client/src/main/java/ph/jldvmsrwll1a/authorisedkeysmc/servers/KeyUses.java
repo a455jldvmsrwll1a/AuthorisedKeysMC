@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 public final class KeyUses {
@@ -56,7 +56,7 @@ public final class KeyUses {
 
     public void read() {
         try {
-            String json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.KEY_USES_PATH);
+            String json = Files.readString(AkmcCore.FILE_PATHS.KEY_USES_PATH);
             Gson gson = new Gson();
             List<ServerKeyListJsonEntry> entries =
                     gson.fromJson(json, new TypeToken<ArrayList<ServerKeyListJsonEntry>>() {}.getType());
@@ -76,7 +76,7 @@ public final class KeyUses {
 
     public void write() {
         try {
-            Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
+            Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
 
             ArrayList<ServerKeyListJsonEntry> out = new ArrayList<>();
             for (var entry : usedKeyTable.entrySet()) {
@@ -84,7 +84,7 @@ public final class KeyUses {
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Files.writeString(AuthorisedKeysModCore.FILE_PATHS.KEY_USES_PATH, gson.toJson(out));
+            Files.writeString(AkmcCore.FILE_PATHS.KEY_USES_PATH, gson.toJson(out));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

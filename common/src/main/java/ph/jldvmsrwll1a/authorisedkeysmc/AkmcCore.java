@@ -7,14 +7,14 @@ import org.jetbrains.annotations.NotNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 
-public final class AuthorisedKeysModCore {
+public final class AkmcCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
     public static AkKeyPair SERVER_KEYPAIR;
     public static UserKeys USER_KEYS;
     public static ServerConfig CONFIG;
 
-    private AuthorisedKeysModCore() {}
+    private AkmcCore() {}
 
     public static void init(@NotNull IPlatformHelper platform) {
         PLATFORM = platform;
@@ -35,7 +35,7 @@ public final class AuthorisedKeysModCore {
 
     private static void initialiseServerKeyPair() {
         try {
-            SERVER_KEYPAIR = AkKeyPair.fromFile(AuthorisedKeysModCore.FILE_PATHS.SERVER_SECRET_PATH, "");
+            SERVER_KEYPAIR = AkKeyPair.fromFile(AkmcCore.FILE_PATHS.SERVER_SECRET_PATH, "");
 
             if (SERVER_KEYPAIR.requiresDecryption()) {
                 throw new RuntimeException("AKMC: the server key pair's private key must NOT be encrypted!");
@@ -47,7 +47,7 @@ public final class AuthorisedKeysModCore {
 
             try {
                 SERVER_KEYPAIR = AkKeyPair.generate(SecureRandom.getInstanceStrong(), "");
-                SERVER_KEYPAIR.writeFile(AuthorisedKeysModCore.FILE_PATHS.SERVER_SECRET_PATH);
+                SERVER_KEYPAIR.writeFile(AkmcCore.FILE_PATHS.SERVER_SECRET_PATH);
 
                 Constants.LOG.info("Generated new server key pair.");
             } catch (NoSuchAlgorithmException | IOException e) {

@@ -16,7 +16,7 @@ import net.minecraft.network.chat.*;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
@@ -179,7 +179,7 @@ public final class KeyManagementScreen extends BaseScreen {
         needsLayout = true;
 
         try {
-            currentKeypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+            currentKeypair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
         } catch (InvalidPathException e) {
             Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
 
@@ -322,7 +322,7 @@ public final class KeyManagementScreen extends BaseScreen {
         }
 
         try {
-            AkKeyPair newPair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+            AkKeyPair newPair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
 
             if (newPair.requiresDecryption()) {
                 minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(
@@ -358,7 +358,7 @@ public final class KeyManagementScreen extends BaseScreen {
                                 Validate.validState(currentKeypair.getName().equals(keyName));
                             }
 
-                            AuthorisedKeysModClient.KEY_PAIRS.deleteKeyFile(keyName);
+                            AkmcClient.KEY_PAIRS.deleteKeyFile(keyName);
                         }
                         reloadKeys();
                     }
@@ -373,7 +373,7 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     public void reloadKeys() {
-        keyNames = AuthorisedKeysModClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
+        keyNames = AkmcClient.KEY_PAIRS.retrieveKeyNamesFromDisk();
         if (keySelectionList != null) {
             keySelectionList.updateKeyNames(keyNames);
         }
@@ -419,6 +419,6 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private List<String> getServerNamesUsingKey(String keyName) {
-        return AuthorisedKeysModClient.KEY_USES.getServersUsingKey(keyName);
+        return AkmcClient.KEY_USES.getServersUsingKey(keyName);
     }
 }

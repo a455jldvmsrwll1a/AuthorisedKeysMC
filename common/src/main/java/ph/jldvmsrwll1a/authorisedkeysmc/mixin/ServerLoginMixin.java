@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ServerLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
@@ -101,7 +101,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
         ci.cancel();
 
-        IPlatformHelper platform = AuthorisedKeysModCore.PLATFORM;
+        IPlatformHelper platform = AkmcCore.PLATFORM;
         ServerLoginPacketListenerImpl self = (ServerLoginPacketListenerImpl) (Object) this;
 
         Validate.validState(
@@ -124,7 +124,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
         if (server.usesAuthentication()) {
             authorisedKeysMC$shouldUseVanillaAuthentication = true;
-        } else if (AuthorisedKeysModCore.CONFIG.skipOnlineAccounts) {
+        } else if (AkmcCore.CONFIG.skipOnlineAccounts) {
             UUID uuid = packet.profileId();
 
             if (uuid.version() == 4) {
@@ -208,7 +208,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void tick(CallbackInfo ci) {
         if (!authorisedKeysMC$skipped && authorisedKeysMC$loginHandler == null && authenticatedProfile != null) {
-            if (!AuthorisedKeysModCore.CONFIG.enforcing) {
+            if (!AkmcCore.CONFIG.enforcing) {
                 authorisedKeysMC$skipped = true;
                 Constants.LOG.warn(
                         "Not verifying {}'s identity because the mod is on standby!", authenticatedProfile.name());

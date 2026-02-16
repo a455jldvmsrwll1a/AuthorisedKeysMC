@@ -17,7 +17,7 @@ import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
@@ -67,7 +67,7 @@ public final class ModCommands {
                         .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
                 .append(Component.literal("\n\nStatus: "));
 
-        if (AuthorisedKeysModCore.CONFIG.enforcing) {
+        if (AkmcCore.CONFIG.enforcing) {
             message.append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
         } else {
             message.append(Component.literal("ON STANDBY").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
@@ -80,7 +80,7 @@ public final class ModCommands {
 
     private static int reload(CommandContext<CommandSourceStack> context) {
         try {
-            AuthorisedKeysModCore.reload();
+            AkmcCore.reload();
         } catch (Exception e) {
             Constants.LOG.error("Could not run reload command: {}", e);
             reply(
@@ -97,14 +97,14 @@ public final class ModCommands {
     }
 
     private static int enable(CommandContext<CommandSourceStack> context) {
-        if (AuthorisedKeysModCore.CONFIG.enforcing) {
+        if (AkmcCore.CONFIG.enforcing) {
             reply(context, Component.literal("AKMC is already enforcing.").withStyle(ChatFormatting.RED));
 
             return ERROR;
         }
 
-        AuthorisedKeysModCore.CONFIG.enforcing = true;
-        AuthorisedKeysModCore.CONFIG.write();
+        AkmcCore.CONFIG.enforcing = true;
+        AkmcCore.CONFIG.write();
 
         context.getSource()
                 .sendSuccess(
@@ -117,14 +117,14 @@ public final class ModCommands {
     }
 
     private static int disable(CommandContext<CommandSourceStack> context) {
-        if (!AuthorisedKeysModCore.CONFIG.enforcing) {
+        if (!AkmcCore.CONFIG.enforcing) {
             reply(context, Component.literal("AKMC is already on standby.").withStyle(ChatFormatting.RED));
 
             return ERROR;
         }
 
-        AuthorisedKeysModCore.CONFIG.enforcing = false;
-        AuthorisedKeysModCore.CONFIG.write();
+        AkmcCore.CONFIG.enforcing = false;
+        AkmcCore.CONFIG.write();
 
         context.getSource()
                 .sendSuccess(
@@ -158,7 +158,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AuthorisedKeysModCore.USER_KEYS.bindKey(player.getUUID(), player.getUUID(), key)) {
+        if (AkmcCore.USER_KEYS.bindKey(player.getUUID(), player.getUUID(), key)) {
             reply(context, Component.literal("Bound your key!").withStyle(ChatFormatting.GREEN));
 
             return SUCCESS;
@@ -190,7 +190,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AuthorisedKeysModCore.USER_KEYS.unbindKey(player.getUUID(), key)) {
+        if (AkmcCore.USER_KEYS.unbindKey(player.getUUID(), key)) {
             reply(
                     context,
                     Component.literal("Unbound your key: ")
@@ -206,7 +206,7 @@ public final class ModCommands {
     private static int idInfo(CommandContext<CommandSourceStack> context) {
         UUID id = UuidArgument.getUuid(context, "id");
 
-        List<UserKeys.UserKey> keys = AuthorisedKeysModCore.USER_KEYS.getUserKeys(id);
+        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(id);
 
         if (keys == null || keys.isEmpty()) {
             reply(
@@ -273,7 +273,7 @@ public final class ModCommands {
         ServerPlayer player = context.getSource().getPlayer();
         UUID issuer = player != null ? player.getUUID() : null;
 
-        if (AuthorisedKeysModCore.USER_KEYS.bindKey(id, issuer, key)) {
+        if (AkmcCore.USER_KEYS.bindKey(id, issuer, key)) {
             reply(context, Component.literal("Key was successfully bound!"));
 
             return SUCCESS;
@@ -299,7 +299,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AuthorisedKeysModCore.USER_KEYS.unbindKey(id, key)) {
+        if (AkmcCore.USER_KEYS.unbindKey(id, key)) {
             reply(context, "Key was successfully unbound!");
 
             return SUCCESS;

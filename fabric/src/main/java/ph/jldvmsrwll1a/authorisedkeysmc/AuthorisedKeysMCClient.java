@@ -10,10 +10,10 @@ public class AuthorisedKeysMCClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 
-        AuthorisedKeysModClient.init();
+        AkmcClient.init();
     }
 
     private void onTick(Minecraft minecraft) {
-        AuthorisedKeysModClient.tick();
+        AkmcClient.tick();
     }
 }

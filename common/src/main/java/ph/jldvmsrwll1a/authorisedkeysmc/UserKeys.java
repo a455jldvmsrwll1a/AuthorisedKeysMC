@@ -100,7 +100,7 @@ public class UserKeys {
         try {
             String json;
             synchronized (WRITE_LOCK) {
-                json = Files.readString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
+                json = Files.readString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
             }
 
             Gson gson = new GsonBuilder()
@@ -144,7 +144,7 @@ public class UserKeys {
 
     public void write() {
         try {
-            Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.MOD_DIR);
+            Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
 
             List<UserJsonEntry> out = new ArrayList<>();
             synchronized (this) {
@@ -168,7 +168,7 @@ public class UserKeys {
                     .create();
 
             synchronized (WRITE_LOCK) {
-                Files.writeString(AuthorisedKeysModCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
+                Files.writeString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

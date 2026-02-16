@@ -19,7 +19,7 @@ import net.minecraft.network.protocol.login.custom.CustomQueryPayload;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
@@ -63,7 +63,7 @@ public final class ClientLoginHandler {
         this.serverData = ((ClientHandshakePacketListenerAccessorMixin) listener).getServerData();
         this.usingVanillaAuthentication = didVanillaAuthentication;
 
-        AuthorisedKeysModClient.setLoginHandler(this);
+        AkmcClient.setLoginHandler(this);
     }
 
     public boolean disconnected() {
@@ -94,19 +94,19 @@ public final class ClientLoginHandler {
             if (keyWasSelectedManually && keypair != null) {
                 Constants.LOG.info(
                         "AKMC: Assigning the \"{}\" key pair to server \"{}\".", keypair.getName(), serverName);
-                AuthorisedKeysModClient.KEY_USES.setKeyNameUsedForServer(serverName, keypair.getName());
+                AkmcClient.KEY_USES.setKeyNameUsedForServer(serverName, keypair.getName());
             }
         });
 
         resetScreen();
-        AuthorisedKeysModClient.clearLoginHandler();
+        AkmcClient.clearLoginHandler();
 
         Constants.LOG.info("AKMC: log-in finished successfully.");
     }
 
     public void handleDisconnection() {
         resetScreen();
-        AuthorisedKeysModClient.clearLoginHandler();
+        AkmcClient.clearLoginHandler();
     }
 
     public void tick() {
@@ -149,7 +149,7 @@ public final class ClientLoginHandler {
         hostKey = payload.key;
 
         AkPublicKey knownKey = getHostAddress()
-                .map(address -> AuthorisedKeysModClient.KNOWN_HOSTS.getHostKey(address))
+                .map(address -> AkmcClient.KNOWN_HOSTS.getHostKey(address))
                 .orElse(null);
 
         if (knownKey == null) {
@@ -225,7 +225,7 @@ public final class ClientLoginHandler {
 
         s2cChallenge = payload;
 
-        if (!AuthorisedKeysModClient.CACHED_KEYS.decryptKeypair(keypair)) {
+        if (!AkmcClient.CACHED_KEYS.decryptKeypair(keypair)) {
             showScreen(new PasswordPromptScreen(minecraft.screen, keypair, this::onPrivateKeyDecrypted));
 
             return;
@@ -352,7 +352,7 @@ public final class ClientLoginHandler {
         Validate.validState(phase == Phase.HELLO, "Tried to send bogus server challenge.");
         Validate.notNull(hostKey, "Trying to send server challenge before host key is known.");
 
-        getHostAddress().ifPresent(address -> AuthorisedKeysModClient.KNOWN_HOSTS.setHostKey(address, hostKey));
+        getHostAddress().ifPresent(address -> AkmcClient.KNOWN_HOSTS.setHostKey(address, hostKey));
 
         C2SChallengePayload challengePayload = new C2SChallengePayload();
         c2sNonce = challengePayload.getNonce();
@@ -399,7 +399,7 @@ public final class ClientLoginHandler {
             return false;
         }
 
-        String keyName = AuthorisedKeysModClient.KEY_USES.getKeyNameUsedForServer(name.get());
+        String keyName = AkmcClient.KEY_USES.getKeyNameUsedForServer(name.get());
         if (keyName == null) {
             return false;
         }
@@ -411,7 +411,7 @@ public final class ClientLoginHandler {
 
     private void loadKeyPair(String keyName) {
         try {
-            keypair = AuthorisedKeysModClient.KEY_PAIRS.loadFromFile(keyName);
+            keypair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
         } catch (IOException e) {
             throw new IllegalStateException("Could not load the \"%s\" key pair.".formatted(keyName), e);
         }

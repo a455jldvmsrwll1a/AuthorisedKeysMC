@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 
 public final class SelfKeysSuggestions implements SuggestionProvider<CommandSourceStack> {
@@ -21,7 +21,7 @@ public final class SelfKeysSuggestions implements SuggestionProvider<CommandSour
             return builder.buildFuture();
         }
 
-        List<UserKeys.UserKey> keys = AuthorisedKeysModCore.USER_KEYS.getUserKeys(player.getUUID());
+        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(player.getUUID());
         if (keys == null) {
             return builder.buildFuture();
         }

@@ -7,14 +7,14 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 
 public final class RegisteredUserIdSuggestions implements SuggestionProvider<CommandSourceStack> {
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        AuthorisedKeysModCore.USER_KEYS.getUsers().forEach(id -> {
-            if (AuthorisedKeysModCore.USER_KEYS.userHasAnyKeys(id)) {
+        AkmcCore.USER_KEYS.getUsers().forEach(id -> {
+            if (AkmcCore.USER_KEYS.userHasAnyKeys(id)) {
                 builder.suggest(id.toString());
             }
         });

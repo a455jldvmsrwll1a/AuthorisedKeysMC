@@ -13,7 +13,7 @@ public class AuthorisedKeysMC implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        AuthorisedKeysModCore.init(new FabricPlatformHelper());
+        AkmcCore.init(new FabricPlatformHelper());
 
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
     }

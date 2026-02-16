@@ -9,7 +9,7 @@ import java.util.List;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysModCore;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
@@ -20,14 +20,14 @@ public class ClientKeyPairs {
     }
 
     public static Path fromKeyName(@NotNull String name) throws InvalidPathException {
-        return ValidPath.makePath(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR, name, Constants.KEY_PAIR_EXTENSION);
+        return ValidPath.makePath(AkmcCore.FILE_PATHS.KEY_PAIRS_DIR, name, Constants.KEY_PAIR_EXTENSION);
     }
 
     public List<String> retrieveKeyNamesFromDisk() {
         List<String> names = new ArrayList<>();
 
         try (DirectoryStream<Path> dirEntries =
-                Files.newDirectoryStream(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR)) {
+                Files.newDirectoryStream(AkmcCore.FILE_PATHS.KEY_PAIRS_DIR)) {
             for (Path path : dirEntries) {
                 String name = path.getFileName().toString();
 
@@ -80,10 +80,10 @@ public class ClientKeyPairs {
     }
 
     private void ensureWarningFileExists() {
-        final Path path = AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("_SECRET_KEYS_DO_NOT_SHARE");
+        final Path path = AkmcCore.FILE_PATHS.KEY_PAIRS_DIR.resolve("_SECRET_KEYS_DO_NOT_SHARE");
 
         try {
-            Files.createDirectories(AuthorisedKeysModCore.FILE_PATHS.KEY_PAIRS_DIR);
+            Files.createDirectories(AkmcCore.FILE_PATHS.KEY_PAIRS_DIR);
             Files.createFile(path);
         } catch (FileAlreadyExistsException ignored) {
             // Do nothing.
