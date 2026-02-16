@@ -59,13 +59,18 @@ public final class ModCommands {
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
-        reply(
-                context,
-                Component.empty()
-                        .append(Component.literal("== AuthorisedKeysMC ==")
-                                .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
-                        .append(Component.literal("\n\nStatus: "))
-                        .append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
+        MutableComponent message =  Component.empty()
+                .append(Component.literal("== AuthorisedKeysMC ==")
+                        .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
+                .append(Component.literal("\n\nStatus: "));
+
+        if (AuthorisedKeysModCore.CONFIG.enforcing) {
+            message.append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+        } else {
+            message.append(Component.literal("ON STANDBY").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+        }
+
+        reply(context, message);
 
         return SUCCESS;
     }
@@ -82,7 +87,8 @@ public final class ModCommands {
 
             return ERROR;
         }
-        reply(context, "Reloaded!");
+
+        context.getSource().sendSuccess(() -> Component.literal("AKMC reloaded!").withStyle(ChatFormatting.GREEN), true);
 
         return SUCCESS;
     }
