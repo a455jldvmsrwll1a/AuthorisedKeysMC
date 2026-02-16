@@ -41,6 +41,9 @@ public final class ModCommands {
                 .then(literal("reload").requires(ModCommands::admin).executes(ModCommands::reload))
                 .then(literal("enable").requires(ModCommands::admin).executes(ModCommands::enable))
                 .then(literal("disable").requires(ModCommands::admin).executes(ModCommands::disable))
+                .then(literal("bind")
+                        .then(argument("key", StringArgumentType.string())
+                                .executes(ModCommands::bind)))
                 .then(literal("unbind")
                         .then(argument("key", StringArgumentType.string())
                                 .suggests(new SelfKeysSuggestions())
@@ -131,6 +134,38 @@ public final class ModCommands {
                         true);
 
         return SUCCESS;
+    }
+
+    private static int bind(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = context.getSource().getPlayer();
+        if (player == null) {
+            context.getSource()
+                    .sendFailure(
+                            Component.literal(
+                                    "Must be executed by a player! To bind a key to a specific user, use: /akmc user <user> bind <key>"));
+            return ERROR;
+        }
+
+        String encodedKey = StringArgumentType.getString(context, "key");
+        AkPublicKey key;
+
+        try {
+            key = new AkPublicKey(encodedKey);
+        } catch (IllegalArgumentException e) {
+            context.getSource()
+                    .sendFailure(
+                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
+            return ERROR;
+        }
+
+        if (AuthorisedKeysModCore.USER_KEYS.bindKey(player.getUUID(), player.getUUID(), key)) {
+            reply(context, Component.literal("Bound your key!").withStyle(ChatFormatting.GREEN));
+
+            return SUCCESS;
+        } else {
+            reply(context, Component.literal("You have already bound this key.").withStyle(ChatFormatting.RED));
+            return ERROR;
+        }
     }
 
     private static int unbind(CommandContext<CommandSourceStack> context) {
