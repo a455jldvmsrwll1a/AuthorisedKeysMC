@@ -325,7 +325,8 @@ public class KeyCreationScreen extends BaseScreen {
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
         Path keysDir = AkmcCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
-        String format = "%s%s%s%s%s%s%s".formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
+        String format = "%s%s%s%s%s%s%s"
+                .formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);
     }

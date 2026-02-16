@@ -39,8 +39,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Inject(method = "createNormalMenuOptions", at = @At("RETURN"))
     private void addModButton(int y, int spacingY, CallbackInfoReturnable<Integer> ci) {
         Button button = Button.builder(Component.empty(), btn -> {
-                    if (!AkmcClient.maybeShowFirstRunScreen(
-                            minecraft, new PortalScreen(minecraft.screen))) {
+                    if (!AkmcClient.maybeShowFirstRunScreen(minecraft, new PortalScreen(minecraft.screen))) {
                         minecraft.setScreen(new PortalScreen(minecraft.screen));
                     }
                 })

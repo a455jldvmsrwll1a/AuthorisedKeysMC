@@ -4,7 +4,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;

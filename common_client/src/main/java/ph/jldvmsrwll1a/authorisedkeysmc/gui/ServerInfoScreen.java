@@ -13,8 +13,8 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public final class ServerInfoScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;

@@ -18,7 +18,10 @@ public class AuthorisedKeysMC implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
     }
 
-    private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext context, Commands.CommandSelection environment) {
+    private void registerCommands(
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            CommandBuildContext context,
+            Commands.CommandSelection environment) {
         ModCommands.register(dispatcher, context, environment);
     }
 }

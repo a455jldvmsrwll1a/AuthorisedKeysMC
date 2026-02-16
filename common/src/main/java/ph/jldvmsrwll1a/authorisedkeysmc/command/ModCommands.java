@@ -42,8 +42,7 @@ public final class ModCommands {
                 .then(literal("enable").requires(ModCommands::admin).executes(ModCommands::enable))
                 .then(literal("disable").requires(ModCommands::admin).executes(ModCommands::disable))
                 .then(literal("bind")
-                        .then(argument("key", StringArgumentType.string())
-                                .executes(ModCommands::bind)))
+                        .then(argument("key", StringArgumentType.string()).executes(ModCommands::bind)))
                 .then(literal("unbind")
                         .then(argument("key", StringArgumentType.string())
                                 .suggests(new SelfKeysSuggestions())
@@ -62,9 +61,8 @@ public final class ModCommands {
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
-        MutableComponent message =  Component.empty()
-                .append(Component.literal("== AuthorisedKeysMC ==")
-                        .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
+        MutableComponent message = Component.empty()
+                .append(Component.literal("== AuthorisedKeysMC ==").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
                 .append(Component.literal("\n\nStatus: "));
 
         if (AkmcCore.CONFIG.enforcing) {
@@ -91,7 +89,8 @@ public final class ModCommands {
             return ERROR;
         }
 
-        context.getSource().sendSuccess(() -> Component.literal("AKMC reloaded!").withStyle(ChatFormatting.GREEN), true);
+        context.getSource()
+                .sendSuccess(() -> Component.literal("AKMC reloaded!").withStyle(ChatFormatting.GREEN), true);
 
         return SUCCESS;
     }

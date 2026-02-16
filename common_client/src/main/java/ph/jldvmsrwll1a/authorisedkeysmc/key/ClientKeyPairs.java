@@ -26,8 +26,7 @@ public class ClientKeyPairs {
     public List<String> retrieveKeyNamesFromDisk() {
         List<String> names = new ArrayList<>();
 
-        try (DirectoryStream<Path> dirEntries =
-                Files.newDirectoryStream(AkmcCore.FILE_PATHS.KEY_PAIRS_DIR)) {
+        try (DirectoryStream<Path> dirEntries = Files.newDirectoryStream(AkmcCore.FILE_PATHS.KEY_PAIRS_DIR)) {
             for (Path path : dirEntries) {
                 String name = path.getFileName().toString();
 
