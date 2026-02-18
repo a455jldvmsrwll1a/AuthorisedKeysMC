@@ -88,6 +88,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 
+    implementation ("org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}")
     shadow ("org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}")
 }
 
