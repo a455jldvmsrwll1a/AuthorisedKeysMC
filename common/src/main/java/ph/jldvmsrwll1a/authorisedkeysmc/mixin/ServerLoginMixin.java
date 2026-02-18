@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
@@ -143,17 +144,24 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
                 authorisedKeysMC$shouldUseVanillaAuthentication));
     }
 
-    @Inject(method = "handleKey", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;start()V"), cancellable = true)
-    private void handleEncryptionKey(ServerboundKeyPacket packet, CallbackInfo ci) {
-        if (!authorisedKeysMC$shouldUseVanillaAuthentication) {
-            // Prevent the Vanilla authenticator thread from running.
-            // The client has not authenticated, so we shouldn't either.
-            ci.cancel();
-
-            Validate.notNull(requestedUsername, "Requested username has not yet been set! This is a bug.");
-            startClientVerification(UUIDUtil.createOfflineProfile(requestedUsername));
+    @WrapWithCondition(method = "handleKey", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;start()V"))
+    private boolean blockVanillaAuthenticator(Thread self) {
+        if (authorisedKeysMC$shouldUseVanillaAuthentication) {
+            // Let the authenticator thread start.
+            return true;
         }
+
+        Validate.notNull(requestedUsername, "Requested username has not yet been set! This is a bug.");
+
+        // We must start client verification ourselves because it is normally
+        // called after the server checks with the session service.
+        startClientVerification(UUIDUtil.createOfflineProfile(requestedUsername));
+
+        // Prevent the authenticator thread from running.
+        // The client has not authenticated, so we shouldn't either.
+        return false;
     }
+
 
     @WrapOperation(
             method = "handleKey",
