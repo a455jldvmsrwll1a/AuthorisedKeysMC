@@ -215,8 +215,6 @@ public class KeySelectionScreen extends BaseScreen {
             inspectorText.setMessage(Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
                     .withStyle(ChatFormatting.RED));
 
-            selectButton.active = true;
-
             return;
         }
 
@@ -254,6 +252,10 @@ public class KeySelectionScreen extends BaseScreen {
     }
 
     private void onKeyDoubleClicked(String keyName) {
+        if (!selectButton.active) {
+            return;
+        }
+
         selectedKeyName = keyName;
 
         if (selectedKeyName != null) {
