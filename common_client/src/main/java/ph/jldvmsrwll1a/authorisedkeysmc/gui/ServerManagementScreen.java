@@ -143,15 +143,14 @@ public class ServerManagementScreen extends BaseScreen {
     }
 
     private void onServerSelected(String serverName) {
-        var selected = serverSelectionList.getSelected();
-        if (selected == null) {
+        if (serverName == null) {
             editButton.active = false;
             selectedServer = null;
 
             return;
         }
 
-        selectedServer = selected.getKeyName();
+        selectedServer = serverName;
         editButton.active = true;
     }
 
