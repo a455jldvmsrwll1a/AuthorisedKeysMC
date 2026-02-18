@@ -238,33 +238,37 @@ public class AkKeyPair {
             inBuffer.flip();
         }
 
-        int header = inBuffer.getInt();
-        Validate.isTrue(
-                header == Constants.KEY_PAIR_HEADER,
-                "Header mismatch: expected 0x%x, got 0x%x.",
-                Constants.KEY_PAIR_HEADER,
-                header);
+        try {
+            int header = inBuffer.getInt();
+            Validate.isTrue(
+                    header == Constants.KEY_PAIR_HEADER,
+                    "Header mismatch: expected 0x%x, got 0x%x.",
+                    Constants.KEY_PAIR_HEADER,
+                    header);
 
-        short version = inBuffer.getShort();
-        Validate.isTrue(
-                version == Constants.KEY_PAIR_VERSION,
-                "Version mismatch: expected %s, got %s.",
-                Constants.KEY_PAIR_VERSION,
-                version);
+            short version = inBuffer.getShort();
+            Validate.isTrue(
+                    version == Constants.KEY_PAIR_VERSION,
+                    "Version mismatch: expected %s, got %s.",
+                    Constants.KEY_PAIR_VERSION,
+                    version);
 
-        short flags = inBuffer.getShort();
+            short flags = inBuffer.getShort();
 
-        if (flags == 1) {
-            AkPublicKey publicKey = new AkPublicKey(inBuffer);
-            AkEncryptedKey encryptedKey = new AkEncryptedKey(inBuffer);
+            if (flags == 1) {
+                AkPublicKey publicKey = new AkPublicKey(inBuffer);
+                AkEncryptedKey encryptedKey = new AkEncryptedKey(inBuffer);
 
-            return new AkKeyPair(name, modificationTime, encryptedKey, publicKey);
-        } else if (flags == 0) {
-            AkPrivateKey privateKey = new AkPrivateKey(inBuffer);
+                return new AkKeyPair(name, modificationTime, encryptedKey, publicKey);
+            } else if (flags == 0) {
+                AkPrivateKey privateKey = new AkPrivateKey(inBuffer);
 
-            return new AkKeyPair(name, modificationTime, privateKey, null);
-        } else {
-            throw new IllegalArgumentException("Unknown flags value: %x".formatted(flags));
+                return new AkKeyPair(name, modificationTime, privateKey, null);
+            } else {
+                throw new IllegalArgumentException("Unknown flags value: %x".formatted(flags));
+            }
+        } catch (BufferUnderflowException e) {
+            throw new IOException("Unexpected end of key pair data.", e);
         }
     }
 }
