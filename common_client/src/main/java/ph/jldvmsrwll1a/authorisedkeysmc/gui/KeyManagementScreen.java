@@ -413,6 +413,7 @@ public final class KeyManagementScreen extends BaseScreen {
                 getWidthLeft(), getScrollListHeight(), contentLayout.getX(), rootLayout.getHeaderHeight() + 5);
         inspectorScroller.setMaxHeight(Math.max(scrollHeight, getScrollListHeight()));
         inspectorText.setMaxWidth(getWidthRight());
+        inspectorScroller.setMinWidth(getWidthRight() - 6);
         listButtons.forEach(button -> button.setWidth(getWidthLeft()));
         inspectorButtons.forEach(button -> button.setWidth(getWidthRightDual()));
         contentLayout.arrangeElements();
