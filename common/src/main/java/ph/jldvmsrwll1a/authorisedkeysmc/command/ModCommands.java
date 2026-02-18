@@ -314,6 +314,34 @@ public final class ModCommands {
             case SUCCESS -> {
                 reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
 
+                ServerPlayer player = context.getSource().getPlayer();
+                ServerPlayer targetPlayer =
+                        context.getSource().getServer().getPlayerList().getPlayer(username);
+
+                if (targetPlayer != null) {
+                    String keyString = key.toString();
+
+                    if (player != null) {
+                        targetPlayer.sendSystemMessage(Component.empty()
+                                .append(player.getDisplayName())
+                                .append(" unbound one of your keys: ")
+                                .append(Component.literal(keyString)
+                                        .withStyle(Style.EMPTY
+                                                .withColor(ChatFormatting.GOLD)
+                                                .withHoverEvent(
+                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                    } else {
+                        targetPlayer.sendSystemMessage(Component.literal("One of your keys was unbound: ")
+                                .append(Component.literal(keyString)
+                                        .withStyle(Style.EMPTY
+                                                .withColor(ChatFormatting.GOLD)
+                                                .withHoverEvent(
+                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                    }
+                }
+
                 return SUCCESS;
             }
             case NO_SUCH_KEY -> {
