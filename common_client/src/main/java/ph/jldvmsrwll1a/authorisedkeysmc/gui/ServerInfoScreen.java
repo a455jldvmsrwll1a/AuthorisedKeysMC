@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.FrameLayout;
@@ -8,8 +9,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.layouts.SpacerElement;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.network.chat.CommonComponents;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.*;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
@@ -29,6 +29,10 @@ public final class ServerInfoScreen extends BaseScreen {
     private static final Component USE_KEY_LABEL = Component.translatable("authorisedkeysmc.screen.server.use-key");
     private static final Component NO_USED_KEY_LABEL =
             Component.translatable("authorisedkeysmc.screen.server.no-used-key");
+    private static final MutableComponent KEY_MISSING_LABEL =
+            Component.translatable("authorisedkeysmc.screen.server.key-missing");
+    private static final MutableComponent KEY_UNREADABLE_LABEL =
+            Component.translatable("authorisedkeysmc.screen.server.key-unreadable");
     private static final Component FORGET_LABEL =
             Component.translatable("authorisedkeysmc.button.forget").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     private static final Tooltip COPY_KEY_TOOLTIP =
@@ -219,10 +223,26 @@ public final class ServerInfoScreen extends BaseScreen {
                 AkKeyPair keyPair = AkmcClient.KEY_PAIRS.loadFromFile(usedKeyName);
                 usedKeyLabel = Component.literal(keyPair.getName());
                 usedKeyString = keyPair.getTextualPublic();
+            } catch (NoSuchFileException e) {
+                Constants.LOG.error("The \"{}\" key pair does not exist: {}", usedKeyName, e);
+
+                usedKeyName = null;
+                usedKeyField.active = false;
+                usedKeyField.setMessage(Component.literal(keyName).append(" ").append(KEY_MISSING_LABEL));
+                usedKeyField.setTooltip(Tooltip.create(Component.literal(e.getClass().getTypeName())));
+                usedKeyForgetBtn.active = true;
+
+                return;
             } catch (IllegalStateException | IOException e) {
                 Constants.LOG.error("Could not load the \"{}\" key pair: {}", usedKeyName, e);
 
                 usedKeyName = null;
+                usedKeyField.active = false;
+                usedKeyField.setMessage(Component.literal(keyName).append(" ").append(KEY_UNREADABLE_LABEL));
+                usedKeyField.setTooltip(Tooltip.create(Component.literal(e.toString())));
+                usedKeyForgetBtn.active = true;
+
+                return;
             }
         }
 

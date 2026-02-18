@@ -55,6 +55,8 @@
     "authorisedkeysmc.screen.server.unknown-key": "Unknown",
     "authorisedkeysmc.screen.server.use-key": "Key pair used for authentication",
     "authorisedkeysmc.screen.server.no-used-key": "No key pair assigned!",
+    "authorisedkeysmc.screen.server.key-unreadable": "(unreadable or corrupted)",
+    "authorisedkeysmc.screen.server.key-missing": "(missing)",
     "authorisedkeysmc.screen.servers.title": "Servers",
     "authorisedkeysmc.screen.servers.list-header": "Server List",
     "authorisedkeysmc.screen.servers.empty": "You have not joined any servers yet.",
