@@ -14,6 +14,7 @@ import java.util.*;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 
 public class UserKeys {
     private static final Object WRITE_LOCK = new Object();
@@ -138,32 +139,31 @@ public class UserKeys {
     }
 
     public void write() {
-        try {
-            Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
+        List<UserJsonEntry> out = new ArrayList<>();
+        synchronized (this) {
+            for (var entry : userKeysMap.entrySet()) {
+                List<UserKey> keys = entry.getValue();
 
-            List<UserJsonEntry> out = new ArrayList<>();
-            synchronized (this) {
-                for (var entry : userKeysMap.entrySet()) {
-                    List<UserKey> keys = entry.getValue();
-
-                    out.add(new UserJsonEntry(
-                            entry.getKey(),
-                            keys.stream()
-                                    .map(key -> new UserKeyJsonEntry(
-                                            Base64Util.encode(key.key.getEncoded()),
-                                            key.issuingPlayer,
-                                            key.registrationTime))
-                                    .toList()));
-                }
+                out.add(new UserJsonEntry(
+                        entry.getKey(),
+                        keys.stream()
+                                .map(key -> new UserKeyJsonEntry(
+                                        Base64Util.encode(key.key.getEncoded()),
+                                        key.issuingPlayer,
+                                        key.registrationTime))
+                                .toList()));
             }
+        }
 
-            Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
-                    .setPrettyPrinting()
-                    .create();
+        String json = new GsonBuilder()
+                .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
+                .setPrettyPrinting()
+                .create().toJson(out);
 
+        try {
             synchronized (WRITE_LOCK) {
-                Files.writeString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH, gson.toJson(out));
+                Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
+                WriteUtil.writeString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH, json);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
