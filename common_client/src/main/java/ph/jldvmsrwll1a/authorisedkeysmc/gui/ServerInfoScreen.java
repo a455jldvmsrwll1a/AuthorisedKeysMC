@@ -252,7 +252,8 @@ public final class ServerInfoScreen extends BaseScreen {
                 usedKeyName = null;
                 usedKeyField.active = false;
                 usedKeyField.setMessage(Component.literal(keyName).append(" ").append(KEY_MISSING_LABEL));
-                usedKeyField.setTooltip(Tooltip.create(Component.literal(e.getClass().getTypeName())));
+                usedKeyField.setTooltip(
+                        Tooltip.create(Component.literal(e.getClass().getTypeName())));
                 usedKeyForgetBtn.active = true;
 
                 return;

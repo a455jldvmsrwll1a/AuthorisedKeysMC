@@ -237,7 +237,8 @@ public class AkKeyPair {
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             if (channel.size() > MAX_FILE_SIZE) {
-                throw new IOException("File is bigger than %s bytes, which is the maximum size of an AKMC key pair.".formatted(MAX_FILE_SIZE));
+                throw new IOException("File is bigger than %s bytes, which is the maximum size of an AKMC key pair."
+                        .formatted(MAX_FILE_SIZE));
             }
 
             while (true) {

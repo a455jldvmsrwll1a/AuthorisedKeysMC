@@ -164,7 +164,6 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         return false;
     }
 
-
     @WrapOperation(
             method = "handleKey",
             at =
@@ -189,7 +188,8 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         }
 
         if (authorisedKeysMC$shouldUseVanillaAuthentication) {
-            // Client completed vanilla authentication, so we need to give it the offline UUID to be consistent with the username.
+            // Client completed vanilla authentication, so we need to give it
+            // the offline UUID to be consistent with the username.
 
             String username = profile.name();
             UUID newId = UUIDUtil.createOfflinePlayerUUID(profile.name());
