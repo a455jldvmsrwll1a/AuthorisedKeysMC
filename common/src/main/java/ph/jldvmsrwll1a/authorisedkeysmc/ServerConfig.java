@@ -86,7 +86,7 @@ public final class ServerConfig {
     }
 
     private static Optional<Integer> parseUnsignedInteger(Properties properties, String key) {
-        String value = properties.getProperty("login_timeout_ticks");
+        String value = properties.getProperty(key);
 
         if (value == null) {
             return Optional.empty();
