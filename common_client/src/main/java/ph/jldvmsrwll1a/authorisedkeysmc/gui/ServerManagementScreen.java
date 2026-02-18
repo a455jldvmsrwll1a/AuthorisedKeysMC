@@ -53,7 +53,13 @@ public class ServerManagementScreen extends BaseScreen {
         reloadServers();
 
         serverSelectionList = new GenericStringSelectionList(
-                EMPTY_LIST_LABEL, minecraft, serverNames, getBestWidth(), rootLayout.getContentHeight());
+                EMPTY_LIST_LABEL,
+                minecraft,
+                serverNames,
+                getBestWidth(),
+                rootLayout.getContentHeight(),
+                this::onServerSelected,
+                this::onServerDoubleClicked);
         serverSelectionList.borderless = true;
 
         listContainerLayout.addChild(serverSelectionList);
@@ -75,26 +81,6 @@ public class ServerManagementScreen extends BaseScreen {
         rootLayout.visitWidgets(this::addRenderableWidget);
 
         repositionElements();
-    }
-
-    @Override
-    public void tick() {
-        super.tick();
-
-        if (!serverSelectionList.checkShouldLoad()) {
-            return;
-        }
-
-        var selected = serverSelectionList.getSelected();
-        if (selected == null) {
-            editButton.active = false;
-            selectedServer = null;
-
-            return;
-        }
-
-        selectedServer = selected.getKeyName();
-        editButton.active = true;
     }
 
     @Override
@@ -154,6 +140,32 @@ public class ServerManagementScreen extends BaseScreen {
                 2,
                 32,
                 2);
+    }
+
+    private void onServerSelected(String serverName) {
+        var selected = serverSelectionList.getSelected();
+        if (selected == null) {
+            editButton.active = false;
+            selectedServer = null;
+
+            return;
+        }
+
+        selectedServer = selected.getKeyName();
+        editButton.active = true;
+    }
+
+    private void onServerDoubleClicked(String serverName) {
+        ServerData data;
+        for (int i = 0; i < serverList.size(); ++i) {
+            data = serverList.get(i);
+
+            if (data.name.equals(serverName)) {
+                minecraft.setScreen(new ServerInfoScreen(this, data));
+
+                return;
+            }
+        }
     }
 
     private void onEditButtonPressed(Button button) {

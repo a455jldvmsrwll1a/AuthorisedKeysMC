@@ -1,36 +1,53 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.util.List;
+import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 public final class GenericStringSelectionList extends ObjectSelectionList<GenericStringSelectionList.StringEntry> {
     private final Component emptyListLabel;
+    private final Consumer<String> selectCallback;
+    private final Consumer<String> actionCallback;
 
     private boolean listIsEmpty;
-    private GenericStringSelectionList.@Nullable StringEntry lastSelection = null;
-    private boolean shouldLoad = false;
-
     public boolean borderless = false;
 
     public GenericStringSelectionList(
-            Component emptyListLabel, Minecraft minecraft, List<String> keyNames, int width, int height) {
+            Component emptyListLabel,
+            Minecraft minecraft,
+            List<String> keyNames,
+            int width,
+            int height,
+            Consumer<String> onSelect) {
+        this(emptyListLabel, minecraft, keyNames, width, height, onSelect, string -> {});
+    }
+
+    public GenericStringSelectionList(
+            Component emptyListLabel,
+            Minecraft minecraft,
+            List<String> keyNames,
+            int width,
+            int height,
+            Consumer<String> onSelect,
+            Consumer<String> onAction) {
         super(minecraft, width, height, 0, minecraft.font.lineHeight * 2);
 
         this.emptyListLabel = emptyListLabel;
+        this.selectCallback = onSelect;
+        this.actionCallback = onAction;
 
         updateKeyNames(keyNames);
     }
 
     public void updateKeyNames(@Nullable List<String> keyNames) {
         clearEntries();
-        shouldLoad = true;
         setSelected(null);
 
         listIsEmpty = keyNames == null || keyNames.isEmpty();
@@ -39,24 +56,8 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
         }
 
         for (String name : keyNames) {
-            addEntry(new StringEntry(minecraft, name));
+            addEntry(new StringEntry(minecraft, name, selectCallback, actionCallback));
         }
-    }
-
-    @Override
-    public void setSelected(GenericStringSelectionList.@Nullable StringEntry selected) {
-        super.setSelected(selected);
-        if (lastSelection == null || lastSelection != selected) {
-            lastSelection = selected;
-            shouldLoad = true;
-        }
-    }
-
-    public boolean checkShouldLoad() {
-        boolean should = shouldLoad;
-        shouldLoad = false;
-
-        return should;
     }
 
     @Override
@@ -112,10 +113,26 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
     public static final class StringEntry extends ObjectSelectionList.Entry<StringEntry> {
         private final StringWidget stringWidget;
         private final String keyName;
+        private final Consumer<String> selectCallback;
+        private final Consumer<String> actionCallback;
 
-        public StringEntry(@NotNull Minecraft minecraft, @NotNull String keyName) {
+        public StringEntry(Minecraft minecraft, String keyName, Consumer<String> onSelect, Consumer<String> onAction) {
             this.keyName = keyName;
+            this.selectCallback = onSelect;
+            this.actionCallback = onAction;
+
             stringWidget = new StringWidget(Component.literal(keyName), minecraft.font);
+        }
+
+        @Override
+        public boolean mouseClicked(@NonNull MouseButtonEvent event, boolean doubleClicked) {
+            if (doubleClicked) {
+                actionCallback.accept(keyName);
+            } else {
+                selectCallback.accept(keyName);
+            }
+
+            return super.mouseClicked(event, doubleClicked);
         }
 
         public String getKeyName() {

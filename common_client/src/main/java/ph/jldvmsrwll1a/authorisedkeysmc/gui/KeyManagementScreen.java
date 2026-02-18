@@ -50,7 +50,7 @@ public final class KeyManagementScreen extends BaseScreen {
     private Button passwordButton;
 
     private @Nullable AkKeyPair currentKeypair;
-    private @Nullable String keyName;
+    private @Nullable String selectedKeyName;
 
     private boolean needsLayout = true;
 
@@ -71,7 +71,7 @@ public final class KeyManagementScreen extends BaseScreen {
         rowHelper.defaultCellSetting().alignVerticallyTop().alignHorizontallyCenter();
 
         keySelectionList = new GenericStringSelectionList(
-                EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
+                EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight(), this::onKeySelected);
 
         LinearLayout inspectorLayout =
                 new LinearLayout(getWidthRight(), getScrollListHeight(), LinearLayout.Orientation.VERTICAL);
@@ -155,90 +155,6 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     @Override
-    public void tick() {
-        super.tick();
-
-        if (!keySelectionList.checkShouldLoad()) {
-            return;
-        }
-
-        inspectorButtons.forEach(button -> button.active = false);
-
-        var selected = keySelectionList.getSelected();
-
-        if (selected == null) {
-            inspectorText.setMessage(
-                    Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"));
-
-            return;
-        }
-
-        keyName = selected.getKeyName();
-        currentKeypair = null;
-
-        needsLayout = true;
-
-        try {
-            currentKeypair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
-        } catch (InvalidPathException e) {
-            Constants.LOG.error("Secret key has invalid path \"{}\": {}", keyName, e);
-
-            inspectorText.setMessage(Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
-                    .withStyle(ChatFormatting.RED));
-
-            return;
-        } catch (Exception e) {
-            Constants.LOG.error("Could not load secret key \"{}\": {}", keyName, e);
-
-            inspectorText.setMessage(Component.translatable("authorisedkeysmc.error.key-props", keyName, e.toString())
-                    .withStyle(ChatFormatting.RED));
-
-            deleteButton.active = true;
-
-            return;
-        }
-
-        List<String> servers = getServerNamesUsingKey(keyName);
-
-        MutableComponent message =
-                Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", keyName);
-
-        if (currentKeypair.requiresDecryption()) {
-            message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted")
-                    .withStyle(ChatFormatting.GREEN));
-        }
-
-        message.append(Component.translatable(
-                                "authorisedkeysmc.screen.config.keys.properties-time",
-                                currentKeypair.getModificationTime().toString())
-                        .withStyle(ChatFormatting.GRAY))
-                .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
-                .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))
-                .append("\n\n")
-                .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
-
-        for (int i = 0; i < servers.size(); ++i) {
-            if (i % 2 == 0) {
-                message.append(" + §7%s§r\n".formatted(servers.get(i)));
-            } else {
-                message.append(" + %s\n".formatted(servers.get(i)));
-            }
-        }
-
-        inspectorText.setMessage(message);
-        inspectorText.setMaxWidth(getWidthRight());
-        inspectorScroller.arrangeElements();
-
-        inspectorButtons.forEach(button -> button.active = true);
-
-        if (currentKeypair.requiresDecryption()) {
-            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-change"));
-        } else {
-            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-add"));
-        }
-    }
-
-    @Override
     public void resize(int width, int height) {
         super.resize(width, height);
         needsLayout = true;
@@ -299,6 +215,76 @@ public final class KeyManagementScreen extends BaseScreen {
                 2);
     }
 
+    private void onKeySelected(String keyName) {
+        inspectorButtons.forEach(button -> button.active = false);
+
+        selectedKeyName = keyName;
+        currentKeypair = null;
+
+        needsLayout = true;
+
+        try {
+            currentKeypair = AkmcClient.KEY_PAIRS.loadFromFile(selectedKeyName);
+        } catch (InvalidPathException e) {
+            Constants.LOG.error("Secret key has invalid path \"{}\": {}", selectedKeyName, e);
+
+            inspectorText.setMessage(
+                    Component.translatable("authorisedkeysmc.error.key-props", selectedKeyName, e.toString())
+                            .withStyle(ChatFormatting.RED));
+
+            return;
+        } catch (Exception e) {
+            Constants.LOG.error("Could not load secret key \"{}\": {}", selectedKeyName, e);
+
+            inspectorText.setMessage(
+                    Component.translatable("authorisedkeysmc.error.key-props", selectedKeyName, e.toString())
+                            .withStyle(ChatFormatting.RED));
+
+            deleteButton.active = true;
+
+            return;
+        }
+
+        List<String> servers = getServerNamesUsingKey(selectedKeyName);
+
+        MutableComponent message =
+                Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", selectedKeyName);
+
+        if (currentKeypair.requiresDecryption()) {
+            message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted")
+                    .withStyle(ChatFormatting.GREEN));
+        }
+
+        message.append(Component.translatable(
+                                "authorisedkeysmc.screen.config.keys.properties-time",
+                                currentKeypair.getModificationTime().toString())
+                        .withStyle(ChatFormatting.GRAY))
+                .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
+                .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))
+                .append("\n\n")
+                .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-servers"));
+
+        for (int i = 0; i < servers.size(); ++i) {
+            if (i % 2 == 0) {
+                message.append(" + §7%s§r\n".formatted(servers.get(i)));
+            } else {
+                message.append(" + %s\n".formatted(servers.get(i)));
+            }
+        }
+
+        inspectorText.setMessage(message);
+        inspectorText.setMaxWidth(getWidthRight());
+        inspectorScroller.arrangeElements();
+
+        inspectorButtons.forEach(button -> button.active = true);
+
+        if (currentKeypair.requiresDecryption()) {
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-change"));
+        } else {
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-add"));
+        }
+    }
+
     private void onCopyButtonPressed(Button ignored) {
         if (currentKeypair != null) {
             minecraft.keyboardHandler.setClipboard(currentKeypair.getTextualPublic());
@@ -346,19 +332,19 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onDeleteButtonPressed(Button ignored) {
-        if (keyName == null && currentKeypair == null) {
+        if (selectedKeyName == null && currentKeypair == null) {
             return;
         }
 
         ConfirmScreen screen = new ConfirmScreen(
                 confirmed -> {
                     if (confirmed) {
-                        if (keyName != null) {
+                        if (selectedKeyName != null) {
                             if (currentKeypair != null) {
-                                Validate.validState(currentKeypair.getName().equals(keyName));
+                                Validate.validState(currentKeypair.getName().equals(selectedKeyName));
                             }
 
-                            AkmcClient.KEY_PAIRS.deleteKeyFile(keyName);
+                            AkmcClient.KEY_PAIRS.deleteKeyFile(selectedKeyName);
                         }
                         reloadKeys();
                     }

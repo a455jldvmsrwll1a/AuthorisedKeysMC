@@ -52,7 +52,7 @@ public class KeySelectionScreen extends BaseScreen {
     private MultiLineTextWidget inspectorText;
     private Button selectButton;
 
-    private @Nullable String keyName;
+    private @Nullable String selectedKeyName;
     private boolean hasSelection = false;
 
     private boolean needsLayout = true;
@@ -83,7 +83,13 @@ public class KeySelectionScreen extends BaseScreen {
         rowHelper.defaultCellSetting().alignVerticallyTop().alignHorizontallyCenter();
 
         keySelectionList = new GenericStringSelectionList(
-                EMPTY_LIST_LABEL, minecraft, keyNames, getWidthLeft(), getScrollListHeight());
+                EMPTY_LIST_LABEL,
+                minecraft,
+                keyNames,
+                getWidthLeft(),
+                getScrollListHeight(),
+                this::onKeySelected,
+                this::onKeyDoubleClicked);
 
         LinearLayout inspectorLayout =
                 new LinearLayout(getWidthRight(), getScrollListHeight(), LinearLayout.Orientation.VERTICAL);
@@ -126,24 +132,70 @@ public class KeySelectionScreen extends BaseScreen {
     }
 
     @Override
-    public void tick() {
-        super.tick();
+    public void resize(int width, int height) {
+        super.resize(width, height);
+        needsLayout = true;
+    }
 
-        if (!keySelectionList.checkShouldLoad()) {
-            return;
-        }
+    @Override
+    public void repositionElements() {
+        rootLayout.arrangeElements();
 
+        forceRecalculateLayout();
+    }
+
+    @Override
+    public void onClose() {
+        minecraft.setScreen(parent);
+        consumer.accept(hasSelection ? selectedKeyName : null);
+    }
+
+    @Override
+    public void render(@NonNull GuiGraphics gui, int cursor_x, int cursor_y, float partialTick) {
+        gui.blit(
+                RenderPipelines.GUI_TEXTURED,
+                Screen.MENU_BACKGROUND,
+                0,
+                this.rootLayout.getHeaderHeight(),
+                .0f,
+                .0f,
+                width,
+                rootLayout.getContentHeight(),
+                32,
+                32);
+
+        recalculateLayoutIfNeeded();
+
+        super.render(gui, cursor_x, cursor_y, partialTick);
+
+        gui.blit(
+                RenderPipelines.GUI_TEXTURED,
+                Screen.HEADER_SEPARATOR,
+                0,
+                this.rootLayout.getHeaderHeight() - 2,
+                .0f,
+                .0f,
+                width,
+                2,
+                32,
+                2);
+
+        gui.blit(
+                RenderPipelines.GUI_TEXTURED,
+                Screen.FOOTER_SEPARATOR,
+                0,
+                this.height - this.rootLayout.getFooterHeight() - 2,
+                .0f,
+                .0f,
+                width,
+                2,
+                32,
+                2);
+    }
+
+    private void onKeySelected(String keyName) {
         selectButton.active = false;
 
-        var selected = keySelectionList.getSelected();
-
-        if (selected == null) {
-            inspectorText.setMessage(Component.translatable("authorisedkeysmc.screen.select-key.no-keys"));
-
-            return;
-        }
-
-        keyName = selected.getKeyName();
         AkKeyPair currentKeypair;
 
         needsLayout = true;
@@ -201,70 +253,18 @@ public class KeySelectionScreen extends BaseScreen {
         repositionElements();
     }
 
-    @Override
-    public void resize(int width, int height) {
-        super.resize(width, height);
-        needsLayout = true;
-    }
+    private void onKeyDoubleClicked(String keyName) {
+        selectedKeyName = keyName;
 
-    @Override
-    public void repositionElements() {
-        rootLayout.arrangeElements();
+        if (selectedKeyName != null) {
+            hasSelection = true;
 
-        forceRecalculateLayout();
-    }
-
-    @Override
-    public void onClose() {
-        minecraft.setScreen(parent);
-        consumer.accept(hasSelection ? keyName : null);
-    }
-
-    @Override
-    public void render(@NonNull GuiGraphics gui, int cursor_x, int cursor_y, float partialTick) {
-        gui.blit(
-                RenderPipelines.GUI_TEXTURED,
-                Screen.MENU_BACKGROUND,
-                0,
-                this.rootLayout.getHeaderHeight(),
-                .0f,
-                .0f,
-                width,
-                rootLayout.getContentHeight(),
-                32,
-                32);
-
-        recalculateLayoutIfNeeded();
-
-        super.render(gui, cursor_x, cursor_y, partialTick);
-
-        gui.blit(
-                RenderPipelines.GUI_TEXTURED,
-                Screen.HEADER_SEPARATOR,
-                0,
-                this.rootLayout.getHeaderHeight() - 2,
-                .0f,
-                .0f,
-                width,
-                2,
-                32,
-                2);
-
-        gui.blit(
-                RenderPipelines.GUI_TEXTURED,
-                Screen.FOOTER_SEPARATOR,
-                0,
-                this.height - this.rootLayout.getFooterHeight() - 2,
-                .0f,
-                .0f,
-                width,
-                2,
-                32,
-                2);
+            onClose();
+        }
     }
 
     private void onSelectButtonPressed(Button button) {
-        if (keyName != null) {
+        if (selectedKeyName != null) {
             hasSelection = true;
 
             onClose();
