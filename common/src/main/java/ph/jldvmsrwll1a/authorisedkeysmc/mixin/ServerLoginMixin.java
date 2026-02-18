@@ -88,16 +88,13 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
     @Unique
     private boolean authorisedKeysMC$shouldUseVanillaAuthentication = false;
 
-    @Inject(method = "handleHello", at = @At("HEAD"), cancellable = true)
-    private void handleIncoming(ServerboundHelloPacket packet, CallbackInfo ci) {
+    /**
+     * @author a455jldvmsrwll1a
+     * @reason Nothing else should change this behaviour.
+     */
+    @Overwrite
+    public void handleHello(ServerboundHelloPacket packet) {
         requestedUsername = packet.name();
-
-        if (server.isSingleplayer()) {
-            // Mark as finished so that verification actually happens.
-            authorisedKeysMC$skipLogin();
-            return;
-        }
-        ci.cancel();
 
         IPlatformHelper platform = AkmcCore.PLATFORM;
         ServerLoginPacketListenerImpl self = (ServerLoginPacketListenerImpl) (Object) this;
@@ -120,6 +117,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return;
         }
 
+        // Decide if client should authenticate normally, or go through the custom authentication.
         if (server.usesAuthentication()) {
             authorisedKeysMC$shouldUseVanillaAuthentication = true;
         } else if (AkmcCore.CONFIG.skipOnlineAccounts) {
@@ -136,12 +134,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             }
         }
 
-        // Always encrypt even if server does not use authentication.
-
-        if (authorisedKeysMC$shouldUseVanillaAuthentication) {
-            Constants.LOG.info("server uses authentication");
-        }
-
+        // Always initiate encryption even if the server is in offline mode.
         platform.setLoginState(self, VanillaLoginHandlerState.ENCRYPTING);
         connection.send(new ClientboundHelloPacket(
                 "",
