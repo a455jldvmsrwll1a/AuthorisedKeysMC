@@ -87,7 +87,7 @@ public final class ModCommands {
         try {
             AkmcCore.reload();
         } catch (Exception e) {
-            Constants.LOG.error("Could not run reload command: {}", e);
+            Constants.LOG.error("Could not run reload command: {}", e.toString());
             fail(context, "Failed to reload: %s".formatted(e.toString()));
 
             return ERROR;
