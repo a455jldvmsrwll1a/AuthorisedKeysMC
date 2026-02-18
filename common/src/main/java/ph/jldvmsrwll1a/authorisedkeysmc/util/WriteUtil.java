@@ -13,7 +13,8 @@ public final class WriteUtil {
         Path temp = path.resolveSibling(path.getFileName() + ".tmp");
 
         try {
-            Files.writeString(temp, content, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.SYNC);
+            Files.writeString(
+                    temp, content, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.SYNC);
             Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             Files.deleteIfExists(temp);

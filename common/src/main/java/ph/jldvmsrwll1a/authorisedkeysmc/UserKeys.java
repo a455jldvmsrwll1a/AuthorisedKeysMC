@@ -158,7 +158,8 @@ public class UserKeys {
         String json = new GsonBuilder()
                 .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
                 .setPrettyPrinting()
-                .create().toJson(out);
+                .create()
+                .toJson(out);
 
         try {
             synchronized (WRITE_LOCK) {

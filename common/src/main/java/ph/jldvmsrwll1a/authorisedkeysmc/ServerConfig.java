@@ -1,11 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
-import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Properties;
+import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 
 public final class ServerConfig {
     private static final Object WRITE_LOCK = new Object();
@@ -30,21 +29,11 @@ public final class ServerConfig {
             }
         }
 
-        parseBooleanStrictly(props, "enforcing").ifPresent(bool -> {
-            config.enforcing = bool;
-        });
-        parseUnsignedInteger(props, "login_timeout_ticks").ifPresent(value -> {
-            config.loginTimeoutTicks = value;
-        });
-        parseBooleanStrictly(props, "registration_required").ifPresent(bool -> {
-            config.registrationRequired = bool;
-        });
-        parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> {
-            config.allowRegistration = bool;
-        });
-        parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> {
-            config.skipOnlineAccounts = bool;
-        });
+        parseBooleanStrictly(props, "enforcing").ifPresent(bool -> config.enforcing = bool);
+        parseUnsignedInteger(props, "login_timeout_ticks").ifPresent(value -> config.loginTimeoutTicks = value);
+        parseBooleanStrictly(props, "registration_required").ifPresent(bool -> config.registrationRequired = bool);
+        parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> config.allowRegistration = bool);
+        parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> config.skipOnlineAccounts = bool);
 
         return config;
     }
