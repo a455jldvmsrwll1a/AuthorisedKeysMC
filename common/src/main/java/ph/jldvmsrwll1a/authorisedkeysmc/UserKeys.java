@@ -47,11 +47,15 @@ public class UserKeys {
         return userKeysMap.keySet();
     }
 
-    public synchronized boolean bindKey(String username, @Nullable String issuer, AkPublicKey key) {
+    public synchronized BindResult bindKey(String username, @Nullable String issuer, AkPublicKey key) {
         ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(username, k -> new ArrayList<>(1));
 
+        if (keys.size() >= AkmcCore.CONFIG.maxKeyCount) {
+            return BindResult.TOO_MANY;
+        }
+
         if (keys.stream().anyMatch(entry -> entry.key.equals(key))) {
-            return false;
+            return BindResult.ALREADY_EXISTS;
         }
 
         UserKey newKey = new UserKey();
@@ -68,25 +72,29 @@ public class UserKeys {
 
         write();
 
-        return true;
+        return BindResult.SUCCESS;
     }
 
-    public synchronized boolean unbindKey(String username, AkPublicKey key) {
+    public synchronized UnbindResult unbindKey(String username, AkPublicKey key, boolean allowEmpty) {
         ArrayList<UserKey> keys = userKeysMap.get(username);
 
         if (keys == null || keys.isEmpty()) {
-            return false;
+            return UnbindResult.NO_SUCH_USER;
+        }
+
+        if (!allowEmpty && keys.size() == 1) {
+            return UnbindResult.CANNOT_BE_EMPTY;
         }
 
         if (!keys.removeIf(userKey -> userKey.key.equals(key))) {
-            return false;
+            return UnbindResult.NO_SUCH_KEY;
         }
 
         Constants.LOG.info("AKMC: The public key {} has been unbound from {}.", key, username);
 
         write();
 
-        return true;
+        return UnbindResult.SUCCESS;
     }
 
     public void read() {
@@ -171,6 +179,19 @@ public class UserKeys {
         }
 
         Constants.LOG.debug("Wrote {} user entries to disk.", userKeysMap.size());
+    }
+
+    public enum BindResult {
+        SUCCESS,
+        ALREADY_EXISTS,
+        TOO_MANY
+    }
+
+    public enum UnbindResult {
+        SUCCESS,
+        NO_SUCH_KEY,
+        NO_SUCH_USER,
+        CANNOT_BE_EMPTY,
     }
 
     public static class UserKey {

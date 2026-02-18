@@ -155,14 +155,23 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AkmcCore.USER_KEYS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
-            reply(context, "Bound your key!", ChatFormatting.GREEN);
+        switch (AkmcCore.USER_KEYS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
+            case SUCCESS -> {
+                reply(context, "Bound your key!", ChatFormatting.GREEN);
 
-            return SUCCESS;
-        } else {
-            fail(context, "You have already bound this key.");
+                return SUCCESS;
+            }
+            case ALREADY_EXISTS -> {
+                fail(context, "You have already bound this key.");
 
-            return ERROR;
+                return ERROR;
+            }
+            case TOO_MANY -> {
+                fail(context, "You cannot bind more than %s keys at a time.".formatted(AkmcCore.CONFIG.maxKeyCount));
+
+                return ERROR;
+            }
+            default -> throw new IllegalStateException("Invalid bind result.");
         }
     }
 
@@ -187,14 +196,25 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AkmcCore.USER_KEYS.unbindKey(player.getPlainTextName(), key)) {
-            reply(context, "Unbound your key!", ChatFormatting.GREEN);
+        switch (AkmcCore.USER_KEYS.unbindKey(player.getPlainTextName(), key, !AkmcCore.CONFIG.registrationRequired)) {
+            case SUCCESS -> {
+                reply(context, "Unbound your key!", ChatFormatting.GREEN);
 
-            return SUCCESS;
-        } else {
-            fail(context, "You have no such key.");
+                return SUCCESS;
+            }
+            case NO_SUCH_KEY -> {
+                fail(context, "You have no such key.");
 
-            return ERROR;
+                return ERROR;
+            }
+            case CANNOT_BE_EMPTY -> {
+                fail(
+                        context,
+                        "As registration is required, you cannot unbind all of your keys.\n\nIf you want to move to a new key, bind the new key, and then unbind the old one.");
+
+                return ERROR;
+            }
+            default -> throw new IllegalStateException("Invalid unbind result.");
         }
     }
 
@@ -228,40 +248,51 @@ public final class ModCommands {
 
         ServerPlayer player = context.getSource().getPlayer();
 
-        if (AkmcCore.USER_KEYS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
-            reply(context, "Bound this key to %s!".formatted(username), ChatFormatting.GREEN);
+        switch (AkmcCore.USER_KEYS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
+            case SUCCESS -> {
+                reply(context, "Bound this key to %s!".formatted(username), ChatFormatting.GREEN);
 
-            ServerPlayer targetPlayer =
-                    context.getSource().getServer().getPlayerList().getPlayer(username);
-            if (targetPlayer != null) {
-                String keyString = key.toString();
+                ServerPlayer targetPlayer =
+                        context.getSource().getServer().getPlayerList().getPlayer(username);
+                if (targetPlayer != null) {
+                    String keyString = key.toString();
 
-                if (player != null) {
-                    targetPlayer.sendSystemMessage(Component.empty()
-                            .append(player.getDisplayName())
-                            .append(" bound a new key to your username: ")
-                            .append(Component.literal(keyString)
-                                    .withStyle(Style.EMPTY
-                                            .withColor(ChatFormatting.GOLD)
-                                            .withHoverEvent(
-                                                    new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
-                } else {
-                    targetPlayer.sendSystemMessage(Component.literal("A new key has been bound to your username: ")
-                            .append(Component.literal(keyString)
-                                    .withStyle(Style.EMPTY
-                                            .withColor(ChatFormatting.GOLD)
-                                            .withHoverEvent(
-                                                    new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                    if (player != null) {
+                        targetPlayer.sendSystemMessage(Component.empty()
+                                .append(player.getDisplayName())
+                                .append(" bound a new key to your username: ")
+                                .append(Component.literal(keyString)
+                                        .withStyle(Style.EMPTY
+                                                .withColor(ChatFormatting.GOLD)
+                                                .withHoverEvent(
+                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                    } else {
+                        targetPlayer.sendSystemMessage(Component.literal("A new key has been bound to your username: ")
+                                .append(Component.literal(keyString)
+                                        .withStyle(Style.EMPTY
+                                                .withColor(ChatFormatting.GOLD)
+                                                .withHoverEvent(
+                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                    }
                 }
+
+                return SUCCESS;
             }
+            case ALREADY_EXISTS -> {
+                fail(context, "This user already has that key.");
 
-            return SUCCESS;
-        } else {
-            fail(context, "This user already has that key.");
+                return ERROR;
+            }
+            case TOO_MANY -> {
+                fail(
+                        context,
+                        "Only up to %s keys can be bound to a given username.".formatted(AkmcCore.CONFIG.maxKeyCount));
 
-            return ERROR;
+                return ERROR;
+            }
+            default -> throw new IllegalStateException("Invalid bind result.");
         }
     }
 
@@ -279,18 +310,23 @@ public final class ModCommands {
             return ERROR;
         }
 
-        if (AkmcCore.USER_KEYS.unbindKey(username, key)) {
-            reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
+        switch (AkmcCore.USER_KEYS.unbindKey(username, key, true)) {
+            case SUCCESS -> {
+                reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
 
-            return SUCCESS;
-        } else if (AkmcCore.USER_KEYS.getUsers().contains(username)) {
-            fail(context, "The user has no such key.");
+                return SUCCESS;
+            }
+            case NO_SUCH_KEY -> {
+                fail(context, "The user has no such key.");
 
-            return ERROR;
-        } else {
-            fail(context, "No such user on record.");
+                return ERROR;
+            }
+            case NO_SUCH_USER -> {
+                fail(context, "No such user on record.");
 
-            return ERROR;
+                return ERROR;
+            }
+            default -> throw new IllegalStateException("Invalid unbind result.");
         }
     }
 

@@ -11,6 +11,7 @@ public final class ServerConfig {
 
     public volatile boolean enforcing = true;
     public volatile int loginTimeoutTicks = 1200;
+    public volatile int maxKeyCount = 100;
     public volatile boolean registrationRequired = false;
     public volatile boolean allowRegistration = true;
     public volatile boolean skipOnlineAccounts = false;
@@ -31,6 +32,7 @@ public final class ServerConfig {
 
         parseBooleanStrictly(props, "enforcing").ifPresent(bool -> config.enforcing = bool);
         parseUnsignedInteger(props, "login_timeout_ticks").ifPresent(value -> config.loginTimeoutTicks = value);
+        parseUnsignedInteger(props, "max_key_count").ifPresent(value -> config.maxKeyCount = value);
         parseBooleanStrictly(props, "registration_required").ifPresent(bool -> config.registrationRequired = bool);
         parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> config.allowRegistration = bool);
         parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> config.skipOnlineAccounts = bool);
@@ -45,6 +47,7 @@ public final class ServerConfig {
         builder.append("enforcing = ");
         builder.append(enforcing ? "true\n" : "false\n");
         builder.append("login_timeout_ticks = %s\n".formatted(loginTimeoutTicks));
+        builder.append("max_key_count = %s\n".formatted(maxKeyCount));
         builder.append("registration_required = ");
         builder.append(registrationRequired ? "true\n" : "false\n");
         builder.append("allow_registration = ");

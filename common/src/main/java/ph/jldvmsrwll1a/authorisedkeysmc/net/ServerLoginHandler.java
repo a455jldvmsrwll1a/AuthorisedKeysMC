@@ -169,9 +169,14 @@ public final class ServerLoginHandler {
                 return;
             }
 
-            AkmcCore.USER_KEYS.bindKey(profile.name(), profile.name(), clientKey);
-            Constants.LOG.info("Successfully registered {}'s key!", profile.name());
-            transition(Phase.SUCCESSFUL);
+            switch (AkmcCore.USER_KEYS.bindKey(profile.name(), profile.name(), clientKey)) {
+                case SUCCESS, ALREADY_EXISTS -> {
+                    Constants.LOG.info("Successfully registered {}'s key!", profile.name());
+                    transition(Phase.SUCCESSFUL);
+                }
+                case TOO_MANY ->
+                    throw new IllegalStateException("Hit key limit even though user is yet to register one!");
+            }
         } else {
             throw new IllegalStateException("Received client signature but wasn't expecting one!");
         }
