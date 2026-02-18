@@ -58,6 +58,7 @@ public final class ServerInfoScreen extends BaseScreen {
     private @Nullable String usedKeyString;
     private boolean dirty = false;
     private boolean forgetHostKey = false;
+    private boolean wasRevealingUsedKey = false;
 
     private MultiLineTextWidget preambleText;
     private Button hostKeyField;
@@ -154,6 +155,28 @@ public final class ServerInfoScreen extends BaseScreen {
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        super.mouseMoved(mouseX, mouseY);
+
+        boolean revealing = usedKeyField.isHovered();
+        if (revealing == wasRevealingUsedKey) {
+            return;
+        }
+
+        wasRevealingUsedKey = revealing;
+
+        if (revealing) {
+            if (usedKeyString != null) {
+                usedKeyField.setMessage(Component.literal(usedKeyString));
+            }
+        } else {
+            if (usedKeyName != null) {
+                usedKeyField.setMessage(Component.literal(usedKeyName));
+            }
+        }
     }
 
     @Override
