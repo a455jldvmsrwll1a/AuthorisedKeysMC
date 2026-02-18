@@ -248,6 +248,7 @@ public class KeySelectionScreen extends BaseScreen {
         inspectorText.setMessage(message);
         inspectorText.setMaxWidth(getWidthRight());
         selectButton.active = true;
+        selectedKeyName = keyName;
         repositionElements();
     }
 
