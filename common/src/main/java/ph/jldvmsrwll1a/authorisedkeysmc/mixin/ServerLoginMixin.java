@@ -20,12 +20,10 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.StringUtil;
 import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
@@ -178,6 +176,27 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
         authorisedKeysMC$sessionHash = hash;
 
         return hash;
+    }
+
+    @ModifyVariable(method = "startClientVerification", at = @At(value = "HEAD"), argsOnly = true)
+    private GameProfile modifyProfileId(GameProfile profile) {
+        if (server.usesAuthentication()) {
+            // Pass through profile as-is.
+            return profile;
+        }
+
+        if (authorisedKeysMC$shouldUseVanillaAuthentication) {
+            // Client completed vanilla authentication, so we need to give it the offline UUID to be consistent with the username.
+
+            String username = profile.name();
+            UUID newId = UUIDUtil.createOfflinePlayerUUID(profile.name());
+            Constants.LOG.info("AKMC: {}'s premium ID has been overridden to the offline ID: {}", username, newId);
+            return new GameProfile(newId, username, profile.properties());
+        }
+
+        // TODO: when UUID remapping is implemented, do the remapping here.
+
+        return profile;
     }
 
     @Inject(method = "handleCustomQueryPacket", at = @At("HEAD"), cancellable = true)
