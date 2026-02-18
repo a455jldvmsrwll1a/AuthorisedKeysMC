@@ -4,29 +4,30 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.level.ServerPlayer;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
 
-public final class SelfKeysSuggestions implements SuggestionProvider<CommandSourceStack> {
+public final class UsernameSuggestions implements SuggestionProvider<CommandSourceStack> {
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        ServerPlayer player = context.getSource().getPlayer();
+        Set<String> usernames = new HashSet<>(AkmcCore.USER_KEYS.getUsers());
 
-        if (player == null) {
-            return builder.buildFuture();
-        }
+        context.getSource()
+                .getServer()
+                .getPlayerList()
+                .getPlayers()
+                .forEach(player -> usernames.add(player.getPlainTextName()));
 
-        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(player.getUUID());
-        if (keys == null) {
-            return builder.buildFuture();
-        }
+        usernames.forEach(username -> {
+            if (!AkmcCore.USER_KEYS.userHasAnyKeys(username)) {
+                return;
+            }
 
-        keys.forEach(key -> builder.suggest(key.key.toString()));
+            builder.suggest(username);
+        });
 
         return builder.buildFuture();
     }

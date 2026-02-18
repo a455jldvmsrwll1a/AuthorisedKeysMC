@@ -6,13 +6,13 @@ import static net.minecraft.commands.Commands.literal;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
@@ -41,23 +41,25 @@ public final class ModCommands {
                 .then(literal("reload").requires(ModCommands::admin).executes(ModCommands::reload))
                 .then(literal("enable").requires(ModCommands::admin).executes(ModCommands::enable))
                 .then(literal("disable").requires(ModCommands::admin).executes(ModCommands::disable))
+                .then(literal("info").executes(ModCommands::selfInfo))
                 .then(literal("bind")
-                        .then(argument("key", StringArgumentType.string()).executes(ModCommands::bind)))
+                        .then(argument("public key", StringArgumentType.word()).executes(ModCommands::bind)))
                 .then(literal("unbind")
-                        .then(argument("key", StringArgumentType.string())
-                                .suggests(new SelfKeysSuggestions())
+                        .then(argument("public key", StringArgumentType.word())
+                                .suggests(new PublicKeysSuggestions.Self())
                                 .executes(ModCommands::unbind)))
-                .then(literal("id")
+                .then(literal("user")
                         .requires(ModCommands::admin)
-                        .then(argument("id", UuidArgument.uuid())
-                                .suggests(new RegisteredUserIdSuggestions())
-                                .executes(ModCommands::idInfo)
+                        .then(argument("username", StringArgumentType.word())
+                                .suggests(new UsernameSuggestions())
+                                .executes(ModCommands::usernameInfo)
                                 .then(literal("bind")
-                                        .then(argument("key", StringArgumentType.string())
-                                                .executes(ModCommands::idBind)))
+                                        .then(argument("public key", StringArgumentType.word())
+                                                .executes(ModCommands::usernameBind)))
                                 .then(literal("unbind")
-                                        .then(argument("key", StringArgumentType.string())
-                                                .executes(ModCommands::idUnbind))))));
+                                        .then(argument("public key", StringArgumentType.word())
+                                                .suggests(new PublicKeysSuggestions.ByUsername())
+                                                .executes(ModCommands::usernameUnbind))))));
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
@@ -81,10 +83,7 @@ public final class ModCommands {
             AkmcCore.reload();
         } catch (Exception e) {
             Constants.LOG.error("Could not run reload command: {}", e);
-            reply(
-                    context,
-                    Component.literal("Failed to reload: %s".formatted(e.toString()))
-                            .withStyle(ChatFormatting.RED));
+            fail(context, "Failed to reload: %s".formatted(e.toString()));
 
             return ERROR;
         }
@@ -97,7 +96,7 @@ public final class ModCommands {
 
     private static int enable(CommandContext<CommandSourceStack> context) {
         if (AkmcCore.CONFIG.enforcing) {
-            reply(context, Component.literal("AKMC is already enforcing.").withStyle(ChatFormatting.RED));
+            fail(context, "AKMC is already enforcing.");
 
             return ERROR;
         }
@@ -117,7 +116,7 @@ public final class ModCommands {
 
     private static int disable(CommandContext<CommandSourceStack> context) {
         if (!AkmcCore.CONFIG.enforcing) {
-            reply(context, Component.literal("AKMC is already on standby.").withStyle(ChatFormatting.RED));
+            fail(context, "AKMC is already on standby.");
 
             return ERROR;
         }
@@ -138,31 +137,31 @@ public final class ModCommands {
     private static int bind(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = context.getSource().getPlayer();
         if (player == null) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal(
-                                    "Must be executed by a player! To bind a key to a specific user, use: /akmc user <user> bind <key>"));
+            fail(
+                    context,
+                    "Must be executed by a player! To bind a key to a specific user, use: /akmc user <username> bind <public key>");
+
             return ERROR;
         }
 
-        String encodedKey = StringArgumentType.getString(context, "key");
+        String encodedKey = StringArgumentType.getString(context, "public key");
         AkPublicKey key;
 
         try {
             key = new AkPublicKey(encodedKey);
         } catch (IllegalArgumentException e) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
+            fail(context, "Invalid public key string. Make sure you copy-pasted it correctly.");
+
             return ERROR;
         }
 
-        if (AkmcCore.USER_KEYS.bindKey(player.getUUID(), player.getUUID(), key)) {
-            reply(context, Component.literal("Bound your key!").withStyle(ChatFormatting.GREEN));
+        if (AkmcCore.USER_KEYS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
+            reply(context, "Bound your key!", ChatFormatting.GREEN);
 
             return SUCCESS;
         } else {
-            reply(context, Component.literal("You have already bound this key.").withStyle(ChatFormatting.RED));
+            fail(context, "You have already bound this key.");
+
             return ERROR;
         }
     }
@@ -170,76 +169,153 @@ public final class ModCommands {
     private static int unbind(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = context.getSource().getPlayer();
         if (player == null) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal(
-                                    "Must be executed by a player! To unbind a specific user, use: /akmc user <user> unbind <key>"));
+            fail(
+                    context,
+                    "Must be executed by a player! To unbind a key from a specific user, use: /akmc user <username> unbind <public key>");
+
             return ERROR;
         }
 
-        String encodedKey = StringArgumentType.getString(context, "key");
+        String encodedKey = StringArgumentType.getString(context, "public key");
         AkPublicKey key;
 
         try {
             key = new AkPublicKey(encodedKey);
         } catch (IllegalArgumentException e) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
+            fail(context, "Invalid public key string. Make sure you copy-pasted it correctly.");
+
             return ERROR;
         }
 
-        if (AkmcCore.USER_KEYS.unbindKey(player.getUUID(), key)) {
-            reply(
-                    context,
-                    Component.literal("Unbound your key: ")
-                            .append(Component.literal(encodedKey).withStyle(ChatFormatting.DARK_PURPLE)));
+        if (AkmcCore.USER_KEYS.unbindKey(player.getPlainTextName(), key)) {
+            reply(context, "Unbound your key!", ChatFormatting.GREEN);
 
             return SUCCESS;
         } else {
-            reply(context, Component.literal("You have no such key.").withStyle(ChatFormatting.RED));
+            fail(context, "You have no such key.");
+
             return ERROR;
         }
     }
 
-    private static int idInfo(CommandContext<CommandSourceStack> context) {
-        UUID id = UuidArgument.getUuid(context, "id");
+    private static int selfInfo(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getPlayer() == null) {
+            fail(context, "Must be executed by a player! To query a specific user, use: /akmc user <username> info");
 
-        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(id);
+            return ERROR;
+        }
 
-        if (keys == null || keys.isEmpty()) {
-            reply(
-                    context,
-                    Component.literal("No user by that UUID is on record.").withStyle(ChatFormatting.GRAY));
+        return playerInfo(context, context.getSource().getPlayer().getPlainTextName());
+    }
+
+    private static int usernameInfo(CommandContext<CommandSourceStack> context) {
+        return playerInfo(context, StringArgumentType.getString(context, "username"));
+    }
+
+    private static int usernameBind(CommandContext<CommandSourceStack> context) {
+        String username = StringArgumentType.getString(context, "username");
+        String encodedKey = StringArgumentType.getString(context, "public key");
+
+        AkPublicKey key;
+
+        try {
+            key = new AkPublicKey(encodedKey);
+        } catch (IllegalArgumentException e) {
+            fail(context, "Invalid public key string. Make sure you copy-pasted it correctly.");
+
+            return ERROR;
+        }
+
+        ServerPlayer player = context.getSource().getPlayer();
+
+        if (AkmcCore.USER_KEYS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
+            reply(context, "Bound this key to %s!".formatted(username), ChatFormatting.GREEN);
+
+            ServerPlayer targetPlayer =
+                    context.getSource().getServer().getPlayerList().getPlayer(username);
+            if (targetPlayer != null) {
+                String keyString = key.toString();
+
+                if (player != null) {
+                    targetPlayer.sendSystemMessage(Component.empty()
+                            .append(player.getDisplayName())
+                            .append(" bound a new key to your username: ")
+                            .append(Component.literal(keyString)
+                                    .withStyle(Style.EMPTY
+                                            .withColor(ChatFormatting.GOLD)
+                                            .withHoverEvent(
+                                                    new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                } else {
+                    targetPlayer.sendSystemMessage(Component.literal("A new key has been bound to your username: ")
+                            .append(Component.literal(keyString)
+                                    .withStyle(Style.EMPTY
+                                            .withColor(ChatFormatting.GOLD)
+                                            .withHoverEvent(
+                                                    new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                }
+            }
 
             return SUCCESS;
+        } else {
+            fail(context, "This user already has that key.");
+
+            return ERROR;
+        }
+    }
+
+    private static int usernameUnbind(CommandContext<CommandSourceStack> context) {
+        String username = StringArgumentType.getString(context, "username");
+        String encodedKey = StringArgumentType.getString(context, "public key");
+
+        AkPublicKey key;
+
+        try {
+            key = new AkPublicKey(encodedKey);
+        } catch (IllegalArgumentException e) {
+            fail(context, "Invalid public key string. Make sure you copy-pasted it correctly.");
+
+            return ERROR;
         }
 
-        ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayer(id);
+        if (AkmcCore.USER_KEYS.unbindKey(username, key)) {
+            reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
+
+            return SUCCESS;
+        } else if (AkmcCore.USER_KEYS.getUsers().contains(username)) {
+            fail(context, "The user has no such key.");
+
+            return ERROR;
+        } else {
+            fail(context, "No such user on record.");
+
+            return ERROR;
+        }
+    }
+
+    private static int playerInfo(CommandContext<CommandSourceStack> context, String username) {
+        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(username);
+
+        if (keys == null || keys.isEmpty()) {
+            fail(context, "No such user on record.");
+
+            return ERROR;
+        }
 
         MutableComponent message = Component.empty();
+        message.append(Component.literal(username).withStyle(ChatFormatting.YELLOW));
+        message.append(" has ");
         message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
-        message.append(" key");
-        if (keys.size() != 1) {
-            message.append("s");
-        }
-        message.append(" belong");
         if (keys.size() == 1) {
-            message.append("s");
-        }
-        message.append(" to ");
-        if (player == null) {
-            message.append(id.toString());
+            message.append(" key bound:");
         } else {
-            message.append(player.getDisplayName());
+            message.append(" keys bound:");
         }
-        if (keys.isEmpty()) {
-            message.append(".");
-        } else {
-            message.append(":");
-        }
-        keys.forEach(key -> {
-            message.append("\n");
+
+        int i = 1;
+        for (UserKeys.UserKey key : keys) {
+            message.append("\n  %s. ".formatted(i));
 
             String keyString = key.key.toString();
             message.append(Component.literal(keyString)
@@ -247,68 +323,23 @@ public final class ModCommands {
                     .withStyle(Style.EMPTY
                             .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy.")))
                             .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
-        });
+
+            if (key.issuingPlayer != null) {
+                message.append("\n    └ Issued by: ");
+                message.append(Component.literal(key.issuingPlayer).withStyle(ChatFormatting.YELLOW));
+            } else {
+                message.append("\n    └ Issued via server console.");
+            }
+
+            message.append("\n    └ Added at: ");
+            message.append(Component.literal(
+                            DateTimeFormatter.RFC_1123_DATE_TIME.format(key.registrationTime.atOffset(ZoneOffset.UTC)))
+                    .withStyle(ChatFormatting.GRAY));
+
+            i++;
+        }
 
         reply(context, message);
-
-        return SUCCESS;
-    }
-
-    private static int idBind(CommandContext<CommandSourceStack> context) {
-        UUID id = UuidArgument.getUuid(context, "id");
-        String encodedKey = StringArgumentType.getString(context, "key");
-
-        AkPublicKey key;
-
-        try {
-            key = new AkPublicKey(encodedKey);
-        } catch (IllegalArgumentException e) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
-            return ERROR;
-        }
-
-        ServerPlayer player = context.getSource().getPlayer();
-        UUID issuer = player != null ? player.getUUID() : null;
-
-        if (AkmcCore.USER_KEYS.bindKey(id, issuer, key)) {
-            reply(context, Component.literal("Key was successfully bound!"));
-
-            return SUCCESS;
-        } else {
-            reply(context, Component.literal("This user already has that key.").withStyle(ChatFormatting.RED));
-
-            return ERROR;
-        }
-    }
-
-    private static int idUnbind(CommandContext<CommandSourceStack> context) {
-        UUID id = UuidArgument.getUuid(context, "id");
-        String encodedKey = StringArgumentType.getString(context, "key");
-
-        AkPublicKey key;
-
-        try {
-            key = new AkPublicKey(encodedKey);
-        } catch (IllegalArgumentException e) {
-            context.getSource()
-                    .sendFailure(
-                            Component.literal("Invalid public key string. Make sure you copy-pasted it correctly."));
-            return ERROR;
-        }
-
-        if (AkmcCore.USER_KEYS.unbindKey(id, key)) {
-            reply(context, "Key was successfully unbound!");
-
-            return SUCCESS;
-        } else {
-            reply(context, Component.literal("No such key or user.").withStyle(ChatFormatting.RED));
-            return ERROR;
-        }
-    }
-
-    private static int b44werwrsse4ind(CommandContext<CommandSourceStack> context) {
 
         return SUCCESS;
     }
@@ -317,11 +348,16 @@ public final class ModCommands {
         return source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.ADMINS));
     }
 
-    private static void reply(CommandContext<CommandSourceStack> context, String message) {
-        reply(context, Component.literal(message));
+    private static void reply(
+            CommandContext<CommandSourceStack> context, String message, ChatFormatting... formatting) {
+        reply(context, Component.literal(message).withStyle(formatting));
     }
 
     private static void reply(CommandContext<CommandSourceStack> context, Component message) {
         context.getSource().sendSystemMessage(message);
+    }
+
+    private static void fail(CommandContext<CommandSourceStack> context, String message) {
+        context.getSource().sendFailure(Component.literal(message));
     }
 }

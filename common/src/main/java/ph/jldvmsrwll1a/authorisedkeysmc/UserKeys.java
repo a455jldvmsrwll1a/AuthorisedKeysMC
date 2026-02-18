@@ -18,10 +18,10 @@ import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 public class UserKeys {
     private static final Object WRITE_LOCK = new Object();
 
-    private HashMap<UUID, ArrayList<UserKey>> userKeysMap = new HashMap<>();
+    private HashMap<String, ArrayList<UserKey>> userKeysMap = new HashMap<>();
 
-    public synchronized boolean userHasAnyKeys(UUID playerId) {
-        List<UserKey> userKeys = userKeysMap.get(playerId);
+    public synchronized boolean userHasAnyKeys(String username) {
+        List<UserKey> userKeys = userKeysMap.get(username);
         if (userKeys == null) {
             return false;
         }
@@ -29,8 +29,8 @@ public class UserKeys {
         return !userKeys.isEmpty();
     }
 
-    public synchronized boolean userHasKey(UUID playerId, AkPublicKey key) {
-        List<UserKey> userKeys = userKeysMap.get(playerId);
+    public synchronized boolean userHasKey(String username, AkPublicKey key) {
+        List<UserKey> userKeys = userKeysMap.get(username);
         if (userKeys == null) {
             return false;
         }
@@ -38,16 +38,16 @@ public class UserKeys {
         return userKeys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
     }
 
-    public synchronized @Nullable List<UserKey> getUserKeys(UUID playerId) {
-        return userKeysMap.get(playerId);
+    public synchronized @Nullable List<UserKey> getUserKeys(String username) {
+        return userKeysMap.get(username);
     }
 
-    public synchronized Set<UUID> getUsers() {
+    public synchronized Set<String> getUsers() {
         return userKeysMap.keySet();
     }
 
-    public synchronized boolean bindKey(UUID playerId, @Nullable UUID issuingPlayerId, AkPublicKey key) {
-        ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(playerId, k -> new ArrayList<>(1));
+    public synchronized boolean bindKey(String username, @Nullable String issuer, AkPublicKey key) {
+        ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(username, k -> new ArrayList<>(1));
 
         if (keys.stream().anyMatch(entry -> entry.key.equals(key))) {
             return false;
@@ -55,18 +55,14 @@ public class UserKeys {
 
         UserKey newKey = new UserKey();
         newKey.key = key;
-        newKey.issuingPlayer = issuingPlayerId;
+        newKey.issuingPlayer = issuer;
         newKey.registrationTime = Instant.now();
         keys.add(newKey);
 
-        if (issuingPlayerId == null) {
-            Constants.LOG.info("Key {} has been bound to {}.", Base64Util.encode(key.getEncoded()), playerId);
+        if (issuer == null) {
+            Constants.LOG.info("Key {} has been bound to {}.", key, username);
         } else {
-            Constants.LOG.info(
-                    "Key {} has been bound by {} to {}.",
-                    Base64Util.encode(key.getEncoded()),
-                    issuingPlayerId,
-                    playerId);
+            Constants.LOG.info("Key {} has been bound by {} to {}.", key, issuer, username);
         }
 
         write();
@@ -74,8 +70,8 @@ public class UserKeys {
         return true;
     }
 
-    public synchronized boolean unbindKey(UUID playerId, AkPublicKey key) {
-        ArrayList<UserKey> keys = userKeysMap.get(playerId);
+    public synchronized boolean unbindKey(String username, AkPublicKey key) {
+        ArrayList<UserKey> keys = userKeysMap.get(username);
 
         if (keys == null || keys.isEmpty()) {
             return false;
@@ -85,7 +81,7 @@ public class UserKeys {
             return false;
         }
 
-        Constants.LOG.info("AKMC: The public key {} has been unbound from {}.", key, playerId);
+        Constants.LOG.info("AKMC: The public key {} has been unbound from {}.", key, username);
 
         write();
 
@@ -93,7 +89,7 @@ public class UserKeys {
     }
 
     public void read() {
-        HashMap<UUID, ArrayList<UserKey>> newMap = new HashMap<>();
+        HashMap<String, ArrayList<UserKey>> newMap = new HashMap<>();
         List<UserJsonEntry> entries;
 
         try {
@@ -178,11 +174,11 @@ public class UserKeys {
 
     public static class UserKey {
         public AkPublicKey key;
-        public @Nullable UUID issuingPlayer;
+        public @Nullable String issuingPlayer;
         public Instant registrationTime;
     }
 
-    private record UserJsonEntry(UUID user, List<UserKeyJsonEntry> keys) {}
+    private record UserJsonEntry(String user, List<UserKeyJsonEntry> keys) {}
 
-    private record UserKeyJsonEntry(String key, @Nullable UUID issued_by, Instant time_added) {}
+    private record UserKeyJsonEntry(String key, @Nullable String issued_by, Instant time_added) {}
 }
