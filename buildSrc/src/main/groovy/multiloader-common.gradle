@@ -68,6 +68,10 @@ jar {
     }
 }
 
+javadoc {
+    options.tags = [ "reason" ]
+}
+
 processResources {
     var expandProps = [
             'version'                      : version,
