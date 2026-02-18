@@ -130,7 +130,9 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
                 if (!uuid.equals(offlineId)) {
                     // Client is *probably* not offline.
                     authorisedKeysMC$shouldUseVanillaAuthentication = true;
-                    authorisedKeysMC$skipLogin();
+                    authorisedKeysMC$skipped = true;
+
+                    Constants.LOG.info("AKMC: using Mojang authentication for premium user {}", requestedUsername);
                 }
             }
         }
