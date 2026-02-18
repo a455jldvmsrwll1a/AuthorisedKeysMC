@@ -1,6 +1,7 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
@@ -17,6 +18,10 @@ import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
  * Keypair that may or may not be encrypted.
  */
 public class AkKeyPair {
+    // Only encrypted key pair files will have this size.
+    // Unencrypted ones are a lot smaller.
+    public static final int MAX_FILE_SIZE = 136;
+
     private final @NonNull String name;
     private Instant modificationTime;
 
@@ -180,7 +185,7 @@ public class AkKeyPair {
             // Don't care.
         }
 
-        ByteBuffer outBuffer = ByteBuffer.allocate(4096);
+        ByteBuffer outBuffer = ByteBuffer.allocate(MAX_FILE_SIZE);
         outBuffer.putInt(Constants.KEY_PAIR_HEADER);
         outBuffer.putShort(Constants.KEY_PAIR_VERSION);
 
@@ -228,15 +233,19 @@ public class AkKeyPair {
     public static AkKeyPair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
-        ByteBuffer inBuffer = ByteBuffer.allocate(4096);
+        ByteBuffer inBuffer = ByteBuffer.allocate(MAX_FILE_SIZE);
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-            while (true) {
-                if (channel.read(inBuffer) < 0) break;
+            if (channel.size() > MAX_FILE_SIZE) {
+                throw new IOException("File is bigger than %s bytes, which is the maximum size of an AKMC key pair.".formatted(MAX_FILE_SIZE));
             }
 
-            inBuffer.flip();
+            while (true) {
+                if (channel.read(inBuffer) <= 0) break;
+            }
         }
+
+        inBuffer.flip();
 
         try {
             int header = inBuffer.getInt();
