@@ -1,23 +1,28 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.crypto;
 
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
-import org.bouncycastle.crypto.modes.ChaCha20Poly1305;
-import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.Argon2Parameters;
-import org.bouncycastle.crypto.params.KeyParameter;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class AkEncryptedKey {
+    private static final String KEY_ALGORITHM = "ChaCha20";
+    private static final String CIPHER_ALGORITHM = "ChaCha20-Poly1305";
     private static final int KDF_SALT_LENGTH = 32;
     private static final int KDF_HASH_LENGTH = 32;
     private static final int MAC_LENGTH = 16;
-    private static final int MAC_BITS = MAC_LENGTH * 8;
     private static final int NONCE_LENGTH = 12;
     private static final int PLAINTEXT_LENGTH = AkPrivateKey.LENGTH;
     private static final int OUTPUT_LENGTH = PLAINTEXT_LENGTH + MAC_LENGTH;
@@ -91,7 +96,9 @@ public class AkEncryptedKey {
             byte[] decryptedBytes = decipher(key);
 
             return Optional.of(new AkPrivateKey(decryptedBytes));
-        } catch (InvalidCipherTextException e) {
+        } catch (InvalidKeyException | BadPaddingException e) {
+            Constants.LOG.info("Failed to decrypt the private key: {}", e.getMessage());
+
             return Optional.empty();
         } finally {
             if (key != null) {
@@ -123,26 +130,20 @@ public class AkEncryptedKey {
         generator.generateBytes(password, out);
     }
 
-    private byte[] decipher(byte[] key) throws InvalidCipherTextException {
+    private byte[] decipher(byte[] key) throws InvalidKeyException, BadPaddingException {
         Validate.isTrue(key.length == KDF_HASH_LENGTH, "Wrong key length.");
 
-        byte[] plaintext = new byte[PLAINTEXT_LENGTH];
+        try {
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, KEY_ALGORITHM), new IvParameterSpec(nonce));
+            byte[] plaintext = cipher.doFinal(cipherText);
+            Validate.validState(plaintext.length == PLAINTEXT_LENGTH, "Decrypted ciphertext is not of the expected size.");
 
-        AEADParameters aeadParams = new AEADParameters(new KeyParameter(key), MAC_BITS, nonce);
-
-        ChaCha20Poly1305 engine = new ChaCha20Poly1305();
-        engine.init(false, aeadParams);
-
-        int outputSize = engine.getOutputSize(OUTPUT_LENGTH);
-        Validate.validState(
-                outputSize == PLAINTEXT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
-
-        int head = engine.processBytes(cipherText, 0, OUTPUT_LENGTH, plaintext, 0);
-        head += engine.doFinal(plaintext, head);
-
-        Validate.validState(head == PLAINTEXT_LENGTH, "Head should match expected size!");
-
-        return plaintext;
+            return plaintext;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException |
+                 IllegalBlockSizeException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static byte[] encipher(byte[] key, byte[] nonce, byte[] plaintext) {
@@ -150,29 +151,19 @@ public class AkEncryptedKey {
         Validate.isTrue(nonce.length == NONCE_LENGTH, "Wrong nonce length.");
         Validate.isTrue(plaintext.length == PLAINTEXT_LENGTH, "Wrong plaintext length.");
 
-        byte[] cipherText = new byte[OUTPUT_LENGTH];
-
-        AEADParameters aeadParams = new AEADParameters(new KeyParameter(key), MAC_BITS, nonce);
-
-        ChaCha20Poly1305 engine = new ChaCha20Poly1305();
-        engine.init(true, aeadParams);
-
-        int outputSize = engine.getOutputSize(AkPrivateKey.LENGTH);
-        Validate.validState(
-                outputSize == OUTPUT_LENGTH, "Output size of %s does not match what was expected!", outputSize);
-
-        int head = engine.processBytes(plaintext, 0, PLAINTEXT_LENGTH, cipherText, 0);
-
         try {
-            head += engine.doFinal(cipherText, head);
-        } catch (InvalidCipherTextException e) {
-            // InvalidCipherTextException is only ever thrown when decrypting, which we are not.
-            throw new RuntimeException("Should not be possible as we are encrypting.", e);
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, KEY_ALGORITHM), new IvParameterSpec(nonce));
+            byte[] ciphertext = cipher.doFinal(plaintext);
+            Validate.validState(ciphertext.length == OUTPUT_LENGTH, "Encrypted plaintext is not of the expected size.");
+
+            return ciphertext;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException |
+                 IllegalBlockSizeException | BadPaddingException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidKeyException e) {
+            throw new IllegalStateException(e);
         }
-
-        Validate.validState(head == OUTPUT_LENGTH, "Head should match expected size!");
-
-        return cipherText;
     }
 
     public static final class Parameters {
