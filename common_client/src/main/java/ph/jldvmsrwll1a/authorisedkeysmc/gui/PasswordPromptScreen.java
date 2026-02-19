@@ -172,8 +172,21 @@ public class PasswordPromptScreen extends BaseScreen {
 
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
-            boolean successful = keypair.decrypt(password);
-            Arrays.fill(password, '\0');
+            boolean successful;
+
+            try {
+                successful = keypair.decrypt(password);
+            } catch (RuntimeException e) {
+                minecraft.execute(() -> {
+                    errorText.visible = true;
+                    passwordEdit.setValue("");
+                    minecraft.setScreen(this);
+                });
+
+                throw e;
+            } finally {
+                Arrays.fill(password, '\0');
+            }
 
             if (successful && cacheDecryptedKey) {
                 AkmcClient.CACHED_KEYS.cacheKey(keypair);
