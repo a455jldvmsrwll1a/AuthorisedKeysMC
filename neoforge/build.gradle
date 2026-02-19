@@ -1,6 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
+    id 'com.gradleup.shadow' version '9.2.2'
     id 'com.diffplug.spotless' version '8.1.0'
 }
 
@@ -50,11 +51,9 @@ neoForge {
 }
 
 dependencies {
-    jarJar(implementation(group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: "${bouncycastle_version}")) {
-        version {
-            strictly "${bouncycastle_version}"
-        }
-    }
+    // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+    implementation "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
+    shadow "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -76,4 +75,18 @@ sourceSets.configureEach {
             }
         }
     }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    configurations = [project.configurations.shadow]
+
+    addMultiReleaseAttribute = false
+
+    relocate 'org.bouncycastle', 'ph.jldvmsrwll1a.authorisedkeysmc.vendor.bouncycastle'
+    exclude 'META-INF/services/java.security.Provider'
+    exclude 'META-INF/versions/**'
+
+    zip64 true
+    minimize()
 }

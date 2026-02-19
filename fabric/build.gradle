@@ -1,6 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
+    id 'com.gradleup.shadow' version '9.2.2'
     id 'com.diffplug.spotless' version '8.1.0'
 }
 
@@ -31,9 +32,8 @@ dependencies {
     modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
-    api 'org.bouncycastle:bcprov-jdk18on:1.83'
-
-    include 'org.bouncycastle:bcprov-jdk18on:1.83'
+    implementation "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
+    shadow "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
 }
 
 loom {
@@ -84,4 +84,25 @@ loom.remapConfigurations.configureEach {
             attribute(loaderAttribute, 'fabric')
         }
     }
+}
+
+shadowJar {
+    archiveClassifier.set('shadow')
+    configurations = [project.configurations.shadow]
+
+    addMultiReleaseAttribute = false
+
+    relocate 'org.bouncycastle', 'ph.jldvmsrwll1a.authorisedkeysmc.vendor.bouncycastle'
+    exclude 'META-INF/services/java.security.Provider'
+    exclude 'META-INF/versions/**'
+
+    zip64 true
+    minimize()
+}
+
+
+remapJar {
+    dependsOn 'shadowJar'
+
+    inputFile.set(shadowJar.archiveFile.get())
 }
