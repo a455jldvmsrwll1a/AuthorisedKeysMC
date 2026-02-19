@@ -86,7 +86,17 @@ shadowJar {
     exclude { details ->
         def path = details.path
 
-        path.startsWith('org/bouncycastle/x509/') || path.startsWith('org/bouncycastle/pqc/')
+        boolean shouldRemove = path.startsWith('org/bouncycastle/x509/')
+                || path.startsWith('org/bouncycastle/pqc/')
+                || path.startsWith('org/bouncycastle/asn1/')
+                || path.startsWith('org/bouncycastle/math/ec/endo/')
+
+        boolean shouldKeep = path.startsWith('org/bouncycastle/asn1/x9/')
+                || path.startsWith('org/bouncycastle/asn1/ASN1Object')
+                || path.startsWith('org/bouncycastle/asn1/ASN1Encod') // 'e' missing on purpose
+                || path.startsWith('org/bouncycastle/asn1/ASN1Output')
+
+        !shouldKeep && shouldRemove
     }
 
     zip64 true
