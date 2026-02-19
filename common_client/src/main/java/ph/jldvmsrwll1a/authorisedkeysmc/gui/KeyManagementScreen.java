@@ -363,6 +363,15 @@ public final class KeyManagementScreen extends BaseScreen {
         if (keySelectionList != null) {
             keySelectionList.updateKeyNames(keyNames);
         }
+
+        if (inspectorButtons != null) {
+            inspectorButtons.forEach(button -> button.active = false);
+        }
+
+        if (inspectorText != null) {
+            inspectorText.setMessage(
+                    Component.translatable("authorisedkeysmc.screen.config.keys.properties-no-selected"));
+        }
     }
 
     private int getWidthLeft() {
