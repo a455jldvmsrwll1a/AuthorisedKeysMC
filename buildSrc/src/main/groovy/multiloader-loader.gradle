@@ -1,5 +1,6 @@
 plugins {
     id 'multiloader-common'
+    id 'com.gradleup.shadow'
 }
 
 configurations {
@@ -70,4 +71,24 @@ tasks.named('sourcesJar', Jar) {
     dependsOn(configurations.commonResources, configurations.commonClientResources)
     from(configurations.commonResources)
     from(configurations.commonClientResources)
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    configurations = [project.configurations.shadow]
+
+    addMultiReleaseAttribute = false
+
+    relocate 'org.bouncycastle', 'ph.jldvmsrwll1a.authorisedkeysmc.vendor.bouncycastle'
+    exclude 'META-INF/services/java.security.Provider'
+    exclude 'META-INF/versions/**'
+
+    exclude { details ->
+        def path = details.path
+
+        path.startsWith('org/bouncycastle/x509/') || path.startsWith('org/bouncycastle/pqc/')
+    }
+
+    zip64 true
+    minimize()
 }
