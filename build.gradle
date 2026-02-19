@@ -19,8 +19,8 @@ tasks.register("collectJars", Copy) {
         dependsOn subproject.tasks.matching { it.name == "build" }
 
         from (subproject.layout.buildDirectory.dir("libs")) {
-            include("*.jar")
-            exclude("*-sources.jar", "*-javadoc.jar", "*common*", "*-forge-${minecraft_version}-${version}.jar")
+            include("*${version}.jar")
+            exclude("*-all.jar", "*-sources.jar", "*-javadoc.jar", "*common*")
         }
     }
 }
