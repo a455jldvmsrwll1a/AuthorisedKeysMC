@@ -246,9 +246,8 @@ public class PasswordPromptScreen extends BaseScreen {
             }
 
             StringBuilder sb = new StringBuilder(s.length());
-            // 'M' is a pretty wide character in the default font.
-            s.chars().forEach(c -> sb.append('M'));
-            return FormattedCharSequence.forward(sb.toString(), Style.EMPTY.withObfuscated(true));
+            s.chars().forEach(c -> sb.append('∙'));
+            return FormattedCharSequence.forward(sb.toString(), Style.EMPTY.withBold(true));
         }
     }
 }
