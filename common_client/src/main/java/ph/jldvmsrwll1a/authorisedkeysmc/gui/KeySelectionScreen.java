@@ -260,17 +260,18 @@ public class KeySelectionScreen extends BaseScreen {
     }
 
     private void onKeyDoubleClicked(String keyName) {
+        if (!keyName.equals(selectedKeyName)) {
+            onKeySelected(keyName);
+
+            return;
+        }
+
         if (!selectButton.active) {
             return;
         }
 
-        selectedKeyName = keyName;
-
-        if (selectedKeyName != null) {
-            hasSelection = true;
-
-            onClose();
-        }
+        hasSelection = true;
+        onClose();
     }
 
     private void onSelectButtonPressed(Button button) {

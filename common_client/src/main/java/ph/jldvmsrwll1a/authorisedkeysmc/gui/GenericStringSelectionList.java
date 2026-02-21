@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
@@ -26,7 +27,7 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
             int width,
             int height,
             Consumer<String> onSelect) {
-        this(emptyListLabel, minecraft, keyNames, width, height, onSelect, string -> {});
+        this(emptyListLabel, minecraft, keyNames, width, height, onSelect, onSelect);
     }
 
     public GenericStringSelectionList(
@@ -133,6 +134,15 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
             }
 
             return super.mouseClicked(event, doubleClicked);
+        }
+
+        @Override
+        public boolean keyPressed(@NonNull KeyEvent event) {
+            if (event.isConfirmation() && isFocused()) {
+                actionCallback.accept(keyName);
+            }
+
+            return super.keyPressed(event);
         }
 
         public String getKeyName() {
