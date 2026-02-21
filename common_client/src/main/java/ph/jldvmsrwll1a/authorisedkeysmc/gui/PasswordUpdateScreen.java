@@ -208,6 +208,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
         }
 
         showCurrentPassword.setRelease(show);
+        currentPasswordEdit.setValue(currentPasswordEdit.getValue());
     }
 
     private void onShowNewPasswordButtonClicked(Button button) {
@@ -222,6 +223,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
         }
 
         showNewPassword.setRelease(show);
+        newPasswordEdit.setValue(newPasswordEdit.getValue());
     }
 
     private void reencryptKey() {

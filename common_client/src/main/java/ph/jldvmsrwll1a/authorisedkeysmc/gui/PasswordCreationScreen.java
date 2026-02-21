@@ -154,6 +154,7 @@ public final class PasswordCreationScreen extends BaseScreen {
         }
 
         showPassword.setRelease(show);
+        passwordEdit.setValue(passwordEdit.getValue());
     }
 
     private void encryptKey() {

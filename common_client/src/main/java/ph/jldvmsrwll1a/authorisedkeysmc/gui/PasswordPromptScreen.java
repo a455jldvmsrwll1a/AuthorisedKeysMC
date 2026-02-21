@@ -191,6 +191,7 @@ public class PasswordPromptScreen extends BaseScreen {
         }
 
         showPassword.setRelease(show);
+        passwordEdit.setValue(passwordEdit.getValue());
     }
 
     protected void onCacheCheckboxChanged(Checkbox checkbox, boolean b) {
