@@ -123,7 +123,7 @@ public class PasswordPromptScreen extends BaseScreen {
                 .width(BUTTON_WIDTH)
                 .build());
 
-        rootLayout.addChild(new StringWidget(TITLE_LABEL, font));
+        rootLayout.addChild(new StringWidget(getTitle(), font));
         rootLayout.addChild(promptText);
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(passwordLabel);
