@@ -341,12 +341,25 @@ public final class KeyManagementScreen extends BaseScreen {
                                         Component.translatable("authorisedkeysmc.error.delete-fail")));
                             }
                         })));
-            case AkKeyPair.Encrypted encrypted -> {
-                // Update/Erase
-                Constants.LOG.warn("Updating/Erasing password not implemented!");
-                SystemToast.addOrUpdate(
-                        minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
-            }
+            case AkKeyPair.Encrypted encrypted ->
+                minecraft.setScreen(new PasswordUpdateScreen(
+                        this,
+                        encrypted,
+                        kp -> kp.ifPresent(keyPair -> {
+                            onNewKeyCreated(keyPair);
+
+                            Path backupPath =
+                                    Path.of("%s.BACKUP".formatted(ClientKeyPairs.fromKeyName(keyPair.getName())));
+                            try {
+                                Files.deleteIfExists(backupPath);
+                            } catch (IOException e) {
+                                Constants.LOG.error("Unable to delete encrypted backup file: {}", e.getMessage());
+
+                                minecraft.setScreen(new ErrorScreen(
+                                        Component.translatable("authorisedkeysmc.error.error"),
+                                        Component.translatable("authorisedkeysmc.error.delete-fail")));
+                            }
+                        })));
             case null, default -> {}
         }
     }
