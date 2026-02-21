@@ -15,9 +15,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class PasswordCreationScreen extends BaseScreen {
@@ -31,11 +33,15 @@ public final class PasswordCreationScreen extends BaseScreen {
     private static final Component ENCRYPT_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.add");
     private static final Component PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.password");
-    private static final Component SHOW_PASSWORD_LABEL =
-            Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
     private static final Component WAITING_LABEL =
             Component.translatable("authorisedkeysmc.screen.add-password.waiting");
     private static final Component ERROR_LABEL = Component.translatable("authorisedkeysmc.error.encryption-fail");
+    private static final Identifier SHOW_PASSWORD_ICON = Constants.modId("widget/show_password");
+    private static final Identifier HIDE_PASSWORD_ICON = Constants.modId("widget/hide_password");
+    private static final Tooltip SHOW_PASSWORD_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.show-password"));
+    private static final Tooltip HIDE_PASSWORD_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.hide-password"));
 
     private final Screen parent;
     private final AkKeyPair.Plain keypair;
@@ -45,6 +51,7 @@ public final class PasswordCreationScreen extends BaseScreen {
 
     private MultiLineTextWidget promptText;
     private EditBox passwordEdit;
+    protected IconButton showPasswordButton;
     private Button encryptKeyButton;
 
     public PasswordCreationScreen(
@@ -65,14 +72,18 @@ public final class PasswordCreationScreen extends BaseScreen {
         promptText = new MultiLineTextWidget(
                 Component.translatable("authorisedkeysmc.screen.add-password.prompt", keypair.getName()), font);
 
-        passwordEdit = new EditBox(font, 300, 20, PASSWORD_LABEL);
+        passwordEdit = new EditBox(font, 100, 20, PASSWORD_LABEL);
         passwordEdit.setResponder(this::onPasswordChanged);
         passwordEdit.addFormatter(new PasswordPromptScreen.PasswordTextFormatter(showPassword));
         passwordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
 
-        Checkbox showPasswordCheckbox = Checkbox.builder(SHOW_PASSWORD_LABEL, font)
-                .onValueChange(this::onShowPasswordCheckboxChanged)
+        showPasswordButton = IconButton.builder(SHOW_PASSWORD_ICON, this::onShowPasswordButtonClicked)
+                .tooltip(SHOW_PASSWORD_TOOLTIP)
                 .build();
+
+        LinearLayout passwordLayout = LinearLayout.horizontal().spacing(4);
+        passwordLayout.addChild(passwordEdit);
+        passwordLayout.addChild(showPasswordButton);
 
         LinearLayout buttonLayout = LinearLayout.horizontal().spacing(4);
         buttonLayout.defaultCellSetting().paddingTop(16);
@@ -90,8 +101,7 @@ public final class PasswordCreationScreen extends BaseScreen {
         rootLayout.addChild(promptText);
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(passwordLabel);
-        rootLayout.addChild(passwordEdit);
-        rootLayout.addChild(showPasswordCheckbox);
+        rootLayout.addChild(passwordLayout);
         rootLayout.addChild(buttonLayout);
 
         rootLayout.visitWidgets(this::addRenderableWidget);
@@ -101,7 +111,7 @@ public final class PasswordCreationScreen extends BaseScreen {
     @Override
     protected void repositionElements() {
         promptText.setMaxWidth(elementWidth());
-        passwordEdit.setWidth(elementWidth());
+        passwordEdit.setWidth(elementWidth() - 24);
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());
@@ -132,8 +142,18 @@ public final class PasswordCreationScreen extends BaseScreen {
         encryptKeyButton.active = !password.isEmpty();
     }
 
-    private void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
-        showPassword.setRelease(b);
+    private void onShowPasswordButtonClicked(Button button) {
+        boolean show = !showPassword.getAcquire();
+
+        if (show) {
+            showPasswordButton.setSprite(HIDE_PASSWORD_ICON);
+            showPasswordButton.setTooltip(HIDE_PASSWORD_TOOLTIP);
+        } else {
+            showPasswordButton.setSprite(SHOW_PASSWORD_ICON);
+            showPasswordButton.setTooltip(SHOW_PASSWORD_TOOLTIP);
+        }
+
+        showPassword.setRelease(show);
     }
 
     private void encryptKey() {

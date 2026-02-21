@@ -69,7 +69,6 @@
     "authorisedkeysmc.screen.new-key.field.name": "File Name",
     "authorisedkeysmc.screen.new-key.field.password": "Encryption Password",
     "authorisedkeysmc.screen.new-key.field.encrypt": "Encrypt this key pair with a password",
-    "authorisedkeysmc.screen.new-key.field.show-password": "Reveal password",
     "authorisedkeysmc.screen.new-key.file-location": "Located at .minecraft%1$s",
     "authorisedkeysmc.screen.new-key.invalid-name": "Invalid file name: %1$s",
     "authorisedkeysmc.screen.new-key.name-taken": "There is already an existing key pair with that name!",
@@ -107,5 +106,7 @@
     "authorisedkeysmc.tooltip.share-key": "Copy the shareable public key to the clipboard.",
     "authorisedkeysmc.tooltip.backup-key": "Make a back-up of this key pair to a file or the clipboard.",
     "authorisedkeysmc.tooltip.delete-key": "Delete this key pair.",
-    "authorisedkeysmc.tooltip.reload-mod": "Reload files and config.\n\nUseful if you manually edited the mod files."
+    "authorisedkeysmc.tooltip.reload-mod": "Reload files and config.\n\nUseful if you manually edited the mod files.",
+    "authorisedkeysmc.tooltip.show-password": "Show password",
+    "authorisedkeysmc.tooltip.hide-password": "Hide password"
 }

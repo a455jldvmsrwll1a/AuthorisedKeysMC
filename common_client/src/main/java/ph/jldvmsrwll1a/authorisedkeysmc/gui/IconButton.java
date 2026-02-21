@@ -82,6 +82,12 @@ public final class IconButton extends Button {
             return this;
         }
 
+        public Builder tooltip(Tooltip tooltip) {
+            this.tooltip = tooltip;
+
+            return this;
+        }
+
         public Builder padding(int padding) {
             this.padding = padding;
 

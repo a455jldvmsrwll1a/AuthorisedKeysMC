@@ -15,11 +15,13 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
+import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public class PasswordPromptScreen extends BaseScreen {
@@ -33,8 +35,6 @@ public class PasswordPromptScreen extends BaseScreen {
     private static final Component DECRYPT_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.decrypt-key");
     private static final Component PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.password");
-    private static final Component SHOW_PASSWORD_LABEL =
-            Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
     private static final Component CACHE_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.cache-key");
     private static final Component CACHE_TEXT_LABEL = Component.translatable(
@@ -44,6 +44,12 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
     private static final Component WAITING_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
+    private static final Identifier SHOW_PASSWORD_ICON = Constants.modId("widget/show_password");
+    private static final Identifier HIDE_PASSWORD_ICON = Constants.modId("widget/hide_password");
+    private static final Tooltip SHOW_PASSWORD_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.show-password"));
+    private static final Tooltip HIDE_PASSWORD_TOOLTIP =
+            Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.hide-password"));
 
     protected final Screen parent;
     protected final AkKeyPair.Encrypted keypair;
@@ -53,6 +59,7 @@ public class PasswordPromptScreen extends BaseScreen {
 
     protected MultiLineTextWidget promptText;
     protected EditBox passwordEdit;
+    protected IconButton showPasswordButton;
     protected StringWidget errorText;
     protected MultiLineTextWidget cacheText;
     protected boolean cacheDecryptedKey = false;
@@ -61,7 +68,12 @@ public class PasswordPromptScreen extends BaseScreen {
 
     public PasswordPromptScreen(
             Screen parent, AkKeyPair.Encrypted keypair, Consumer<Optional<AkKeyPair.Plain>> callback) {
-        super(TITLE_LABEL);
+        this(TITLE_LABEL, parent, keypair, callback);
+    }
+
+    public PasswordPromptScreen(
+            Component title, Screen parent, AkKeyPair.Encrypted keypair, Consumer<Optional<AkKeyPair.Plain>> callback) {
+        super(title);
 
         this.parent = parent;
         this.keypair = keypair;
@@ -71,20 +83,23 @@ public class PasswordPromptScreen extends BaseScreen {
     }
 
     @Override
-    protected void init() {
+    protected final void init() {
         StringWidget passwordLabel = new StringWidget(PASSWORD_LABEL, font);
 
-        promptText = new MultiLineTextWidget(
-                Component.translatable("authorisedkeysmc.screen.decrypt-key.prompt", keypair.getName()), font);
+        promptText = new MultiLineTextWidget(getPrompt(), font);
 
-        passwordEdit = new EditBox(font, 300, 20, PASSWORD_LABEL);
+        passwordEdit = new EditBox(font, 100, 20, PASSWORD_LABEL);
         passwordEdit.setResponder(this::onPasswordChanged);
         passwordEdit.addFormatter(new PasswordPromptScreen.PasswordTextFormatter(showPassword));
         passwordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
 
-        Checkbox showPasswordCheckbox = Checkbox.builder(SHOW_PASSWORD_LABEL, font)
-                .onValueChange(this::onShowPasswordCheckboxChanged)
+        showPasswordButton = IconButton.builder(SHOW_PASSWORD_ICON, this::onShowPasswordButtonClicked)
+                .tooltip(SHOW_PASSWORD_TOOLTIP)
                 .build();
+
+        LinearLayout passwordLayout = LinearLayout.horizontal().spacing(4);
+        passwordLayout.addChild(passwordEdit);
+        passwordLayout.addChild(showPasswordButton);
 
         Checkbox cacheCheckbox = Checkbox.builder(CACHE_LABEL, font)
                 .onValueChange(this::onCacheCheckboxChanged)
@@ -112,8 +127,7 @@ public class PasswordPromptScreen extends BaseScreen {
         rootLayout.addChild(promptText);
         rootLayout.addChild(new SpacerElement(1, font.lineHeight));
         rootLayout.addChild(passwordLabel);
-        rootLayout.addChild(passwordEdit);
-        rootLayout.addChild(showPasswordCheckbox);
+        rootLayout.addChild(passwordLayout);
         rootLayout.addChild(cacheCheckbox);
         rootLayout.addChild(errorText);
         rootLayout.addChild(cacheText);
@@ -126,7 +140,7 @@ public class PasswordPromptScreen extends BaseScreen {
     @Override
     protected final void repositionElements() {
         promptText.setMaxWidth(elementWidth());
-        passwordEdit.setWidth(elementWidth());
+        passwordEdit.setWidth(elementWidth() - 24);
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());
@@ -155,14 +169,28 @@ public class PasswordPromptScreen extends BaseScreen {
         minecraft.setScreen(parent);
     }
 
+    protected Component getPrompt() {
+        return Component.translatable("authorisedkeysmc.screen.decrypt-key.prompt", keypair.getName());
+    }
+
     protected void onPasswordChanged(String password) {
         if (!password.isEmpty()) {
             errorText.visible = false;
         }
     }
 
-    protected void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
-        showPassword.setRelease(b);
+    protected void onShowPasswordButtonClicked(Button button) {
+        boolean show = !showPassword.getAcquire();
+
+        if (show) {
+            showPasswordButton.setSprite(HIDE_PASSWORD_ICON);
+            showPasswordButton.setTooltip(HIDE_PASSWORD_TOOLTIP);
+        } else {
+            showPasswordButton.setSprite(SHOW_PASSWORD_ICON);
+            showPasswordButton.setTooltip(SHOW_PASSWORD_TOOLTIP);
+        }
+
+        showPassword.setRelease(show);
     }
 
     protected void onCacheCheckboxChanged(Checkbox checkbox, boolean b) {
