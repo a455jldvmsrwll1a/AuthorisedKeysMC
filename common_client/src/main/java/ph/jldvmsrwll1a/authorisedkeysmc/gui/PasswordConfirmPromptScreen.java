@@ -1,5 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.*;
@@ -8,16 +9,12 @@ import net.minecraft.client.gui.layouts.SpacerElement;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.confirm-key.title")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);
     private static final Component CONFIRM_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.confirm");
-    private static final Component NEW_KEY_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.create-key");
     private static final Component PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.password");
     private static final Component SHOW_PASSWORD_LABEL =
@@ -25,16 +22,8 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     private static final Component ERROR_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
 
-    private final Consumer<@Nullable String> newKeyCallback;
-
-    public PasswordConfirmPromptScreen(
-            Screen parent,
-            AkKeyPair keypair,
-            Consumer<@NonNull AkKeyPair> callback,
-            Consumer<@Nullable String> newKeycallback) {
+    public PasswordConfirmPromptScreen(Screen parent, AkKeyPair keypair, Consumer<Optional<AkKeyPair>> callback) {
         super(parent, keypair, callback);
-
-        this.newKeyCallback = newKeycallback;
     }
 
     @Override
@@ -67,9 +56,6 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
         buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose())
                 .width(BUTTON_WIDTH)
                 .build());
-        buttonLayout.addChild(Button.builder(NEW_KEY_BUTTON_LABEL, button -> makeFreshKeypair())
-                .width(BUTTON_WIDTH)
-                .build());
 
         rootLayout.addChild(new StringWidget(TITLE_LABEL, font));
         rootLayout.addChild(promptText);
@@ -82,20 +68,5 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
 
         rootLayout.visitWidgets(this::addRenderableWidget);
         repositionElements();
-    }
-
-    @Override
-    public void onClose() {
-        if (keypair.requiresDecryption()) {
-            AkmcClient.KEY_PAIRS.deleteKeyFile(keypair);
-        }
-
-        super.onClose();
-    }
-
-    private void makeFreshKeypair() {
-        AkmcClient.KEY_PAIRS.deleteKeyFile(keypair);
-
-        minecraft.setScreen(new KeyCreationScreen(parent, newKeyCallback, keypair.getName()));
     }
 }

@@ -226,7 +226,13 @@ public final class ClientLoginHandler {
         s2cChallenge = payload;
 
         if (!AkmcClient.CACHED_KEYS.decryptKeypair(keypair)) {
-            showScreen(new PasswordPromptScreen(minecraft.screen, keypair, this::onPrivateKeyDecrypted));
+            showScreen(new PasswordPromptScreen(minecraft.screen, keypair, decrypted -> {
+                if (decrypted.isPresent()) {
+                    onPrivateKeyDecrypted(decrypted.get());
+                } else {
+                    cancelLogin();
+                }
+            }));
 
             return;
         }

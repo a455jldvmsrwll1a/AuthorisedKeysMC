@@ -3,11 +3,11 @@ package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -17,13 +17,11 @@ import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.util.FormattedCharSequence;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.ValidPath;
 
@@ -31,53 +29,38 @@ public class KeyCreationScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;
     private static final int HORIZONTAL_SPACE = 60;
     private static final int MAX_WIDTH = 550;
-    private static final int MAX_PASSWORD_LENGTH = 255;
 
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.title")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);
     private static final Component PREAMBLE_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.preamble");
     private static final Component GEN_BUTTON_LABEL = Component.translatable("authorisedkeysmc.button.generate-key");
     private static final Component NAME_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.field.name");
-    private static final Component PASSWORD_LABEL =
-            Component.translatable("authorisedkeysmc.screen.new-key.field.password");
     private static final Component ENCRYPT_LABEL =
             Component.translatable("authorisedkeysmc.screen.new-key.field.encrypt");
-    private static final Component SHOW_PASSWORD_LABEL =
-            Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
-    private static final Component ENCRYPTION_REMINDER_LABEL = Component.translatable(
-                    "authorisedkeysmc.screen.new-key.encryption-reminder")
-            .withStyle(ChatFormatting.YELLOW, ChatFormatting.UNDERLINE);
     private static final Component NAME_TAKEN_LABEL =
             Component.translatable("authorisedkeysmc.screen.new-key.name-taken").withStyle(ChatFormatting.RED);
     private static final Component WAITING_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.waiting");
 
     private final Screen parent;
-    private final Consumer<@Nullable String> callback;
+    private final Consumer<Optional<AkKeyPair>> callback;
     private final List<String> existingNames;
     private final LinearLayout rootLayout;
 
     private ScrollableLayout scrollLayout;
     private MultiLineTextWidget preambleText;
     private MultiLineTextWidget fileLocationText;
-    private MultiLineTextWidget reminderText;
-    private StringWidget passwordLabel;
     private EditBox nameEdit;
-    private EditBox passwordEdit;
     private Checkbox passwordCheckbox;
-    private Checkbox showPasswordCheckbox;
     private Button genKeybutton;
 
     private String currentName;
-    private String currentPassword;
     private String lastNameError = "";
-    private final AtomicBoolean showPassword = new AtomicBoolean(false);
-    private boolean hasCreated = false;
 
-    public KeyCreationScreen(Screen parent, Consumer<@Nullable String> callback) {
+    public KeyCreationScreen(Screen parent, Consumer<Optional<AkKeyPair>> callback) {
         this(parent, callback, null);
     }
 
-    public KeyCreationScreen(Screen parent, Consumer<@Nullable String> callback, @Nullable String defaultName) {
+    public KeyCreationScreen(Screen parent, Consumer<Optional<AkKeyPair>> callback, @Nullable String defaultName) {
         super(TITLE_LABEL);
 
         this.parent = parent;
@@ -92,13 +75,8 @@ public class KeyCreationScreen extends BaseScreen {
     protected void init() {
         StringWidget nameLabel = new StringWidget(NAME_LABEL, font);
 
-        passwordLabel = new StringWidget(PASSWORD_LABEL, font);
-        passwordLabel.setHeight(0);
-        passwordLabel.visible = false;
-
         preambleText = new MultiLineTextWidget(PREAMBLE_LABEL, font);
         fileLocationText = new MultiLineTextWidget(Component.empty(), font);
-        reminderText = new MultiLineTextWidget(Component.empty(), font);
 
         nameEdit = new EditBox(font, 300, 20, NAME_LABEL);
         nameEdit.setHint(Component.literal("default"));
@@ -109,22 +87,7 @@ public class KeyCreationScreen extends BaseScreen {
         }
         nameEdit.setResponder(this::onNameChanged);
 
-        passwordEdit = new EditBox(font, 300, 0, PASSWORD_LABEL);
-        passwordEdit.setResponder(this::onPasswordChanged);
-        passwordEdit.addFormatter(new PasswordTextFormatter(showPassword));
-        passwordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
-        passwordEdit.active = false;
-        passwordEdit.visible = false;
-
-        passwordCheckbox = Checkbox.builder(ENCRYPT_LABEL, font)
-                .onValueChange(this::onEncryptionCheckboxChanged)
-                .build();
-
-        showPasswordCheckbox = Checkbox.builder(SHOW_PASSWORD_LABEL, font)
-                .onValueChange(this::onShowPasswordCheckboxChanged)
-                .build();
-        showPasswordCheckbox.visible = false;
-        showPasswordCheckbox.setHeight(0);
+        passwordCheckbox = Checkbox.builder(ENCRYPT_LABEL, font).build();
 
         LinearLayout buttonLayout = LinearLayout.horizontal().spacing(4);
         buttonLayout.defaultCellSetting().paddingTop(16);
@@ -148,10 +111,6 @@ public class KeyCreationScreen extends BaseScreen {
         scrollContentsLayout.addChild(fileLocationText);
         scrollContentsLayout.addChild(new SpacerElement(1, font.lineHeight));
         scrollContentsLayout.addChild(passwordCheckbox);
-        scrollContentsLayout.addChild(reminderText);
-        scrollContentsLayout.addChild(passwordLabel);
-        scrollContentsLayout.addChild(passwordEdit);
-        scrollContentsLayout.addChild(showPasswordCheckbox);
 
         scrollLayout = new ScrollableLayout(minecraft, scrollContentsLayout, scrollContentsLayout.getHeight());
 
@@ -175,13 +134,9 @@ public class KeyCreationScreen extends BaseScreen {
     @Override
     protected void repositionElements() {
         scrollLayout.setMaxHeight(height - 100);
-
         preambleText.setMaxWidth(elementWidth());
         fileLocationText.setMaxWidth(elementWidth());
-        reminderText.setMaxWidth(elementWidth());
-
         nameEdit.setWidth(elementWidth());
-        passwordEdit.setWidth(elementWidth());
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());
@@ -193,22 +148,8 @@ public class KeyCreationScreen extends BaseScreen {
     }
 
     @Override
-    public void resize(int x, int y) {
-        super.resize(x, y);
-    }
-
-    @Override
     public void onClose() {
-        if (!hasCreated) {
-            callback.accept(null);
-        }
-
         minecraft.setScreen(parent);
-    }
-
-    @Override
-    public void render(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
-        super.render(gui, mouseX, mouseY, partialTick);
     }
 
     private void onNameChanged(String name) {
@@ -216,34 +157,8 @@ public class KeyCreationScreen extends BaseScreen {
         onInputUpdate();
     }
 
-    private void onPasswordChanged(String password) {
-        currentPassword = password;
-        onInputUpdate();
-    }
-
-    private void onEncryptionCheckboxChanged(Checkbox checkbox, boolean checked) {
-        passwordEdit.active = checked;
-
-        reminderText.setMessage(checked ? ENCRYPTION_REMINDER_LABEL : Component.empty());
-
-        passwordLabel.visible = checked;
-        passwordEdit.visible = checked;
-        showPasswordCheckbox.visible = checked;
-
-        passwordLabel.setHeight(checked ? font.lineHeight : 0);
-        passwordEdit.setHeight(checked ? 20 : 0);
-        showPasswordCheckbox.setHeight(checked ? 20 : 0);
-
-        onInputUpdate();
-        repositionElements();
-    }
-
-    private void onShowPasswordCheckboxChanged(Checkbox checkbox, boolean b) {
-        showPassword.setRelease(b);
-    }
-
     private void onInputUpdate() {
-        genKeybutton.active = inputsAreValid();
+        genKeybutton.active = nameIsValid() && nameIsFree();
 
         if (!nameIsValid()) {
             Component label = Component.translatable("authorisedkeysmc.screen.new-key.invalid-name", lastNameError)
@@ -279,19 +194,8 @@ public class KeyCreationScreen extends BaseScreen {
         return !existingNames.contains(currentName);
     }
 
-    private boolean passwordIsValid() {
-        return !passwordCheckbox.selected()
-                || (currentPassword != null
-                        && !currentPassword.isEmpty()
-                        && currentPassword.length() <= MAX_PASSWORD_LENGTH);
-    }
-
-    private boolean inputsAreValid() {
-        return nameIsValid() && passwordIsValid() && nameIsFree();
-    }
-
     private void createNewKey() {
-        if (!inputsAreValid()) {
+        if (!nameIsValid() || !nameIsFree()) {
             return;
         }
 
@@ -299,22 +203,22 @@ public class KeyCreationScreen extends BaseScreen {
 
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
-                AkmcClient.KEY_PAIRS.generate(
-                        currentName, passwordCheckbox.selected() ? currentPassword.toCharArray() : null);
+                AkKeyPair keyPair = AkKeyPair.generate(SecureRandom.getInstanceStrong(), currentName);
+
+                if (passwordCheckbox.selected()) {
+                    minecraft.execute(() -> minecraft.setScreen(new PasswordCreationScreen(parent, keyPair, callback)));
+                } else {
+                    minecraft.execute(() -> {
+                        callback.accept(Optional.of(keyPair));
+                        onClose();
+                    });
+                }
             } catch (Exception e) {
-                Constants.LOG.error("Failed to generate keypair: {}", e);
+                Constants.LOG.error("Failed to generate keypair: {}", e.getMessage());
                 minecraft.execute(() -> minecraft.setScreen(new ErrorScreen(
                         Component.translatable("authorisedkeysmc.error.generation-fail"),
                         Component.literal(e.getMessage()))));
-
-                return;
             }
-
-            minecraft.execute(() -> {
-                callback.accept(currentName);
-                hasCreated = true;
-                onClose();
-            });
         });
     }
 
@@ -329,19 +233,5 @@ public class KeyCreationScreen extends BaseScreen {
                 .formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)
                 .withStyle(ChatFormatting.GRAY);
-    }
-
-    private record PasswordTextFormatter(AtomicBoolean shouldShow) implements EditBox.TextFormatter {
-        @Override
-        public @NonNull FormattedCharSequence format(@NonNull String s, int i) {
-            if (shouldShow.getAcquire()) {
-                return FormattedCharSequence.forward(s, Style.EMPTY);
-            }
-
-            StringBuilder sb = new StringBuilder(s.length());
-            // 'M' is a pretty wide character in the default font.
-            s.chars().forEach(c -> sb.append('M'));
-            return FormattedCharSequence.forward(sb.toString(), Style.EMPTY.withObfuscated(true));
-        }
     }
 }

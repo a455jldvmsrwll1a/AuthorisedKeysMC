@@ -106,7 +106,14 @@ public class AkKeyPair {
      * Does this keypair need to be decrypted in order to be usable?
      */
     public boolean requiresDecryption() {
-        return privateKey == null && encryptedKey != null;
+        return privateKey == null && isEncrypted();
+    }
+
+    /**
+     * Does this key pair have an encrypted private key?
+     */
+    public boolean isEncrypted() {
+        return encryptedKey != null;
     }
 
     /**
@@ -147,7 +154,7 @@ public class AkKeyPair {
     }
 
     /**
-     * Encrypt the keypair in-place with the provided password. Does not erase the unencrypted private key.
+     * Encrypt the keypair in-place with the provided password. The plaintext private key is dropped.
      * @param password The password to encrypt with.
      */
     public void encrypt(char @NonNull [] password) {
@@ -158,6 +165,7 @@ public class AkKeyPair {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         } finally {
+            privateKey = null;
             Arrays.fill(password, '\0');
         }
 

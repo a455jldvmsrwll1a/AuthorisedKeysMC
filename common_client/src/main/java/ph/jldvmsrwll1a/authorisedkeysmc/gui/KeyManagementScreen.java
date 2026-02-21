@@ -1,7 +1,9 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -10,6 +12,7 @@ import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.*;
 import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.*;
@@ -19,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
+import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
 
 public final class KeyManagementScreen extends BaseScreen {
     private static final float WIDTH_LEFT = 4.0f / 11.0f;
@@ -297,26 +301,18 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onNewKeyButtonPressed(Button ignored) {
-        minecraft.setScreen(new KeyCreationScreen(KeyManagementScreen.this, this::onNewKeyCreated));
+        minecraft.setScreen(
+                new KeyCreationScreen(KeyManagementScreen.this, keyPair -> keyPair.ifPresent(this::onNewKeyCreated)));
     }
 
-    private void onNewKeyCreated(@Nullable String keyName) {
-        reloadKeys();
-
-        if (keyName == null) {
-            return;
-        }
-
+    private void onNewKeyCreated(AkKeyPair keyPair) {
         try {
-            AkKeyPair newPair = AkmcClient.KEY_PAIRS.loadFromFile(keyName);
-
-            if (newPair.requiresDecryption()) {
-                minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(
-                        KeyManagementScreen.this, newPair, decrypted -> reloadKeys(), this::onNewKeyCreated)));
-            }
+            keyPair.writeFile(ClientKeyPairs.fromKeyName(keyPair.getName()));
         } catch (IOException e) {
-            Constants.LOG.warn("Failed to load newly created key: {}", e.getMessage());
+            throw new RuntimeException(e);
         }
+
+        reloadKeys();
     }
 
     private void onBackupButtonPressed(Button ignored) {
@@ -326,9 +322,34 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onPasswordButtonPressed(Button ignored) {
-        Constants.LOG.warn("Setting/Updating/Erasing password not implemented!");
+        if (currentKeypair == null) {
+            return;
+        }
 
-        SystemToast.addOrUpdate(minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
+        if (currentKeypair.requiresDecryption()) {
+            // Update/Erase
+            Constants.LOG.warn("Updating/Erasing password not implemented!");
+            SystemToast.addOrUpdate(
+                    minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
+        } else {
+            minecraft.setScreen(new PasswordCreationScreen(
+                    this,
+                    currentKeypair,
+                    encrypted -> encrypted.ifPresent(keyPair -> {
+                        onNewKeyCreated(keyPair);
+
+                        Path backupPath = Path.of("%s.BACKUP".formatted(ClientKeyPairs.fromKeyName(keyPair.getName())));
+                        try {
+                            Files.deleteIfExists(backupPath);
+                        } catch (IOException e) {
+                            Constants.LOG.error("Unable to delete unencrypted backup file: {}", e.getMessage());
+
+                            minecraft.setScreen(new ErrorScreen(
+                                    Component.translatable("authorisedkeysmc.error.error"),
+                                    Component.translatable("authorisedkeysmc.error.delete-fail")));
+                        }
+                    })));
+        }
     }
 
     private void onDeleteButtonPressed(Button ignored) {
