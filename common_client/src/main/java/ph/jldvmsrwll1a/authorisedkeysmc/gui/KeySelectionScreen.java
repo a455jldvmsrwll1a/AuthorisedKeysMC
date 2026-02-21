@@ -1,6 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
 import java.nio.file.InvalidPathException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -228,9 +232,12 @@ public class KeySelectionScreen extends BaseScreen {
                     .withStyle(ChatFormatting.GREEN));
         }
 
+        ZonedDateTime modificationTime = currentKeypair.getModificationTime().atZone(ZoneOffset.UTC);
+        ZonedDateTime localTime = modificationTime.withZoneSameInstant(ZoneId.systemDefault());
+
         message.append(Component.translatable(
                                 "authorisedkeysmc.screen.config.keys.properties-time",
-                                currentKeypair.getModificationTime().toString())
+                                DateTimeFormatter.RFC_1123_DATE_TIME.format(localTime))
                         .withStyle(ChatFormatting.GRAY))
                 .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
                 .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))

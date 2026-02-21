@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -258,9 +260,12 @@ public final class KeyManagementScreen extends BaseScreen {
                     .withStyle(ChatFormatting.GREEN));
         }
 
+        ZonedDateTime modificationTime = currentKeypair.getModificationTime().atZone(ZoneOffset.UTC);
+        ZonedDateTime localTime = modificationTime.withZoneSameInstant(ZoneId.systemDefault());
+
         message.append(Component.translatable(
                                 "authorisedkeysmc.screen.config.keys.properties-time",
-                                currentKeypair.getModificationTime().toString())
+                                DateTimeFormatter.RFC_1123_DATE_TIME.format(localTime))
                         .withStyle(ChatFormatting.GRAY))
                 .append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-key"))
                 .append(Component.literal(currentKeypair.getTextualPublic()).withStyle(ChatFormatting.DARK_PURPLE))
