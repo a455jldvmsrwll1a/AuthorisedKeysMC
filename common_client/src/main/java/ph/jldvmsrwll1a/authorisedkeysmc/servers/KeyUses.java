@@ -44,7 +44,7 @@ public final class KeyUses {
         ArrayList<String> servers = new ArrayList<>();
 
         usedKeyTable.forEach((address, keys) -> {
-            if (keys.contains(keyName)) {
+            if (keys.equals(keyName)) {
                 servers.add(address);
             }
         });
