@@ -16,11 +16,10 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public class PasswordPromptScreen extends BaseScreen {
@@ -47,8 +46,8 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
 
     protected final Screen parent;
-    protected final AkKeyPair keypair;
-    protected final Consumer<Optional<AkKeyPair>> callback;
+    protected final AkKeyPair.Encrypted keypair;
+    protected final Consumer<Optional<AkKeyPair.Plain>> callback;
     protected final LinearLayout rootLayout;
     protected final AtomicBoolean showPassword = new AtomicBoolean(false);
 
@@ -58,12 +57,11 @@ public class PasswordPromptScreen extends BaseScreen {
     protected MultiLineTextWidget cacheText;
     protected boolean cacheDecryptedKey = false;
 
-    private boolean hasDecrypted = false;
+    private AkKeyPair.@Nullable Plain decryptedKey = null;
 
-    public PasswordPromptScreen(Screen parent, AkKeyPair keypair, Consumer<Optional<AkKeyPair>> callback) {
+    public PasswordPromptScreen(
+            Screen parent, AkKeyPair.Encrypted keypair, Consumer<Optional<AkKeyPair.Plain>> callback) {
         super(TITLE_LABEL);
-
-        Validate.isTrue(keypair.isEncrypted(), "requesting password for an unencrypted key");
 
         this.parent = parent;
         this.keypair = keypair;
@@ -152,7 +150,8 @@ public class PasswordPromptScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        callback.accept(hasDecrypted ? Optional.of(keypair) : Optional.empty());
+        callback.accept(Optional.ofNullable(decryptedKey));
+
         minecraft.setScreen(parent);
     }
 
@@ -177,8 +176,7 @@ public class PasswordPromptScreen extends BaseScreen {
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
-                hasDecrypted = keypair.decrypt(password);
-                Constants.LOG.info("has decrypted = {}", hasDecrypted);
+                keypair.decrypt(password).ifPresent(decrypted -> decryptedKey = decrypted);
             } catch (RuntimeException e) {
                 minecraft.execute(() -> {
                     errorText.visible = true;
@@ -191,12 +189,12 @@ public class PasswordPromptScreen extends BaseScreen {
                 Arrays.fill(password, '\0');
             }
 
-            if (hasDecrypted && cacheDecryptedKey) {
-                AkmcClient.CACHED_KEYS.cacheKey(keypair);
+            if (decryptedKey != null && cacheDecryptedKey) {
+                AkmcClient.CACHED_KEYS.cacheKey(decryptedKey);
             }
 
             minecraft.execute(() -> {
-                if (hasDecrypted) {
+                if (decryptedKey != null) {
                     minecraft.execute(this::onClose);
                 } else {
                     errorText.visible = true;

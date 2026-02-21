@@ -1,14 +1,17 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.layouts.SpacerElement;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 
 public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
@@ -21,9 +24,17 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
             Component.translatable("authorisedkeysmc.screen.new-key.field.show-password");
     private static final Component ERROR_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
+    private static final Component WAITING_LABEL =
+            Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
 
-    public PasswordConfirmPromptScreen(Screen parent, AkKeyPair keypair, Consumer<Optional<AkKeyPair>> callback) {
-        super(parent, keypair, callback);
+    private final Consumer<Optional<AkKeyPair.Encrypted>> callback;
+    boolean successful = false;
+
+    public PasswordConfirmPromptScreen(
+            Screen parent, AkKeyPair.Encrypted keypair, Consumer<Optional<AkKeyPair.Encrypted>> callback) {
+        super(parent, keypair, kp -> {});
+
+        this.callback = callback;
     }
 
     @Override
@@ -68,5 +79,46 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
 
         rootLayout.visitWidgets(this::addRenderableWidget);
         repositionElements();
+    }
+
+    @Override
+    public void onClose() {
+        callback.accept(Optional.ofNullable(successful ? keypair : null));
+
+        minecraft.setScreen(parent);
+    }
+
+    @Override
+    protected void decryptKey() {
+        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
+
+        char[] password = passwordEdit.getValue().toCharArray();
+        AkmcClient.WORKER_EXECUTOR.execute(() -> {
+            try {
+                if (keypair.decrypt(password).isPresent()) {
+                    successful = true;
+                }
+            } catch (RuntimeException e) {
+                minecraft.execute(() -> {
+                    errorText.visible = true;
+                    passwordEdit.setValue("");
+                    minecraft.setScreen(this);
+                });
+
+                throw e;
+            } finally {
+                Arrays.fill(password, '\0');
+            }
+
+            minecraft.execute(() -> {
+                if (successful) {
+                    minecraft.execute(this::onClose);
+                } else {
+                    errorText.visible = true;
+                    passwordEdit.setValue("");
+                    minecraft.setScreen(this);
+                }
+            });
+        });
     }
 }

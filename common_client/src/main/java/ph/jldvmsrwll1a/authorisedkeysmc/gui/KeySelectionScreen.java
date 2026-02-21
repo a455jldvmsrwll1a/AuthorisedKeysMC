@@ -223,7 +223,7 @@ public class KeySelectionScreen extends BaseScreen {
         MutableComponent message =
                 Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", keyName);
 
-        if (currentKeypair.requiresDecryption()) {
+        if (currentKeypair.isEncrypted()) {
             message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted")
                     .withStyle(ChatFormatting.GREEN));
         }

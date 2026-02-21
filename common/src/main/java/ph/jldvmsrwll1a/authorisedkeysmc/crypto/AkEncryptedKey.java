@@ -8,14 +8,13 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-
-import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 public class AkEncryptedKey {
     private static final String KEY_ALGORITHM = "ChaCha20";
@@ -137,11 +136,14 @@ public class AkEncryptedKey {
             Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, KEY_ALGORITHM), new IvParameterSpec(nonce));
             byte[] plaintext = cipher.doFinal(cipherText);
-            Validate.validState(plaintext.length == PLAINTEXT_LENGTH, "Decrypted ciphertext is not of the expected size.");
+            Validate.validState(
+                    plaintext.length == PLAINTEXT_LENGTH, "Decrypted ciphertext is not of the expected size.");
 
             return plaintext;
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException |
-                 IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException
+                | NoSuchPaddingException
+                | InvalidAlgorithmParameterException
+                | IllegalBlockSizeException e) {
             throw new RuntimeException(e);
         }
     }
@@ -158,8 +160,11 @@ public class AkEncryptedKey {
             Validate.validState(ciphertext.length == OUTPUT_LENGTH, "Encrypted plaintext is not of the expected size.");
 
             return ciphertext;
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException |
-                 IllegalBlockSizeException | BadPaddingException e) {
+        } catch (NoSuchAlgorithmException
+                | NoSuchPaddingException
+                | InvalidAlgorithmParameterException
+                | IllegalBlockSizeException
+                | BadPaddingException e) {
             throw new RuntimeException(e);
         } catch (InvalidKeyException e) {
             throw new IllegalStateException(e);

@@ -8,64 +8,41 @@ import java.nio.file.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.Optional;
 import org.apache.commons.lang3.Validate;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
 /**
  * Keypair that may or may not be encrypted.
  */
-public class AkKeyPair {
+@NullMarked
+public abstract sealed class AkKeyPair permits AkKeyPair.Plain, AkKeyPair.Encrypted {
     // Only encrypted key pair files will have this size.
     // Unencrypted ones are a lot smaller.
-    public static final int MAX_FILE_SIZE = 136;
+    protected static final int MAX_FILE_SIZE = 136;
 
-    private final @NonNull String name;
-    private Instant modificationTime;
+    protected final String name;
+    protected final Instant modificationTime;
+    protected final AkPublicKey publicKey;
 
-    private @Nullable AkPublicKey publicKey;
-    private @Nullable AkPrivateKey privateKey;
-    private @Nullable AkEncryptedKey encryptedKey;
-
-    public AkKeyPair(
-            @NonNull String name,
-            @NonNull Instant modificationTime,
-            @NonNull AkPrivateKey privateKey,
-            @Nullable AkPublicKey publicKey) {
+    private AkKeyPair(String name, Instant modificationTime, AkPublicKey publicKey) {
         this.name = name;
         this.modificationTime = modificationTime;
-
-        this.privateKey = privateKey;
-        this.publicKey = publicKey != null ? publicKey : privateKey.derivePublicKey();
-        this.encryptedKey = null;
-    }
-
-    public AkKeyPair(
-            @NonNull String name,
-            @NonNull Instant modificationTime,
-            @NonNull AkEncryptedKey encryptedKey,
-            @Nullable AkPublicKey publicKey) {
-        this.name = name;
-        this.modificationTime = modificationTime;
-
-        this.privateKey = null;
         this.publicKey = publicKey;
-        this.encryptedKey = encryptedKey;
     }
 
     /**
      * Get the name of this keypair.
      */
-    public @NonNull String getName() {
+    public String getName() {
         return name;
     }
 
     /**
      * Get the latest modification time of this keypair.
      */
-    public @NonNull Instant getModificationTime() {
+    public Instant getModificationTime() {
         return modificationTime;
     }
 
@@ -73,103 +50,16 @@ public class AkKeyPair {
      * Get a textual representation of the public key. This is intended to define the "canonical" format that will be
      * used by users and stored in files.
      */
-    public @NonNull String getTextualPublic() {
+    public String getTextualPublic() {
         return getPublic().toString();
     }
 
-    /**
-     * Get the public key of this keypair. The keypair's private key must already be unencrypted or this will throw.
-     */
-    public @NonNull AkPublicKey getPublic() {
-        if (publicKey != null) {
-            return publicKey;
-        } else {
-            throw new IllegalStateException(
-                    "public key is undetermined (private key has likely not yet been decrypted, and no public key was explicitly supplied in the key file)");
-        }
+    public AkPublicKey getPublic() {
+        return publicKey;
     }
 
-    /**
-     * Get the private key of this keypair. The keypair must already be decrypted or this will throw.
-     */
-    public @NonNull AkPrivateKey getDecryptedPrivate() {
-        if (privateKey != null) {
-            return privateKey;
-        } else if (encryptedKey != null) {
-            throw new IllegalStateException("private key has likely not yet been decrypted");
-        } else {
-            throw new IllegalStateException("Degenerate keypair does not contain any data.");
-        }
-    }
-
-    /**
-     * Does this keypair need to be decrypted in order to be usable?
-     */
-    public boolean requiresDecryption() {
-        return privateKey == null && isEncrypted();
-    }
-
-    /**
-     * Does this key pair have an encrypted private key?
-     */
     public boolean isEncrypted() {
-        return encryptedKey != null;
-    }
-
-    /**
-     * Manually set the private key of this keypair. If present, the public key must correspond with the private key.
-     * <p>
-     * Care should be taken if the new private key is different from the current encrypted private key.
-     * @param secret The new private key.
-     */
-    public void setPrivateKey(@NonNull AkPrivateKey secret) {
-        AkPublicKey newPublicKey = secret.derivePublicKey();
-
-        if (publicKey != null && !publicKey.equals(newPublicKey)) {
-            throw new IllegalStateException("Provided private key does not match the current public key.");
-        }
-
-        privateKey = secret;
-        if (publicKey == null) {
-            publicKey = newPublicKey;
-        }
-        modificationTime = Instant.now();
-    }
-
-    /**
-     * Attempt to decrypt the keypair in-place with the provided password. Never erases the encrypted private key.
-     * @param password The password to decrypt with.
-     * @return {@code true} if successful.
-     */
-    public boolean decrypt(char @NonNull [] password) {
-        Validate.validState(encryptedKey != null, "Not an encrypted private key.");
-
-        try {
-            encryptedKey.decrypt(password).ifPresent(this::setPrivateKey);
-        } finally {
-            Arrays.fill(password, '\0');
-        }
-
-        return !requiresDecryption();
-    }
-
-    /**
-     * Encrypt the keypair in-place with the provided password. The plaintext private key is dropped.
-     * @param password The password to encrypt with.
-     */
-    public void encrypt(char @NonNull [] password) {
-        Validate.validState(privateKey != null, "Decrypted private key not available.");
-
-        try {
-            encryptedKey = new AkEncryptedKey(SecureRandom.getInstanceStrong(), privateKey, password);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } finally {
-            privateKey = null;
-            Arrays.fill(password, '\0');
-        }
-
-        modificationTime = Instant.now();
+        return this instanceof AkKeyPair.Encrypted;
     }
 
     @Override
@@ -182,7 +72,7 @@ public class AkKeyPair {
      * @param outPath The file path to write to.
      * @throws IOException May fail to write the file.
      */
-    public void writeFile(@NonNull Path outPath) throws IOException {
+    public void writeFile(Path outPath) throws IOException {
         Path path = outPath.normalize();
         Files.createDirectories(path.getParent());
 
@@ -197,16 +87,7 @@ public class AkKeyPair {
         outBuffer.putInt(Constants.KEY_PAIR_HEADER);
         outBuffer.putShort(Constants.KEY_PAIR_VERSION);
 
-        if (encryptedKey != null && publicKey != null) {
-            outBuffer.putShort((short) 1);
-            publicKey.write(outBuffer);
-            encryptedKey.write(outBuffer);
-        } else if (privateKey != null) {
-            outBuffer.putShort((short) 0);
-            privateKey.write(outBuffer);
-        } else {
-            throw new IllegalStateException("Degenerate keypair has no private key");
-        }
+        writeSpecificData(outBuffer);
 
         try (FileChannel channel = FileChannel.open(outPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             outBuffer.flip();
@@ -223,13 +104,11 @@ public class AkKeyPair {
      * @param name A label for the key.
      * @return The newly created keypair.
      */
-    public static @NonNull AkKeyPair generate(@NonNull SecureRandom random, @NonNull String name) {
+    public static AkKeyPair.Plain generate(SecureRandom random, String name) {
         AkPrivateKey privateKey = new AkPrivateKey(random);
-        AkPublicKey publicKey = privateKey.derivePublicKey();
-
         Instant now = Instant.now();
 
-        return new AkKeyPair(name, now, privateKey, publicKey);
+        return new AkKeyPair.Plain(name, now, privateKey);
     }
 
     /**
@@ -238,7 +117,7 @@ public class AkKeyPair {
      * @return The loaded keypair.
      * @throws IOException May fail to read the file.
      */
-    public static AkKeyPair fromFile(@NonNull Path path, @NonNull String name) throws IOException {
+    public static AkKeyPair fromFile(Path path, String name) throws IOException {
         Instant modificationTime = Files.getLastModifiedTime(path).toInstant();
 
         ByteBuffer inBuffer = ByteBuffer.allocate(MAX_FILE_SIZE);
@@ -273,20 +152,86 @@ public class AkKeyPair {
 
             short flags = inBuffer.getShort();
 
-            if (flags == 1) {
+            if (flags == Encrypted.ENCRYPTED_FLAG) {
                 AkPublicKey publicKey = new AkPublicKey(inBuffer);
                 AkEncryptedKey encryptedKey = new AkEncryptedKey(inBuffer);
 
-                return new AkKeyPair(name, modificationTime, encryptedKey, publicKey);
-            } else if (flags == 0) {
+                return new AkKeyPair.Encrypted(name, modificationTime, publicKey, encryptedKey);
+            } else if (flags == Plain.PLAIN_FLAG) {
                 AkPrivateKey privateKey = new AkPrivateKey(inBuffer);
 
-                return new AkKeyPair(name, modificationTime, privateKey, null);
+                return new AkKeyPair.Plain(name, modificationTime, privateKey);
             } else {
                 throw new IllegalArgumentException("Unknown flags value: %x".formatted(flags));
             }
         } catch (BufferUnderflowException e) {
             throw new IOException("Unexpected end of key pair data.", e);
+        }
+    }
+
+    protected abstract void writeSpecificData(ByteBuffer buffer);
+
+    public static final class Plain extends AkKeyPair {
+        private static final short PLAIN_FLAG = 0;
+
+        private final AkPrivateKey privateKey;
+
+        public Plain(String name, Instant modificationTime, AkPrivateKey privateKey) {
+            super(name, modificationTime, privateKey.derivePublicKey());
+
+            this.privateKey = privateKey;
+        }
+
+        public AkKeyPair.Encrypted encrypt(char[] password) {
+            SecureRandom rng;
+            try {
+                rng = SecureRandom.getInstanceStrong();
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+
+            AkEncryptedKey encryptedKey = new AkEncryptedKey(rng, privateKey, password);
+
+            return new Encrypted(name, Instant.now(), publicKey, encryptedKey);
+        }
+
+        public AkPrivateKey getPrivateKey() {
+            return privateKey;
+        }
+
+        @Override
+        protected void writeSpecificData(ByteBuffer buffer) {
+            buffer.putShort(PLAIN_FLAG);
+            privateKey.write(buffer);
+        }
+    }
+
+    public static final class Encrypted extends AkKeyPair {
+        private static final short ENCRYPTED_FLAG = 1;
+
+        private final AkEncryptedKey encryptedKey;
+
+        public Encrypted(String name, Instant modificationTime, AkPublicKey publicKey, AkEncryptedKey encryptedKey) {
+            super(name, modificationTime, publicKey);
+
+            this.encryptedKey = encryptedKey;
+        }
+
+        public Optional<AkKeyPair.Plain> decrypt(char[] password) {
+            return encryptedKey.decrypt(password).map(decrypted -> {
+                Validate.isTrue(
+                        decrypted.isMatchingPublicKey(publicKey),
+                        "Decrypted private key does not match with the current public key.");
+
+                return new AkKeyPair.Plain(name, Instant.now(), decrypted);
+            });
+        }
+
+        @Override
+        protected void writeSpecificData(ByteBuffer buffer) {
+            buffer.putShort(ENCRYPTED_FLAG);
+            publicKey.write(buffer);
+            encryptedKey.write(buffer);
         }
     }
 }

@@ -42,7 +42,7 @@ public class KeyCreationScreen extends BaseScreen {
     private static final Component WAITING_LABEL = Component.translatable("authorisedkeysmc.screen.new-key.waiting");
 
     private final Screen parent;
-    private final Consumer<Optional<AkKeyPair>> callback;
+    private final Consumer<Optional<? extends AkKeyPair>> callback;
     private final List<String> existingNames;
     private final LinearLayout rootLayout;
 
@@ -56,11 +56,12 @@ public class KeyCreationScreen extends BaseScreen {
     private String currentName;
     private String lastNameError = "";
 
-    public KeyCreationScreen(Screen parent, Consumer<Optional<AkKeyPair>> callback) {
+    public KeyCreationScreen(Screen parent, Consumer<Optional<? extends AkKeyPair>> callback) {
         this(parent, callback, null);
     }
 
-    public KeyCreationScreen(Screen parent, Consumer<Optional<AkKeyPair>> callback, @Nullable String defaultName) {
+    public KeyCreationScreen(
+            Screen parent, Consumer<Optional<? extends AkKeyPair>> callback, @Nullable String defaultName) {
         super(TITLE_LABEL);
 
         this.parent = parent;
@@ -203,10 +204,14 @@ public class KeyCreationScreen extends BaseScreen {
 
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
-                AkKeyPair keyPair = AkKeyPair.generate(SecureRandom.getInstanceStrong(), currentName);
+                AkKeyPair.Plain keyPair = AkKeyPair.generate(SecureRandom.getInstanceStrong(), currentName);
 
                 if (passwordCheckbox.selected()) {
-                    minecraft.execute(() -> minecraft.setScreen(new PasswordCreationScreen(parent, keyPair, callback)));
+                    minecraft.execute(() -> minecraft.setScreen(new PasswordCreationScreen(
+                            parent,
+                            keyPair,
+                            encrypted -> encrypted.ifPresentOrElse(
+                                    e -> callback.accept(Optional.of(e)), () -> callback.accept(Optional.empty())))));
                 } else {
                     minecraft.execute(() -> {
                         callback.accept(Optional.of(keyPair));

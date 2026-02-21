@@ -15,7 +15,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.apache.commons.lang3.Validate;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
@@ -39,8 +38,8 @@ public final class PasswordCreationScreen extends BaseScreen {
     private static final Component ERROR_LABEL = Component.translatable("authorisedkeysmc.error.encryption-fail");
 
     private final Screen parent;
-    private final AkKeyPair keypair;
-    private final Consumer<Optional<AkKeyPair>> callback;
+    private final AkKeyPair.Plain keypair;
+    private final Consumer<Optional<AkKeyPair.Encrypted>> callback;
     private final LinearLayout rootLayout;
     private final AtomicBoolean showPassword = new AtomicBoolean(false);
 
@@ -48,12 +47,9 @@ public final class PasswordCreationScreen extends BaseScreen {
     private EditBox passwordEdit;
     private Button encryptKeyButton;
 
-    public PasswordCreationScreen(Screen parent, AkKeyPair keypair, Consumer<Optional<AkKeyPair>> callback) {
+    public PasswordCreationScreen(
+            Screen parent, AkKeyPair.Plain keypair, Consumer<Optional<AkKeyPair.Encrypted>> callback) {
         super(TITLE_LABEL);
-
-        Validate.isTrue(
-                !keypair.requiresDecryption(),
-                "setting up password encryption for a key pair that requires decryption prior");
 
         this.parent = parent;
         this.keypair = keypair;
@@ -149,8 +145,9 @@ public final class PasswordCreationScreen extends BaseScreen {
 
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
+            AkKeyPair.Encrypted encrypted;
             try {
-                keypair.encrypt(password);
+                encrypted = keypair.encrypt(password);
             } catch (RuntimeException e) {
                 minecraft.execute(
                         () -> minecraft.setScreen(new ErrorScreen(ERROR_LABEL, Component.literal(e.getMessage()))));
@@ -160,7 +157,7 @@ public final class PasswordCreationScreen extends BaseScreen {
                 Arrays.fill(password, '\0');
             }
 
-            minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(parent, keypair, callback)));
+            minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(parent, encrypted, callback)));
         });
     }
 

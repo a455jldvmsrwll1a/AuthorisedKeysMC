@@ -10,7 +10,7 @@ import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 public final class AkmcCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
-    public static AkKeyPair SERVER_KEYPAIR;
+    public static AkKeyPair.Plain SERVER_KEYPAIR;
     public static UserKeys USER_KEYS;
     public static ServerConfig CONFIG;
 
@@ -35,9 +35,9 @@ public final class AkmcCore {
 
     private static void initialiseServerKeyPair() {
         try {
-            SERVER_KEYPAIR = AkKeyPair.fromFile(AkmcCore.FILE_PATHS.SERVER_SECRET_PATH, "");
-
-            if (SERVER_KEYPAIR.requiresDecryption()) {
+            if (AkKeyPair.fromFile(AkmcCore.FILE_PATHS.SERVER_SECRET_PATH, "") instanceof AkKeyPair.Plain plain) {
+                SERVER_KEYPAIR = plain;
+            } else {
                 throw new RuntimeException("AKMC: the server key pair's private key must NOT be encrypted!");
             }
 

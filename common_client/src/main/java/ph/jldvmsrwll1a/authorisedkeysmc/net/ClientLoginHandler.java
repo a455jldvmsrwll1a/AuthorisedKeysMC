@@ -225,8 +225,12 @@ public final class ClientLoginHandler {
 
         s2cChallenge = payload;
 
-        if (!AkmcClient.CACHED_KEYS.decryptKeypair(keypair)) {
-            showScreen(new PasswordPromptScreen(minecraft.screen, keypair, decrypted -> {
+        if (keypair instanceof AkKeyPair.Encrypted encrypted) {
+            AkmcClient.CACHED_KEYS.decryptKeypair(encrypted).ifPresent(decrypted -> keypair = decrypted);
+        }
+
+        if (keypair instanceof AkKeyPair.Encrypted encrypted) {
+            showScreen(new PasswordPromptScreen(minecraft.screen, encrypted, decrypted -> {
                 if (decrypted.isPresent()) {
                     onPrivateKeyDecrypted(decrypted.get());
                 } else {
@@ -260,7 +264,7 @@ public final class ClientLoginHandler {
         });
     }
 
-    private void onPrivateKeyDecrypted(AkKeyPair decryptedKeypair) {
+    private void onPrivateKeyDecrypted(AkKeyPair.Plain decryptedKeypair) {
         nettyLoop.execute(() -> {
             byte[] sessionHash = this.sessionHash;
 
@@ -272,12 +276,7 @@ public final class ClientLoginHandler {
             Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
 
             keypair = decryptedKeypair;
-
-            if (decryptedKeypair.requiresDecryption()) {
-                cancelLogin();
-            } else {
-                sendChallengeResponse();
-            }
+            sendChallengeResponse();
         });
     }
 
@@ -345,10 +344,13 @@ public final class ClientLoginHandler {
         Validate.validState(sessionHash != null, "Session hash is null. This is impossible as encryption is required.");
         Validate.validState(s2cChallenge != null, "Did not yet receive a challenge.");
         Validate.notNull(keypair, "Missing key pair.");
-        Validate.validState(!keypair.requiresDecryption(), "Key pair has not been decrypted.");
 
-        respond(C2SSignaturePayload.fromSigningChallenge(
-                keypair.getDecryptedPrivate(), s2cChallenge, sessionHash, phase == Phase.AWAIT_REGISTRATION_CHALLENGE));
+        if (keypair instanceof AkKeyPair.Plain kp) {
+            respond(C2SSignaturePayload.fromSigningChallenge(
+                    kp.getPrivateKey(), s2cChallenge, sessionHash, phase == Phase.AWAIT_REGISTRATION_CHALLENGE));
+        } else {
+            throw new IllegalStateException("Key pair has not been decrypted.");
+        }
 
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.waiting-verdict"));
         transition(Phase.AWAIT_VERDICT);

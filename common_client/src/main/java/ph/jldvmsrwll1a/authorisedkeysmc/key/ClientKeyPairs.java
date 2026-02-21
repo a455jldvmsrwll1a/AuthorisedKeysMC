@@ -49,13 +49,13 @@ public class ClientKeyPairs {
         Path path = fromKeyName(name);
 
         try {
-            AkKeyPair generated = AkKeyPair.generate(SecureRandom.getInstanceStrong(), name);
+            AkKeyPair.Plain generated = AkKeyPair.generate(SecureRandom.getInstanceStrong(), name);
 
             if (password != null) {
-                generated.encrypt(password);
+                generated.encrypt(password).writeFile(path);
+            } else {
+                generated.writeFile(path);
             }
-
-            generated.writeFile(path);
         } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }

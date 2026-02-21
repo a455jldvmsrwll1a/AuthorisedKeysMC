@@ -250,11 +250,10 @@ public final class KeyManagementScreen extends BaseScreen {
         }
 
         List<String> servers = getServerNamesUsingKey(selectedKeyName);
-
         MutableComponent message =
                 Component.translatable("authorisedkeysmc.screen.config.keys.properties-subtitle", selectedKeyName);
 
-        if (currentKeypair.requiresDecryption()) {
+        if (currentKeypair.isEncrypted()) {
             message.append(Component.translatable("authorisedkeysmc.screen.config.keys.properties-encrypted")
                     .withStyle(ChatFormatting.GREEN));
         }
@@ -282,7 +281,7 @@ public final class KeyManagementScreen extends BaseScreen {
 
         inspectorButtons.forEach(button -> button.active = true);
 
-        if (currentKeypair.requiresDecryption()) {
+        if (currentKeypair.isEncrypted()) {
             passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-change"));
         } else {
             passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-add"));
@@ -301,8 +300,8 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onNewKeyButtonPressed(Button ignored) {
-        minecraft.setScreen(
-                new KeyCreationScreen(KeyManagementScreen.this, keyPair -> keyPair.ifPresent(this::onNewKeyCreated)));
+        minecraft.setScreen(new KeyCreationScreen(
+                KeyManagementScreen.this, keyPair -> keyPair.ifPresent(kp -> onNewKeyCreated((AkKeyPair) kp))));
     }
 
     private void onNewKeyCreated(AkKeyPair keyPair) {
@@ -322,33 +321,33 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onPasswordButtonPressed(Button ignored) {
-        if (currentKeypair == null) {
-            return;
-        }
+        switch (currentKeypair) {
+            case AkKeyPair.Plain plain ->
+                minecraft.setScreen(new PasswordCreationScreen(
+                        this,
+                        plain,
+                        encrypted -> encrypted.ifPresent(keyPair -> {
+                            onNewKeyCreated(keyPair);
 
-        if (currentKeypair.requiresDecryption()) {
-            // Update/Erase
-            Constants.LOG.warn("Updating/Erasing password not implemented!");
-            SystemToast.addOrUpdate(
-                    minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
-        } else {
-            minecraft.setScreen(new PasswordCreationScreen(
-                    this,
-                    currentKeypair,
-                    encrypted -> encrypted.ifPresent(keyPair -> {
-                        onNewKeyCreated(keyPair);
+                            Path backupPath =
+                                    Path.of("%s.BACKUP".formatted(ClientKeyPairs.fromKeyName(keyPair.getName())));
+                            try {
+                                Files.deleteIfExists(backupPath);
+                            } catch (IOException e) {
+                                Constants.LOG.error("Unable to delete unencrypted backup file: {}", e.getMessage());
 
-                        Path backupPath = Path.of("%s.BACKUP".formatted(ClientKeyPairs.fromKeyName(keyPair.getName())));
-                        try {
-                            Files.deleteIfExists(backupPath);
-                        } catch (IOException e) {
-                            Constants.LOG.error("Unable to delete unencrypted backup file: {}", e.getMessage());
-
-                            minecraft.setScreen(new ErrorScreen(
-                                    Component.translatable("authorisedkeysmc.error.error"),
-                                    Component.translatable("authorisedkeysmc.error.delete-fail")));
-                        }
-                    })));
+                                minecraft.setScreen(new ErrorScreen(
+                                        Component.translatable("authorisedkeysmc.error.error"),
+                                        Component.translatable("authorisedkeysmc.error.delete-fail")));
+                            }
+                        })));
+            case AkKeyPair.Encrypted encrypted -> {
+                // Update/Erase
+                Constants.LOG.warn("Updating/Erasing password not implemented!");
+                SystemToast.addOrUpdate(
+                        minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
+            }
+            case null, default -> {}
         }
     }
 

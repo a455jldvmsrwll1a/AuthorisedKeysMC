@@ -23,6 +23,10 @@ public final class AkPrivateKey {
         parameters = new Ed25519PrivateKeyParameters(bytes);
     }
 
+    public boolean isMatchingPublicKey(AkPublicKey publicKey) {
+        return derivePublicKey().equals(publicKey);
+    }
+
     public void write(ByteBuffer buffer) {
         buffer.put(parameters.getEncoded());
     }
