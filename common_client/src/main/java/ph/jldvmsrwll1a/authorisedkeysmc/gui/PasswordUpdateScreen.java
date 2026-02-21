@@ -34,9 +34,9 @@ public final class PasswordUpdateScreen extends BaseScreen {
                     "authorisedkeysmc.screen.erase-password.title")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     private static final Component UPDATE_BUTTON_LABEL =
-            Component.translatable("authorisedkeysmc.button.password-change");
+            Component.translatable("authorisedkeysmc.button.update-password");
     private static final Component ERASE_BUTTON_LABEL =
-            Component.translatable("authorisedkeysmc.button.password-remove").withStyle(ChatFormatting.RED);
+            Component.translatable("authorisedkeysmc.button.erase-password").withStyle(ChatFormatting.RED);
     private static final Component CURRENT_PASSWORD_LABEL =
             Component.translatable("authorisedkeysmc.screen.update-password.current-password");
     private static final Component NEW_PASSWORD_LABEL =

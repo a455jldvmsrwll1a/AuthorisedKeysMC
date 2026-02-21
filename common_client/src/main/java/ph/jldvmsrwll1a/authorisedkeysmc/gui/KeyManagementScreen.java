@@ -102,7 +102,7 @@ public final class KeyManagementScreen extends BaseScreen {
                 .build());
 
         inspectorButtons.add(Button.builder(
-                        Component.translatable("authorisedkeysmc.button.password-add"), this::onPasswordButtonPressed)
+                        Component.translatable("authorisedkeysmc.button.set-password"), this::onPasswordButtonPressed)
                 .tooltip(Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.set-password")))
                 .size(getWidthRightDual(), 20)
                 .build());
@@ -282,9 +282,9 @@ public final class KeyManagementScreen extends BaseScreen {
         inspectorButtons.forEach(button -> button.active = true);
 
         if (currentKeypair.isEncrypted()) {
-            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-change"));
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.update-password"));
         } else {
-            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.password-add"));
+            passwordButton.setMessage(Component.translatable("authorisedkeysmc.button.set-password"));
         }
     }
 
