@@ -9,10 +9,12 @@ import com.mojang.brigadier.context.CommandContext;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
@@ -20,6 +22,7 @@ import net.minecraft.server.permissions.PermissionLevel;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
+import ph.jldvmsrwll1a.authorisedkeysmc.UsernameAliases;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public final class ModCommands {
@@ -64,7 +67,21 @@ public final class ModCommands {
                                 .then(literal("unbind")
                                         .then(argument("public key", StringArgumentType.word())
                                                 .suggests(new PublicKeysSuggestions.ByUsername())
-                                                .executes(ModCommands::usernameUnbind))))));
+                                                .executes(ModCommands::usernameUnbind)))))
+                .then(literal("alias")
+                        .requires(ModCommands::admin)
+                        .then(literal("list").executes(ModCommands::listAliases))
+                        .then(literal("info")
+                                .then(argument("original username", StringArgumentType.word())
+                                        .executes(ModCommands::aliasInfo)))
+                        .then(literal("link")
+                                .then(argument("original username", StringArgumentType.word())
+                                        .then(literal("to")
+                                                .then(argument("replacement uuid", UuidArgument.uuid())
+                                                        .executes(ModCommands::link)))))
+                        .then(literal("unlink")
+                                .then(argument("original username", StringArgumentType.word())
+                                        .executes(ModCommands::unlink)))));
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
@@ -411,6 +428,74 @@ public final class ModCommands {
         reply(context, message);
 
         return SUCCESS;
+    }
+
+    private static int listAliases(CommandContext<CommandSourceStack> context) {
+        fail(context, "Work in progress!  D:");
+
+        /*/tellraw @s {text: "1. Username: AAAAAAAAAAAAAAA\n\s\s\sReplacement ID: AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"}
+        * */
+
+        return ERROR;
+    }
+
+    private static int aliasInfo(CommandContext<CommandSourceStack> context) {
+        String username = StringArgumentType.getString(context, "original username");
+
+        Optional<UsernameAliases.Alias> maybeAlias = AkmcCore.USER_ALIASES.getAlias(username);
+        if (maybeAlias.isEmpty()) {
+            fail(context, "No such alias exists.");
+
+            return ERROR;
+        }
+
+        UsernameAliases.Alias alias = maybeAlias.get();
+        String idStr = alias.id().toString();
+
+        MutableComponent message = Component.empty()
+                .append("The username ")
+                .append(Component.literal(username).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" maps to UUID:\n"))
+                .append(Component.literal(idStr)
+                        .withStyle(Style.EMPTY
+                                .withColor(ChatFormatting.GOLD)
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy UUID.")))
+                                .withClickEvent(new ClickEvent.CopyToClipboard(idStr))));
+
+        if (alias.issuer() != null) {
+            message.append("\n    └ Issued by: ");
+            message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
+        } else {
+            message.append("\n    └ Issued via server console.");
+        }
+
+        message.append("\n    └ Added at: ");
+        message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                        alias.creationTime().atOffset(ZoneOffset.UTC)))
+                .withStyle(ChatFormatting.GRAY));
+
+        if (alias.reason() != null) {
+            message.append("\n    └ Reason: ");
+            message.append(Component.literal(alias.reason()).withStyle(ChatFormatting.GREEN));
+        }
+
+        reply(context, message);
+
+        return SUCCESS;
+    }
+
+    private static int link(CommandContext<CommandSourceStack> context) {
+        fail(context, "Work in progress!  D:");
+
+        //        UUID id = UuidArgument.getUuid(context, "replacement uuid");
+
+        return ERROR;
+    }
+
+    private static int unlink(CommandContext<CommandSourceStack> context) {
+        fail(context, "Work in progress!  D:");
+
+        return ERROR;
     }
 
     private static boolean admin(CommandSourceStack source) {
