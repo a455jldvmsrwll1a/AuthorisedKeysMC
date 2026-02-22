@@ -18,7 +18,7 @@ public class FilePaths {
 
     public final Path AUTHORISED_KEYS_PATH;
     public final Path BYPASS_LIST_PATH;
-    public final Path UUID_REMAPS_PATH;
+    public final Path ALIASES_PATH;
     public final Path HISTORY_PATH;
     public final Path SERVER_SECRET_PATH;
 
@@ -35,7 +35,7 @@ public class FilePaths {
 
         AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised_keys.json");
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
-        UUID_REMAPS_PATH = MOD_DIR.resolve("uuid_remaps.json");
+        ALIASES_PATH = MOD_DIR.resolve("aliases.json");
         HISTORY_PATH = MOD_DIR.resolve("history.json");
         SERVER_SECRET_PATH = MOD_DIR.resolve("server_secret%s".formatted(Constants.KEY_PAIR_EXTENSION));
     }
