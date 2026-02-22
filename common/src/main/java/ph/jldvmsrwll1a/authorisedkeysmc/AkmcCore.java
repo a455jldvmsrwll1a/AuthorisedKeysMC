@@ -12,6 +12,7 @@ public final class AkmcCore {
     public static FilePaths FILE_PATHS;
     public static AkKeyPair.Plain SERVER_KEYPAIR;
     public static UserKeys USER_KEYS;
+    public static UsernameAliases USER_ALIASES;
     public static ServerConfig CONFIG;
 
     private AkmcCore() {}
@@ -21,6 +22,7 @@ public final class AkmcCore {
         FILE_PATHS = new FilePaths(platform);
         CONFIG = new ServerConfig();
         USER_KEYS = new UserKeys();
+        USER_ALIASES = new UsernameAliases();
 
         reload();
         initialiseServerKeyPair();
@@ -28,6 +30,7 @@ public final class AkmcCore {
 
     public static synchronized void reload() {
         USER_KEYS.read();
+        USER_ALIASES.read();
         CONFIG = ServerConfig.fromDisk();
 
         Constants.LOG.info("AKMC: loaded server files!");
