@@ -225,7 +225,11 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             if (!authorisedKeysMC$clientHasEverResponded) {
                 // Did not understand the very first query we sent. Client most likely does not have the mod installed.
                 ci.cancel();
-                disconnect(Component.literal("Access denied!!! D:"));
+
+                String customMessage = AkmcCore.CONFIG.kickMessage;
+                String message = customMessage != null ? customMessage : "Access denied!!! D:";
+
+                disconnect(Component.literal(message));
                 Constants.LOG.info("{} does not have the mod installed.", requestedUsername);
             }
 

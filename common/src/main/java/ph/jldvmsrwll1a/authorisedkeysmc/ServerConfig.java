@@ -4,6 +4,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Properties;
+
+import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 
 public final class ServerConfig {
@@ -15,6 +17,7 @@ public final class ServerConfig {
     public volatile boolean registrationRequired = false;
     public volatile boolean allowRegistration = true;
     public volatile boolean skipOnlineAccounts = false;
+    public volatile @Nullable String kickMessage = null;
 
     public static ServerConfig fromDisk() {
         ServerConfig config = new ServerConfig();
@@ -37,6 +40,12 @@ public final class ServerConfig {
         parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> config.allowRegistration = bool);
         parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> config.skipOnlineAccounts = bool);
 
+        String kickMessage = props.getProperty("kick_message");
+        if (kickMessage != null && kickMessage.isBlank()) {
+            kickMessage = null;
+        }
+        config.kickMessage = kickMessage;
+
         return config;
     }
 
@@ -54,6 +63,9 @@ public final class ServerConfig {
         builder.append(allowRegistration ? "true\n" : "false\n");
         builder.append("skip_online_accounts = ");
         builder.append(skipOnlineAccounts ? "true\n" : "false\n");
+        builder.append("kick_message = ");
+        builder.append(kickMessage != null ? kickMessage : "");
+        builder.append('\n');
 
         synchronized (WRITE_LOCK) {
             try {
