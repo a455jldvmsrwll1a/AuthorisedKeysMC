@@ -17,6 +17,8 @@ public final class ServerConfig {
     public volatile boolean registrationRequired = false;
     public volatile boolean allowRegistration = true;
     public volatile boolean skipOnlineAccounts = false;
+    public volatile boolean preserveOnlineId = false;
+    public volatile boolean matchPlayerListByName = true;
     public volatile @Nullable String kickMessage = null;
 
     public static ServerConfig fromDisk() {
@@ -39,6 +41,8 @@ public final class ServerConfig {
         parseBooleanStrictly(props, "registration_required").ifPresent(bool -> config.registrationRequired = bool);
         parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> config.allowRegistration = bool);
         parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> config.skipOnlineAccounts = bool);
+        parseBooleanStrictly(props, "preserve_online_id").ifPresent(bool -> config.preserveOnlineId = bool);
+        parseBooleanStrictly(props, "match_player_list_by_name").ifPresent(bool -> config.matchPlayerListByName = bool);
 
         String kickMessage = props.getProperty("kick_message");
         if (kickMessage != null && kickMessage.isBlank()) {
@@ -63,6 +67,10 @@ public final class ServerConfig {
         builder.append(allowRegistration ? "true\n" : "false\n");
         builder.append("skip_online_accounts = ");
         builder.append(skipOnlineAccounts ? "true\n" : "false\n");
+        builder.append("preserve_online_id = ");
+        builder.append(preserveOnlineId ? "true\n" : "false\n");
+        builder.append("match_player_list_by_name = ");
+        builder.append(matchPlayerListByName ? "true\n" : "false\n");
         builder.append("kick_message = ");
         builder.append(kickMessage != null ? kickMessage : "");
         builder.append('\n');
