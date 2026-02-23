@@ -6,6 +6,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import java.net.SocketAddress;
 import java.security.PublicKey;
+import java.util.Optional;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import net.minecraft.core.UUIDUtil;
@@ -28,6 +29,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
+import ph.jldvmsrwll1a.authorisedkeysmc.UsernameAliases;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ServerLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
@@ -182,6 +184,17 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
     @ModifyVariable(method = "startClientVerification", at = @At(value = "HEAD"), argsOnly = true)
     private GameProfile modifyProfileId(GameProfile profile) {
+        Optional<UsernameAliases.Alias> alias = AkmcCore.USER_ALIASES.getAlias(profile.name());
+
+        if (alias.isPresent()) {
+            Constants.LOG.info(
+                    "AKMC: rewrote the UUID of {} to {}, per alias rules.",
+                    profile.name(),
+                    alias.get().id());
+
+            return new GameProfile(alias.get().id(), profile.name(), profile.properties());
+        }
+
         if (server.usesAuthentication()) {
             // Pass through profile as-is.
             return profile;
@@ -196,8 +209,6 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             Constants.LOG.info("AKMC: {}'s premium ID has been overridden to the offline ID: {}", username, newId);
             return new GameProfile(newId, username, profile.properties());
         }
-
-        // TODO: when UUID remapping is implemented, do the remapping here.
 
         return profile;
     }

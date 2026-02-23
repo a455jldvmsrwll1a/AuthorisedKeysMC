@@ -1,0 +1,19 @@
+package ph.jldvmsrwll1a.authorisedkeysmc.command;
+
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.commands.CommandSourceStack;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
+
+public class AliasedUsernameSuggestions implements SuggestionProvider<CommandSourceStack> {
+    @Override
+    public CompletableFuture<Suggestions> getSuggestions(
+            CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        AkmcCore.USER_ALIASES.getAliasedUsernames().forEach(builder::suggest);
+
+        return builder.buildFuture();
+    }
+}

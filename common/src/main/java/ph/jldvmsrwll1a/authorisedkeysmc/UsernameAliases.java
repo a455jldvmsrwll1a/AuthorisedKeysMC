@@ -4,7 +4,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import com.mojang.authlib.GameProfile;
 import com.mojang.util.InstantTypeAdapter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.time.Instant;
 import java.util.*;
-import net.minecraft.core.UUIDUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
@@ -22,20 +20,6 @@ public final class UsernameAliases {
     private static final Object WRITE_LOCK = new Object();
 
     private HashMap<String, Alias> aliases = new HashMap<>();
-
-    // TODO: we probably just want to directly use getAlias(). that way we control how we log stuff during the login
-
-    public synchronized GameProfile resolve(GameProfile original) {
-        return getAlias(original.name())
-                .map(alias -> new GameProfile(alias.id, original.name(), original.properties()))
-                .orElse(original);
-    }
-
-    public synchronized GameProfile resolveOffline(String username) {
-        return getAlias(username)
-                .map(alias -> new GameProfile(alias.id, username))
-                .orElse(UUIDUtil.createOfflineProfile(username));
-    }
 
     public synchronized Optional<Alias> getAlias(String username) {
         return Optional.ofNullable(aliases.get(username));
@@ -64,17 +48,17 @@ public final class UsernameAliases {
         return true;
     }
 
-    public synchronized boolean unlink(String username) {
+    public synchronized Optional<UUID> unlink(String username) {
         if (!aliases.containsKey(username)) {
-            return false;
+            return Optional.empty();
         }
 
-        aliases.remove(username);
+        UUID id = aliases.remove(username).id();
         write();
 
-        Constants.LOG.info("AKMC: Alias for user \"{}\" was removed.", username);
+        Constants.LOG.info("AKMC: Alias for user \"{}\" was removed. (was linked to ID {})", username, id);
 
-        return true;
+        return Optional.of(id);
     }
 
     public void read() {

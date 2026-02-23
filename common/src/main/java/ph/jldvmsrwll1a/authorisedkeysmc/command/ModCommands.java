@@ -10,6 +10,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -73,14 +75,19 @@ public final class ModCommands {
                         .then(literal("list").executes(ModCommands::listAliases))
                         .then(literal("info")
                                 .then(argument("original username", StringArgumentType.word())
+                                        .suggests(new AliasedUsernameSuggestions())
                                         .executes(ModCommands::aliasInfo)))
                         .then(literal("link")
                                 .then(argument("original username", StringArgumentType.word())
-                                        .then(literal("to")
-                                                .then(argument("replacement uuid", UuidArgument.uuid())
+                                        .suggests(new UsernameSuggestions())
+                                        .then(argument("replacement uuid", UuidArgument.uuid())
+                                                .suggests(new KnownUuidSuggestions())
+                                                .executes(ModCommands::link)
+                                                .then(argument("reason", StringArgumentType.greedyString())
                                                         .executes(ModCommands::link)))))
                         .then(literal("unlink")
                                 .then(argument("original username", StringArgumentType.word())
+                                        .suggests(new AliasedUsernameSuggestions())
                                         .executes(ModCommands::unlink)))));
     }
 
@@ -431,12 +438,35 @@ public final class ModCommands {
     }
 
     private static int listAliases(CommandContext<CommandSourceStack> context) {
-        fail(context, "Work in progress!  D:");
+        Set<String> names = AkmcCore.USER_ALIASES.getAliasedUsernames();
+        int len = names.size();
 
-        /*/tellraw @s {text: "1. Username: AAAAAAAAAAAAAAA\n\s\s\sReplacement ID: AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"}
-        * */
+        MutableComponent message = Component.empty();
+        if (len == 1) {
+            message.append("There is ");
+        } else {
+            message.append("There are ");
+        }
+        message.append(Component.literal(String.valueOf(len)).withStyle(ChatFormatting.AQUA));
+        if (len == 1) {
+            message.append(" alias rule:");
+        } else {
+            message.append(" alias rules:");
+        }
 
-        return ERROR;
+        int i = 1;
+        for (String name : names) {
+            message.append("\n  %s. ".formatted(i));
+            message.append(Component.literal(name)
+                    .withStyle(Style.EMPTY
+                            .withColor(ChatFormatting.YELLOW)
+                            .withUnderlined(true)
+                            .withClickEvent(new ClickEvent.SuggestCommand("/akmc alias info %s".formatted(name)))));
+        }
+
+        reply(context, message);
+
+        return SUCCESS;
     }
 
     private static int aliasInfo(CommandContext<CommandSourceStack> context) {
@@ -455,7 +485,7 @@ public final class ModCommands {
         MutableComponent message = Component.empty()
                 .append("The username ")
                 .append(Component.literal(username).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" maps to UUID:\n"))
+                .append(Component.literal(" maps to the UUID:\n"))
                 .append(Component.literal(idStr)
                         .withStyle(Style.EMPTY
                                 .withColor(ChatFormatting.GOLD)
@@ -463,19 +493,19 @@ public final class ModCommands {
                                 .withClickEvent(new ClickEvent.CopyToClipboard(idStr))));
 
         if (alias.issuer() != null) {
-            message.append("\n    └ Issued by: ");
+            message.append("\n └ Issued by: ");
             message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
         } else {
-            message.append("\n    └ Issued via server console.");
+            message.append("\n └ Issued via server console.");
         }
 
-        message.append("\n    └ Added at: ");
+        message.append("\n └ Added at: ");
         message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
                         alias.creationTime().atOffset(ZoneOffset.UTC)))
                 .withStyle(ChatFormatting.GRAY));
 
         if (alias.reason() != null) {
-            message.append("\n    └ Reason: ");
+            message.append("\n └ Reason: ");
             message.append(Component.literal(alias.reason()).withStyle(ChatFormatting.GREEN));
         }
 
@@ -485,17 +515,93 @@ public final class ModCommands {
     }
 
     private static int link(CommandContext<CommandSourceStack> context) {
-        fail(context, "Work in progress!  D:");
+        String username = StringArgumentType.getString(context, "original username");
+        UUID id = UuidArgument.getUuid(context, "replacement uuid");
 
-        //        UUID id = UuidArgument.getUuid(context, "replacement uuid");
+        String reason;
+        try {
+            reason = StringArgumentType.getString(context, "reason");
+        } catch (IllegalArgumentException ignored) {
+            reason = null;
+        }
 
-        return ERROR;
+        ServerPlayer issuer = context.getSource().getPlayer();
+
+        boolean wasAdded = AkmcCore.USER_ALIASES.link(
+                username,
+                id,
+                issuer != null ? issuer.getPlainTextName() : null,
+                (reason != null && !reason.isBlank()) ? reason : null);
+
+        if (!wasAdded) {
+            fail(context, "There is already an alias rule that targets the username %s!".formatted(username));
+
+            return ERROR;
+        }
+
+        reply(context, "Successfully linked!", ChatFormatting.GREEN);
+
+        // Warn affected player(s) currently in the server.
+        context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> {
+            if (player.getUUID().equals(id)) {
+                player.sendSystemMessage(
+                        Component.empty()
+                                .append(Component.literal("Warning: ")
+                                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                                .append("the username ")
+                                .append(Component.literal(username).withStyle(ChatFormatting.YELLOW))
+                                .append(
+                                        " has been linked to your current player ID.\n\nFor changes to take effect, reconnect with that username."));
+            } else if (player.getPlainTextName().equals(username)) {
+                player.sendSystemMessage(
+                        Component.empty()
+                                .append(Component.literal("Warning: ")
+                                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                                .append(
+                                        "Your username has been linked to another ID.\n\nBy reconnecting, you will lose access to your current player data, and will instead access the player data of the linked ID."));
+            }
+        });
+
+        return SUCCESS;
     }
 
     private static int unlink(CommandContext<CommandSourceStack> context) {
-        fail(context, "Work in progress!  D:");
+        String username = StringArgumentType.getString(context, "original username");
 
-        return ERROR;
+        Optional<UUID> oldId = AkmcCore.USER_ALIASES.unlink(username);
+
+        if (oldId.isEmpty()) {
+            fail(context, "No such alias rule.");
+
+            return ERROR;
+        }
+
+        UUID id = oldId.get();
+        String idStr = id.toString();
+        reply(
+                context,
+                Component.empty()
+                        .append(Component.literal("Successfully unlinked!\n").withStyle(ChatFormatting.GREEN))
+                        .append("The linked ID was ")
+                        .append(Component.literal(idStr)
+                                .withStyle(Style.EMPTY
+                                        .withColor(ChatFormatting.GOLD)
+                                        .withHoverEvent(
+                                                new HoverEvent.ShowText(Component.literal("Click to copy UUID.")))
+                                        .withClickEvent(new ClickEvent.CopyToClipboard(idStr)))));
+
+        // Warn affected player(s) currently in the server.
+        ServerPlayer affectedPlayer =
+                context.getSource().getServer().getPlayerList().getPlayer(id);
+        if (affectedPlayer != null && affectedPlayer.getPlainTextName().equals(username)) {
+            affectedPlayer.sendSystemMessage(
+                    Component.empty()
+                            .append(Component.literal("Warning: ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                            .append(
+                                    "Your username has been unlinked from your current ID.\n\nBy reconnecting, you will lose access to your current player data, and will instead access the player data of your original ID."));
+        }
+
+        return SUCCESS;
     }
 
     private static boolean admin(CommandSourceStack source) {
