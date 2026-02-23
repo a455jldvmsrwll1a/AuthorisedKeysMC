@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
@@ -43,7 +44,7 @@ public class KnownHosts {
 
     public void read() {
         try {
-            String json = Files.readString(AkmcCore.FILE_PATHS.KNOWN_HOSTS_PATH);
+            String json = Files.readString(AkmcClient.FILE_PATHS.KNOWN_HOSTS_PATH);
             Gson gson = new Gson();
             List<HostJsonEntry> entries = gson.fromJson(json, new TypeToken<ArrayList<HostJsonEntry>>() {}.getType());
 
@@ -72,7 +73,7 @@ public class KnownHosts {
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Files.writeString(AkmcCore.FILE_PATHS.KNOWN_HOSTS_PATH, gson.toJson(out));
+            Files.writeString(AkmcClient.FILE_PATHS.KNOWN_HOSTS_PATH, gson.toJson(out));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

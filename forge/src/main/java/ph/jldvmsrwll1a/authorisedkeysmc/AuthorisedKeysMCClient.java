@@ -3,6 +3,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.PortalScreen;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.ForgePlatformHelper;
 
 public final class AuthorisedKeysMCClient {
     public AuthorisedKeysMCClient(FMLJavaModLoadingContext context) {
@@ -10,6 +11,6 @@ public final class AuthorisedKeysMCClient {
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, parent) -> new PortalScreen(parent)));
 
-        AkmcClient.init();
+        AkmcClient.init(new ForgePlatformHelper());
     }
 }

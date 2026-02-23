@@ -16,7 +16,7 @@
     "icon": "${mod_id}.png",
     "environment": "*",
     "entrypoints": {
-        "main": [
+        "server": [
             "ph.jldvmsrwll1a.authorisedkeysmc.AuthorisedKeysMC"
         ],
         "client": [

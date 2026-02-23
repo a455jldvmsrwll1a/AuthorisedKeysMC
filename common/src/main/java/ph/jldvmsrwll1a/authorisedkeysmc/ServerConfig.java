@@ -21,7 +21,7 @@ public final class ServerConfig {
         Properties props = new Properties();
 
         synchronized (WRITE_LOCK) {
-            try (FileReader file = new FileReader(AkmcCore.FILE_PATHS.SERVER_CONFIG_PATH.toFile())) {
+            try (FileReader file = new FileReader(AkmcCore.FILE_PATHS.CONFIG_PATH.toFile())) {
                 props.load(file);
             } catch (FileNotFoundException e) {
                 return config;
@@ -58,7 +58,7 @@ public final class ServerConfig {
         synchronized (WRITE_LOCK) {
             try {
                 Files.createDirectories(AkmcCore.FILE_PATHS.CONFIG_DIR);
-                WriteUtil.writeString(AkmcCore.FILE_PATHS.SERVER_CONFIG_PATH, builder);
+                WriteUtil.writeString(AkmcCore.FILE_PATHS.CONFIG_PATH, builder);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

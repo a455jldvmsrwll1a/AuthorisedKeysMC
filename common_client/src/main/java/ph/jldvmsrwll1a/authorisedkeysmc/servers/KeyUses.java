@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 
@@ -56,7 +57,7 @@ public final class KeyUses {
 
     public void read() {
         try {
-            String json = Files.readString(AkmcCore.FILE_PATHS.KEY_USES_PATH);
+            String json = Files.readString(AkmcClient.FILE_PATHS.KEY_USES_PATH);
             Gson gson = new Gson();
             List<ServerKeyListJsonEntry> entries =
                     gson.fromJson(json, new TypeToken<ArrayList<ServerKeyListJsonEntry>>() {}.getType());
@@ -84,7 +85,7 @@ public final class KeyUses {
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Files.writeString(AkmcCore.FILE_PATHS.KEY_USES_PATH, gson.toJson(out));
+            Files.writeString(AkmcClient.FILE_PATHS.KEY_USES_PATH, gson.toJson(out));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

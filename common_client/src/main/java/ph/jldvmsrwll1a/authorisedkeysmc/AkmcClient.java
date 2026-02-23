@@ -6,11 +6,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.gui.FirstRunScreen;
 import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
 import ph.jldvmsrwll1a.authorisedkeysmc.key.PrivateKeyCache;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ClientLoginHandler;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KeyUses;
 import ph.jldvmsrwll1a.authorisedkeysmc.servers.KnownHosts;
 
@@ -22,6 +24,8 @@ public class AkmcClient {
         return thread;
     });
 
+    public static IPlatformHelper PLATFORM;
+    public static ClientFilePaths FILE_PATHS;
     public static final PrivateKeyCache CACHED_KEYS = new PrivateKeyCache();
     public static ClientKeyPairs KEY_PAIRS;
     public static KnownHosts KNOWN_HOSTS;
@@ -33,7 +37,9 @@ public class AkmcClient {
 
     private AkmcClient() {}
 
-    public static void init() {
+    public static void init(@NotNull IPlatformHelper platform) {
+        PLATFORM = platform;
+        FILE_PATHS = new ClientFilePaths(platform);
         KEY_PAIRS = new ClientKeyPairs();
         KNOWN_HOSTS = new KnownHosts();
         KEY_USES = new KeyUses();

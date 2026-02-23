@@ -19,7 +19,6 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkKeyPair;
 import ph.jldvmsrwll1a.authorisedkeysmc.key.ClientKeyPairs;
@@ -233,7 +232,7 @@ public class KeyCreationScreen extends BaseScreen {
 
     private Component makeLocationLabel() {
         char sep = File.separatorChar;
-        Path keysDir = AkmcCore.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
+        Path keysDir = AkmcClient.FILE_PATHS.KEY_PAIRS_DIR.getFileName();
         String format = "%s%s%s%s%s%s%s"
                 .formatted(sep, Constants.MOD_DIR_NAME, sep, keysDir, sep, currentName, Constants.KEY_PAIR_EXTENSION);
         return Component.translatable("authorisedkeysmc.screen.new-key.file-location", format)

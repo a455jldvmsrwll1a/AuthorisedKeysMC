@@ -11,12 +11,15 @@ import ph.jldvmsrwll1a.authorisedkeysmc.platform.ForgePlatformHelper;
 @Mod(Constants.MOD_ID)
 public class AuthorisedKeysMC {
     public AuthorisedKeysMC(FMLJavaModLoadingContext context) {
-        TickEvent.ClientTickEvent.Post.BUS.addListener(this::onTick);
-        RegisterCommandsEvent.BUS.addListener(this::onCommandRegistration);
+        if (FMLEnvironment.dist.isDedicatedServer()) {
+            RegisterCommandsEvent.BUS.addListener(this::onCommandRegistration);
 
-        AkmcCore.init(new ForgePlatformHelper());
+            AkmcCore.init(new ForgePlatformHelper());
+        }
 
         if (FMLEnvironment.dist.isClient()) {
+            TickEvent.ClientTickEvent.Post.BUS.addListener(this::onTick);
+
             new AuthorisedKeysMCClient(context);
         }
     }
