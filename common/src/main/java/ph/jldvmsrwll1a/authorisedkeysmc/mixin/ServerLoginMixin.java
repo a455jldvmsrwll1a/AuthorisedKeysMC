@@ -200,7 +200,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return profile;
         }
 
-        if (authorisedKeysMC$shouldUseVanillaAuthentication) {
+        if (authorisedKeysMC$shouldUseVanillaAuthentication && !AkmcCore.CONFIG.preserveOnlineId) {
             // Client completed vanilla authentication, so we need to give it
             // the offline UUID to be consistent with the username.
 
