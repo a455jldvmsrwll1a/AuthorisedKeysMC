@@ -7,7 +7,10 @@
   "mixins": [
     "AuthHandlerThreadMixin",
     "CustomQueryAnswerPacketMixin",
-    "ServerLoginMixin"
+    "ServerLoginMixin",
+    "ServerOpListMixin",
+    "UserBanListMixin",
+    "UserWhiteListMixin"
   ],
   "client": [],
   "server": [],
