@@ -21,6 +21,8 @@ import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.server.players.PlayerList;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
@@ -540,6 +542,21 @@ public final class ModCommands {
         }
 
         reply(context, "Successfully linked!", ChatFormatting.GREEN);
+
+        PlayerList players = context.getSource().getServer().getPlayerList();
+        NameAndId linkedProfile = new NameAndId(id, username);
+
+        if (players.isOp(linkedProfile)) {
+            reply(context, "Caution: the linked profile has operator privileges!", ChatFormatting.GOLD);
+        }
+
+        if (players.isUsingWhitelist() && !players.isWhiteListed(linkedProfile)) {
+            reply(context, "Note: the whitelist currently prevents the user from joining.");
+        }
+
+        if (players.getBans().isBanned(linkedProfile)) {
+            reply(context, "Note: the linked profile cannot join because they are banned.");
+        }
 
         // Warn affected player(s) currently in the server.
         context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> {
