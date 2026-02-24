@@ -4,7 +4,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Properties;
-
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 

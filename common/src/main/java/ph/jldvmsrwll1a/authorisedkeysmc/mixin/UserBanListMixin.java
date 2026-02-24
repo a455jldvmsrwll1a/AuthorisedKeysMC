@@ -12,7 +12,10 @@ import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 
 @Mixin(UserBanList.class)
 public class UserBanListMixin {
-    @Inject(method = "getKeyForUser(Lnet/minecraft/server/players/NameAndId;)Ljava/lang/String;", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method = "getKeyForUser(Lnet/minecraft/server/players/NameAndId;)Ljava/lang/String;",
+            at = @At("HEAD"),
+            cancellable = true)
     private void useNameAsKey(NameAndId profile, CallbackInfoReturnable<String> cir) {
         if (AkmcCore.CONFIG.matchPlayerListByName) {
             cir.setReturnValue(profile.name());
