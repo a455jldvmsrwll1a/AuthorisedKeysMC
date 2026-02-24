@@ -511,6 +511,8 @@ public final class ModCommands {
                             .withColor(ChatFormatting.YELLOW)
                             .withUnderlined(true)
                             .withClickEvent(new ClickEvent.SuggestCommand("/akmc alias info %s".formatted(name)))));
+
+            i++;
         }
 
         reply(context, message);
