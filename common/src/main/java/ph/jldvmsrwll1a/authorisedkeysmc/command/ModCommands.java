@@ -48,6 +48,7 @@ public final class ModCommands {
                 .then(literal("reload").requires(ModCommands::admin).executes(ModCommands::reload))
                 .then(literal("enable").requires(ModCommands::admin).executes(ModCommands::enable))
                 .then(literal("disable").requires(ModCommands::admin).executes(ModCommands::disable))
+                .then(literal("list").requires(ModCommands::admin).executes(ModCommands::listUsers))
                 .then(literal("info")
                         .executes(ModCommands::selfInfo)
                         .then(argument("username", StringArgumentType.word())
@@ -161,6 +162,52 @@ public final class ModCommands {
                                 .append(Component.literal("ON STANDBY")
                                         .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)),
                         true);
+
+        return SUCCESS;
+    }
+
+    private static int listUsers(CommandContext<CommandSourceStack> context) {
+        Set<String> names = AkmcCore.USER_KEYS.getUsers();
+        int len = names.size();
+
+        MutableComponent message = Component.empty();
+        if (len == 1) {
+            message.append("There is ");
+        } else {
+            message.append("There are ");
+        }
+        message.append(Component.literal(String.valueOf(len)).withStyle(ChatFormatting.AQUA));
+        if (len == 1) {
+            message.append(" user on record:");
+        } else {
+            message.append(" users on record:");
+        }
+
+        int i = 0;
+        for (String name : names) {
+            i++;
+
+            List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(name);
+            if (keys == null || keys.isEmpty()) {
+                continue;
+            }
+
+            message.append("\n  %s. ".formatted(i));
+            message.append(Component.literal(name)
+                    .withStyle(Style.EMPTY
+                            .withColor(ChatFormatting.YELLOW)
+                            .withUnderlined(true)
+                            .withClickEvent(new ClickEvent.SuggestCommand("/akmc user %s".formatted(name)))));
+            message.append(" (");
+            message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
+            if (keys.size() == 1) {
+                message.append(" key)");
+            } else {
+                message.append(" keys)");
+            }
+        }
+
+        reply(context, message);
 
         return SUCCESS;
     }
