@@ -125,6 +125,10 @@ public class UserKeys {
         }
 
         entries.forEach(entry -> {
+            if (entry.keys().isEmpty()) {
+                return;
+            }
+
             List<UserKey> keys = entry.keys.stream()
                     .map(jsonEntry -> {
                         UserKey userKey = new UserKey();
@@ -151,6 +155,10 @@ public class UserKeys {
         synchronized (this) {
             for (var entry : userKeysMap.entrySet()) {
                 List<UserKey> keys = entry.getValue();
+
+                if (keys.isEmpty()) {
+                    continue;
+                }
 
                 out.add(new UserJsonEntry(
                         entry.getKey(),
