@@ -230,7 +230,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
                 String message = customMessage != null ? customMessage : "Access denied!!! D:";
 
                 disconnect(Component.literal(message));
-                Constants.LOG.info("{} does not have the mod installed.", requestedUsername);
+                Constants.LOG.info("{} does not have AKMC installed.", requestedUsername);
             }
 
             return;
@@ -269,7 +269,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
                     authorisedKeysMC$sessionHash, "Session hash must already by known before starting authentication.");
 
             // Start the custom authentication.
-            Constants.LOG.info("begin custom auth");
+            Constants.LOG.debug("AKMC: starting login handler for \"{}\"", authenticatedProfile.name());
             authorisedKeysMC$loginHandler = new ServerLoginHandler(
                     (ServerLoginPacketListenerImpl) (Object) this,
                     connection,

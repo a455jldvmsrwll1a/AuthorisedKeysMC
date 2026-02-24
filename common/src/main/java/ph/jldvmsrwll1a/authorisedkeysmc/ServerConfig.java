@@ -80,7 +80,7 @@ public final class ServerConfig {
             }
         }
 
-        Constants.LOG.info("AKMC: wrote server config.");
+        Constants.LOG.debug("AKMC: wrote server config.");
     }
 
     private void emitBoolean(StringBuilder builder, String key, boolean value) {

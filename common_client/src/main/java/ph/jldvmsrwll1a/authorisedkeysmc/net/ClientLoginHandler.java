@@ -209,8 +209,6 @@ public final class ClientLoginHandler {
     private void handleRegistrationRequest(S2CRegistrationRequestPayload payload) {
         Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected registration request.");
 
-        Constants.LOG.info("registration required = {}", payload.registrationRequired());
-
         transition(Phase.AWAIT_REGISTRATION_DECISION);
         showScreen(LoginRegistrationScreen.create(
                 originalScreen, usingVanillaAuthentication, this::onRegistrationAction, this::cancelLogin));
@@ -330,7 +328,7 @@ public final class ClientLoginHandler {
                 phase == Phase.AWAIT_REGISTRATION_DECISION, "Should not send registration key at this time.");
         Validate.notNull(keypair, "sendRegistrationKey(): Missing keypair.");
 
-        Constants.LOG.info("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
+        Constants.LOG.debug("Proceeding with registration! Sending pubkey: {}", keypair.getTextualPublic());
         respond(new C2SPublicKeyPayload(keypair.getPublic()));
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.registering"));
 
@@ -380,7 +378,7 @@ public final class ClientLoginHandler {
     private void refuseRegistration() {
         Validate.validState(phase == Phase.AWAIT_REGISTRATION_DECISION, "Refusing non-existent registration request.");
 
-        Constants.LOG.info("AKMC: Refusing to register!");
+        Constants.LOG.debug("AKMC: Refusing to register!");
 
         respond(new C2SRefuseRegistrationPayload());
         updateStatus.accept(Component.translatable("authorisedkeysmc.status.refusing-to-register"));
@@ -389,7 +387,7 @@ public final class ClientLoginHandler {
     }
 
     private void cancelLogin() {
-        Constants.LOG.info("AKMC: Log-in canceled by user.");
+        Constants.LOG.debug("AKMC: Log-in canceled by user.");
         connection.disconnect(Component.translatable("connect.aborted"));
 
         showScreen(new JoinMultiplayerScreen(new TitleScreen()));
@@ -430,7 +428,7 @@ public final class ClientLoginHandler {
     }
 
     private void transition(Phase next) {
-        Constants.LOG.info("{} -> {}", phase, next);
+        Constants.LOG.debug("AKMC log-in: {} -> {}", phase, next);
         Validate.validState(nettyLoop.inEventLoop(), "Changing phase in the wrong thread!");
 
         phase = next;

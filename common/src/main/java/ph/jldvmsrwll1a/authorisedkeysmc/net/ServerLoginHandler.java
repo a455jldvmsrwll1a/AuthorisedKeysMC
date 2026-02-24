@@ -98,7 +98,7 @@ public final class ServerLoginHandler {
     }
 
     private void handlePing(C2SPingPayload payload) {
-        Constants.LOG.info("AKMC: {}: got ping!", profile.name());
+        Constants.LOG.debug("AKMC: {}: got ping!", profile.name());
 
         send(new S2CPongPayload());
     }
@@ -185,7 +185,7 @@ public final class ServerLoginHandler {
         Validate.validState(phase == Phase.WAIT_FOR_CLIENT_REGISTRATION_KEY, "Received bogus registration refusal.");
 
         if (AkmcCore.CONFIG.registrationRequired) {
-            Constants.LOG.info("{} refuses to register!", profile.name());
+            Constants.LOG.debug("{} refuses to register!", profile.name());
             listener.disconnect(Component.translatable("authorisedkeysmc.error.registration-mandatory"));
 
             return;
@@ -203,7 +203,7 @@ public final class ServerLoginHandler {
     }
 
     private void transition(Phase phase) {
-        Constants.LOG.info("{}: {} --> {}", profile.name(), this.phase, phase);
+        Constants.LOG.debug("AKMC log-in for {}: {} --> {}", profile.name(), this.phase, phase);
         this.phase = phase;
     }
 

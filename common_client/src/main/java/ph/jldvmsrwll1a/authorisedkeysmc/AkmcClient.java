@@ -62,7 +62,7 @@ public class AkmcClient {
 
             currentLogin = handler;
 
-            Constants.LOG.info("AKMC: Setting login handler.");
+            Constants.LOG.debug("AKMC: Setting login handler.");
         });
     }
 
@@ -76,7 +76,7 @@ public class AkmcClient {
 
             currentLogin = null;
 
-            Constants.LOG.info("AKMC: Discarding login handler.");
+            Constants.LOG.debug("AKMC: Discarding login handler.");
         });
     }
 
