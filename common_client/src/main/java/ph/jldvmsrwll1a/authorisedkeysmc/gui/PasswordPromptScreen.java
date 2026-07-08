@@ -44,8 +44,8 @@ public class PasswordPromptScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.error").withStyle(ChatFormatting.RED);
     private static final Component WAITING_LABEL =
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
-    private static final Identifier SHOW_PASSWORD_ICON = Constants.modId("widget/show_password");
-    private static final Identifier HIDE_PASSWORD_ICON = Constants.modId("widget/hide_password");
+    private static final Identifier FIELD_HIDDEN_ICON = Constants.modId("widget/field_hidden");
+    private static final Identifier FIELD_VISIBLE_ICON = Constants.modId("widget/field_visible");
     private static final Tooltip SHOW_PASSWORD_TOOLTIP =
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.show-password"));
     private static final Tooltip HIDE_PASSWORD_TOOLTIP =
@@ -93,7 +93,7 @@ public class PasswordPromptScreen extends BaseScreen {
         passwordEdit.addFormatter(new PasswordPromptScreen.PasswordTextFormatter(showPassword));
         passwordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
 
-        showPasswordButton = IconButton.builder(SHOW_PASSWORD_ICON, this::onShowPasswordButtonClicked)
+        showPasswordButton = IconButton.builder(FIELD_HIDDEN_ICON, this::onShowPasswordButtonClicked)
                 .tooltip(SHOW_PASSWORD_TOOLTIP)
                 .build();
 
@@ -183,10 +183,10 @@ public class PasswordPromptScreen extends BaseScreen {
         boolean show = !showPassword.getAcquire();
 
         if (show) {
-            showPasswordButton.setSprite(HIDE_PASSWORD_ICON);
+            showPasswordButton.setSprite(FIELD_VISIBLE_ICON);
             showPasswordButton.setTooltip(HIDE_PASSWORD_TOOLTIP);
         } else {
-            showPasswordButton.setSprite(SHOW_PASSWORD_ICON);
+            showPasswordButton.setSprite(FIELD_HIDDEN_ICON);
             showPasswordButton.setTooltip(SHOW_PASSWORD_TOOLTIP);
         }
 

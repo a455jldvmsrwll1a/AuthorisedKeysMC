@@ -49,8 +49,8 @@ public final class PasswordUpdateScreen extends BaseScreen {
             Component.translatable("authorisedkeysmc.screen.decrypt-key.waiting");
     private static final Component WAIT_ENCRYPT_LABEL =
             Component.translatable("authorisedkeysmc.screen.add-password.waiting");
-    private static final Identifier SHOW_PASSWORD_ICON = Constants.modId("widget/show_password");
-    private static final Identifier HIDE_PASSWORD_ICON = Constants.modId("widget/hide_password");
+    private static final Identifier FIELD_HIDDEN_ICON = Constants.modId("widget/field_hidden");
+    private static final Identifier FIELD_VISIBLE_ICON = Constants.modId("widget/field_visible");
     private static final Tooltip SHOW_PASSWORD_TOOLTIP =
             Tooltip.create(Component.translatable("authorisedkeysmc.tooltip.show-password"));
     private static final Tooltip HIDE_PASSWORD_TOOLTIP =
@@ -92,7 +92,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
         currentPasswordEdit.addFormatter(new PasswordPromptScreen.PasswordTextFormatter(showCurrentPassword));
         currentPasswordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
 
-        showCurrentPasswordButton = IconButton.builder(SHOW_PASSWORD_ICON, this::onShowCurrentPasswordButtonClicked)
+        showCurrentPasswordButton = IconButton.builder(FIELD_HIDDEN_ICON, this::onShowCurrentPasswordButtonClicked)
                 .tooltip(SHOW_PASSWORD_TOOLTIP)
                 .build();
 
@@ -106,7 +106,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
         newPasswordEdit.setMaxLength(MAX_PASSWORD_LENGTH + 1);
         newPasswordEdit.setHint(NEW_PASSWORD_HINT_LABEL);
 
-        showNewPasswordButton = IconButton.builder(SHOW_PASSWORD_ICON, this::onShowNewPasswordButtonClicked)
+        showNewPasswordButton = IconButton.builder(FIELD_HIDDEN_ICON, this::onShowNewPasswordButtonClicked)
                 .tooltip(SHOW_PASSWORD_TOOLTIP)
                 .build();
 
@@ -200,10 +200,10 @@ public final class PasswordUpdateScreen extends BaseScreen {
         boolean show = !showCurrentPassword.getAcquire();
 
         if (show) {
-            showCurrentPasswordButton.setSprite(HIDE_PASSWORD_ICON);
+            showCurrentPasswordButton.setSprite(FIELD_VISIBLE_ICON);
             showCurrentPasswordButton.setTooltip(HIDE_PASSWORD_TOOLTIP);
         } else {
-            showCurrentPasswordButton.setSprite(SHOW_PASSWORD_ICON);
+            showCurrentPasswordButton.setSprite(FIELD_HIDDEN_ICON);
             showCurrentPasswordButton.setTooltip(SHOW_PASSWORD_TOOLTIP);
         }
 
@@ -215,10 +215,10 @@ public final class PasswordUpdateScreen extends BaseScreen {
         boolean show = !showNewPassword.getAcquire();
 
         if (show) {
-            showNewPasswordButton.setSprite(HIDE_PASSWORD_ICON);
+            showNewPasswordButton.setSprite(FIELD_VISIBLE_ICON);
             showNewPasswordButton.setTooltip(HIDE_PASSWORD_TOOLTIP);
         } else {
-            showNewPasswordButton.setSprite(SHOW_PASSWORD_ICON);
+            showNewPasswordButton.setSprite(FIELD_HIDDEN_ICON);
             showNewPasswordButton.setTooltip(SHOW_PASSWORD_TOOLTIP);
         }
 
