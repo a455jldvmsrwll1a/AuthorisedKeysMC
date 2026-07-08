@@ -31,6 +31,11 @@ public class Users {
     private HashMap<String, User> users = new HashMap<>();
     private HashSet<String> aliasedUsernames = new HashSet<>();
 
+    public synchronized boolean userHasData(String username) {
+        User user = users.get(username);
+        return user != null && !user.isEmpty();
+    }
+
     public synchronized boolean userHasAnyKeys(String username) {
         User user = users.get(username);
         if (user == null) {

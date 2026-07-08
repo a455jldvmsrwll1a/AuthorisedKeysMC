@@ -431,6 +431,11 @@ public final class ModCommands {
     private static int playerInfo(CommandContext<CommandSourceStack> context, String username) {
         List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(username);
 
+        if (!AkmcCore.USERS.userHasData(username)) {
+            fail(context, "No such user on record.");
+            return ERROR;
+        }
+
         MutableComponent message = Component.empty();
         message.append("Info for username ");
         message.append(Component.literal(username).withStyle(ChatFormatting.YELLOW));
