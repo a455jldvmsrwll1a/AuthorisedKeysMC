@@ -1,5 +1,8 @@
 {
   "authorisedkeysmc.button.add": "Add",
+  "authorisedkeysmc.button.add-key-generate": "Generate Key Pair",
+  "authorisedkeysmc.button.add-key-import-code": "Import from Code",
+  "authorisedkeysmc.button.browse-keys-folder": "Browse Folder",
   "authorisedkeysmc.button.configuration": "Settings",
   "authorisedkeysmc.button.confirm": "Confirm",
   "authorisedkeysmc.button.copy-key": "Share",
@@ -31,6 +34,7 @@
   "authorisedkeysmc.error.must-preregister": "You must have pre-register your public keys in advance!\n\nYou will most likely need to contact a server administrator for this.",
   "authorisedkeysmc.error.registration-mandatory": "Registration is mandatory!",
   "authorisedkeysmc.error.server-auth-fail": "The server could not prove its identity! (incorrect signature)",
+  "authorisedkeysmc.screen.add-key.title": "Add Key Pair",
   "authorisedkeysmc.screen.add-password.prompt": "Set a password to encrypt the \"%1$s\" key pair on disk. The password is neither stored nor transmitted.\n\nDo not forget your password. Recovery is impossible without back-ups.",
   "authorisedkeysmc.screen.add-password.title": "Key Pair Encryption",
   "authorisedkeysmc.screen.add-password.waiting": "Encrypting the private key. Please wait for a short while.",
