@@ -120,23 +120,8 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
             return;
         }
 
-        // Decide if client should authenticate normally, or go through the custom authentication.
         if (server.usesAuthentication()) {
             authorisedKeysMC$shouldUseVanillaAuthentication = true;
-        } else if (AkmcCore.CONFIG.skipOnlineAccounts) {
-            UUID uuid = packet.profileId();
-
-            if (uuid.version() == 4) {
-                UUID offlineId = UUIDUtil.createOfflinePlayerUUID(packet.name());
-
-                if (!uuid.equals(offlineId)) {
-                    // Client is *probably* not offline.
-                    authorisedKeysMC$shouldUseVanillaAuthentication = true;
-                    authorisedKeysMC$skipped = true;
-
-                    Constants.LOG.info("AKMC: using Mojang authentication for premium user {}", requestedUsername);
-                }
-            }
         }
 
         // Always initiate encryption even if the server is in offline mode.

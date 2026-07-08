@@ -15,7 +15,6 @@ public final class ServerConfig {
     public volatile int maxKeyCount = 100;
     public volatile boolean registrationRequired = false;
     public volatile boolean allowRegistration = true;
-    public volatile boolean skipOnlineAccounts = false;
     public volatile boolean preserveOnlineId = false;
     public volatile boolean matchPlayerListByName = true;
     public volatile @Nullable String kickMessage = null;
@@ -39,7 +38,6 @@ public final class ServerConfig {
         parseUnsignedInteger(props, "max_key_count").ifPresent(value -> config.maxKeyCount = value);
         parseBooleanStrictly(props, "registration_required").ifPresent(bool -> config.registrationRequired = bool);
         parseBooleanStrictly(props, "allow_registration").ifPresent(bool -> config.allowRegistration = bool);
-        parseBooleanStrictly(props, "skip_online_accounts").ifPresent(bool -> config.skipOnlineAccounts = bool);
         parseBooleanStrictly(props, "preserve_online_id").ifPresent(bool -> config.preserveOnlineId = bool);
         parseBooleanStrictly(props, "match_player_list_by_name").ifPresent(bool -> config.matchPlayerListByName = bool);
 
@@ -60,7 +58,6 @@ public final class ServerConfig {
         emitBoolean(builder, "enforcing", enforcing);
         emitBoolean(builder, "registration_required", registrationRequired);
         emitBoolean(builder, "allow_registration", allowRegistration);
-        emitBoolean(builder, "skip_online_accounts", skipOnlineAccounts);
         emitBoolean(builder, "preserve_online_id", preserveOnlineId);
         emitBoolean(builder, "match_player_list_by_name", matchPlayerListByName);
 
