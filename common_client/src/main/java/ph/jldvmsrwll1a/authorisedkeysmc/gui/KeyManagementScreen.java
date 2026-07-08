@@ -305,7 +305,7 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onNewKeyButtonPressed(Button ignored) {
-        minecraft.setScreen(new KeyCreationScreen(
+        minecraft.setScreen(new KeyAddScreen(
                 KeyManagementScreen.this, keyPair -> keyPair.ifPresent(kp -> onNewKeyCreated((AkKeyPair) kp))));
     }
 
