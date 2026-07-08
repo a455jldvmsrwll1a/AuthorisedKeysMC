@@ -192,12 +192,17 @@ public final class ModCommands {
                             .withColor(ChatFormatting.YELLOW)
                             .withUnderlined(true)
                             .withClickEvent(new ClickEvent.SuggestCommand("/akmc user %s".formatted(name)))));
-            message.append(" (");
+            message.append(": ");
+
+            if (AkmcCore.USERS.getUserAlias(name).isPresent()) {
+                message.append(Component.literal("[ID aliased] ").withStyle(ChatFormatting.LIGHT_PURPLE));
+            }
+
             message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
             if (keys.size() == 1) {
-                message.append(" key)");
+                message.append(" key.");
             } else {
-                message.append(" keys)");
+                message.append(" keys.");
             }
         }
 
