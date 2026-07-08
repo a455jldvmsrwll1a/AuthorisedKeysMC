@@ -153,9 +153,9 @@ public final class ClientLoginHandler {
                 .orElse(null);
 
         if (knownKey == null) {
-            showScreen(UnknownServerKeyWarningScreen.create(this, payload.key, this::onHostKeyAction));
+            showScreen(new UnknownServerKeyWarningScreen(this, payload.key, this::onHostKeyAction));
         } else if (!knownKey.equals(payload.key)) {
-            showScreen(WrongServerKeyWarningScreen.create(this, knownKey, payload.key, this::onHostKeyAction));
+            showScreen(new WrongServerKeyWarningScreen(this, knownKey, payload.key, this::onHostKeyAction));
         } else {
             acceptKeyAndSendChallenge();
         }
