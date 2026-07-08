@@ -413,12 +413,12 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private int getWidthLeft() {
-        float cappedWidth = Math.max(Math.min((float) width * 0.8f, MAX_TOTAL_WIDTH), MIN_TOTAL_WIDTH);
+        float cappedWidth = Math.clamp((float) width * 0.8f, MIN_TOTAL_WIDTH, MAX_TOTAL_WIDTH);
         return Math.round((cappedWidth * WIDTH_LEFT));
     }
 
     private int getWidthRight() {
-        float cappedWidth = Math.max(Math.min((float) width * 0.8f, MAX_TOTAL_WIDTH), MIN_TOTAL_WIDTH);
+        float cappedWidth = Math.clamp((float) width * 0.8f, MIN_TOTAL_WIDTH, MAX_TOTAL_WIDTH);
         return Math.round((cappedWidth * WIDTH_RIGHT));
     }
 
