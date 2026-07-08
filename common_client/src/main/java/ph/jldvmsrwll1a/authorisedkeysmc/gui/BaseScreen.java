@@ -5,7 +5,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcClient;
-import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.Version;
 
 public abstract class BaseScreen extends Screen {

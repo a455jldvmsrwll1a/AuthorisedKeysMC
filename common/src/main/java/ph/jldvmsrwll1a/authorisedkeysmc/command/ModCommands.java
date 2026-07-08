@@ -508,8 +508,6 @@ public final class ModCommands {
             message.append(Component.literal("No keys bound.").withStyle(ChatFormatting.RED));
         }
 
-
-
         reply(context, message);
 
         return SUCCESS;
