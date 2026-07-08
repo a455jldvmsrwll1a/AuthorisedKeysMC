@@ -6,7 +6,7 @@
   "authorisedkeysmc.button.configuration": "Settings",
   "authorisedkeysmc.button.confirm": "Confirm",
   "authorisedkeysmc.button.copy-key": "Share",
-  "authorisedkeysmc.button.create-key": "New key pair",
+  "authorisedkeysmc.button.add-key": "Add key pair",
   "authorisedkeysmc.button.decrypt-key": "Decrypt",
   "authorisedkeysmc.button.delete-key": "Delete",
   "authorisedkeysmc.button.edit": "Edit",

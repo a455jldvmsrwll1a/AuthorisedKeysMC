@@ -135,7 +135,7 @@ public final class KeyManagementScreen extends BaseScreen {
                         .size(getWidthLeft(), 20)
                         .build());
         listButtons.add(Button.builder(
-                        Component.translatable("authorisedkeysmc.button.create-key"), this::onNewKeyButtonPressed)
+                        Component.translatable("authorisedkeysmc.button.add-key"), this::onAddKeyButtonPressed)
                 .size(getWidthLeft(), 20)
                 .build());
 
@@ -304,7 +304,7 @@ public final class KeyManagementScreen extends BaseScreen {
         }
     }
 
-    private void onNewKeyButtonPressed(Button ignored) {
+    private void onAddKeyButtonPressed(Button ignored) {
         minecraft.setScreen(new KeyAddScreen(
                 KeyManagementScreen.this, keyPair -> keyPair.ifPresent(kp -> onNewKeyCreated((AkKeyPair) kp))));
     }
