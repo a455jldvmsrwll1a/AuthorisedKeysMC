@@ -456,19 +456,19 @@ public final class ModCommands {
 
 
             if (alias.issuer() != null) {
-                message.append("\n   └ Issued by: ");
+                message.append("\n   Issued by: ");
                 message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
             } else {
-                message.append("\n   └ Issued via server console.");
+                message.append("\n   Issued via server console.");
             }
 
-            message.append("\n   └ Added at: ");
+            message.append("\n   Added at: ");
             message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
                             alias.creationTime().atOffset(ZoneOffset.UTC)))
                     .withStyle(ChatFormatting.GRAY));
 
             if (alias.reason() != null) {
-                message.append("\n   └ Reason: ");
+                message.append("\n   Reason: ");
                 message.append(Component.literal(alias.reason()).withStyle(ChatFormatting.GREEN));
             }
         });
@@ -493,13 +493,13 @@ public final class ModCommands {
                             .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
 
             if (key.issuingPlayer() != null) {
-                message.append("\n      └ Issued by: ");
+                message.append("\n      Issued by: ");
                 message.append(Component.literal(key.issuingPlayer()).withStyle(ChatFormatting.YELLOW));
             } else {
-                message.append("\n      └ Issued via server console.");
+                message.append("\n      Issued via server console.");
             }
 
-            message.append("\n      └ Added at: ");
+            message.append("\n      Added at: ");
             message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
                             key.registrationTime().atOffset(ZoneOffset.UTC)))
                     .withStyle(ChatFormatting.GRAY));
