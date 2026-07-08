@@ -77,7 +77,7 @@ public final class KeyUses {
 
     public void write() {
         try {
-            Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
+            Files.createDirectories(AkmcClient.FILE_PATHS.MOD_DIR);
 
             ArrayList<ServerKeyListJsonEntry> out = new ArrayList<>();
             for (var entry : usedKeyTable.entrySet()) {
