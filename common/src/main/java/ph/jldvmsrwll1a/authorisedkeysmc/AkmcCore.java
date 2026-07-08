@@ -11,8 +11,7 @@ public final class AkmcCore {
     public static IPlatformHelper PLATFORM;
     public static FilePaths FILE_PATHS;
     public static AkKeyPair.Plain SERVER_KEYPAIR;
-    public static UserKeys USER_KEYS;
-    public static UsernameAliases USER_ALIASES;
+    public static Users USERS;
     public static ServerConfig CONFIG;
 
     private AkmcCore() {}
@@ -21,16 +20,14 @@ public final class AkmcCore {
         PLATFORM = platform;
         FILE_PATHS = new FilePaths(platform);
         CONFIG = new ServerConfig();
-        USER_KEYS = new UserKeys();
-        USER_ALIASES = new UsernameAliases();
+        USERS = new Users();
 
         reload();
         initialiseServerKeyPair();
     }
 
     public static synchronized void reload() {
-        USER_KEYS.read();
-        USER_ALIASES.read();
+        USERS.read();
         CONFIG = ServerConfig.fromDisk();
 
         Constants.LOG.info("AKMC: loaded server files!");

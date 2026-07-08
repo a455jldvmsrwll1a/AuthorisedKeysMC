@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.UsernameAliases;
+import ph.jldvmsrwll1a.authorisedkeysmc.Users;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.ServerLoginHandler;
 import ph.jldvmsrwll1a.authorisedkeysmc.net.VanillaLoginHandlerState;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.IPlatformHelper;
@@ -184,7 +184,7 @@ public abstract class ServerLoginMixin implements ServerLoginPacketListener, Tic
 
     @ModifyVariable(method = "startClientVerification", at = @At(value = "HEAD"), argsOnly = true)
     private GameProfile modifyProfileId(GameProfile profile) {
-        Optional<UsernameAliases.Alias> alias = AkmcCore.USER_ALIASES.getAlias(profile.name());
+        Optional<Users.Alias> alias = AkmcCore.USERS.getUserAlias(profile.name());
 
         if (alias.isPresent()) {
             Constants.LOG.info(

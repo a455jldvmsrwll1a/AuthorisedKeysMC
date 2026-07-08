@@ -11,7 +11,7 @@ public class FilePaths {
 
     public final Path CONFIG_PATH;
 
-    public final Path AUTHORISED_KEYS_PATH;
+    public final Path USERS_JSON_PATH;
     public final Path BYPASS_LIST_PATH;
     public final Path ALIASES_PATH;
     public final Path HISTORY_PATH;
@@ -23,7 +23,7 @@ public class FilePaths {
 
         CONFIG_PATH = CONFIG_DIR.resolve("server.properties");
 
-        AUTHORISED_KEYS_PATH = MOD_DIR.resolve("authorised_keys.json");
+        USERS_JSON_PATH = MOD_DIR.resolve("users.json");
         BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
         ALIASES_PATH = MOD_DIR.resolve("aliases.json");
         HISTORY_PATH = MOD_DIR.resolve("history.json");

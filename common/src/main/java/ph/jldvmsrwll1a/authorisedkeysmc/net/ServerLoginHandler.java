@@ -114,7 +114,7 @@ public final class ServerLoginHandler {
     private void handleAcknowledgement(C2SIdAckPayload payload) {
         Validate.validState(phase.equals(Phase.WAIT_FOR_ACK), "Received acknowledgement but wasn't expecting it!");
 
-        if (AkmcCore.USER_KEYS.userHasAnyKeys(profile.name())) {
+        if (AkmcCore.USERS.userHasAnyKeys(profile.name())) {
             send(new S2CAuthenticationRequestPayload());
             transition(Phase.WAIT_FOR_CLIENT_AUTHENTICATION_KEY);
         } else if (AkmcCore.CONFIG.allowRegistration) {
@@ -129,7 +129,7 @@ public final class ServerLoginHandler {
         clientKey = payload.key;
 
         if (phase == Phase.WAIT_FOR_CLIENT_AUTHENTICATION_KEY) {
-            if (!AkmcCore.USER_KEYS.userHasKey(profile.name(), clientKey)) {
+            if (!AkmcCore.USERS.userHasKey(profile.name(), clientKey)) {
                 listener.disconnect(Component.translatable("authorisedkeysmc.error.key-rejected"));
 
                 return;
@@ -168,7 +168,7 @@ public final class ServerLoginHandler {
                 return;
             }
 
-            switch (AkmcCore.USER_KEYS.bindKey(profile.name(), profile.name(), clientKey)) {
+            switch (AkmcCore.USERS.bindKey(profile.name(), profile.name(), clientKey)) {
                 case SUCCESS, ALREADY_EXISTS -> {
                     Constants.LOG.info("Successfully registered {}'s key!", profile.name());
                     transition(Phase.SUCCESSFUL);

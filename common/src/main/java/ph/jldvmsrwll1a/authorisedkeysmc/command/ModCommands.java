@@ -25,8 +25,7 @@ import net.minecraft.server.players.NameAndId;
 import net.minecraft.server.players.PlayerList;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
-import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
-import ph.jldvmsrwll1a.authorisedkeysmc.UsernameAliases;
+import ph.jldvmsrwll1a.authorisedkeysmc.Users;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 
 public final class ModCommands {
@@ -75,11 +74,6 @@ public final class ModCommands {
                                                 .executes(ModCommands::usernameUnbind)))))
                 .then(literal("alias")
                         .requires(ModCommands::admin)
-                        .then(literal("list").executes(ModCommands::listAliases))
-                        .then(literal("info")
-                                .then(argument("original username", StringArgumentType.word())
-                                        .suggests(new AliasedUsernameSuggestions())
-                                        .executes(ModCommands::aliasInfo)))
                         .then(literal("link")
                                 .then(argument("original username", StringArgumentType.word())
                                         .suggests(new UsernameSuggestions())
@@ -167,7 +161,7 @@ public final class ModCommands {
     }
 
     private static int listUsers(CommandContext<CommandSourceStack> context) {
-        Set<String> names = AkmcCore.USER_KEYS.getUsernames();
+        Set<String> names = AkmcCore.USERS.getUsernames();
         int len = names.size();
 
         MutableComponent message = Component.empty();
@@ -187,7 +181,7 @@ public final class ModCommands {
         for (String name : names) {
             i++;
 
-            List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(name);
+            List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(name);
             if (keys == null || keys.isEmpty()) {
                 continue;
             }
@@ -233,7 +227,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        switch (AkmcCore.USER_KEYS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
+        switch (AkmcCore.USERS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
             case SUCCESS -> {
                 reply(context, "Bound your key!", ChatFormatting.GREEN);
 
@@ -274,7 +268,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        switch (AkmcCore.USER_KEYS.unbindKey(player.getPlainTextName(), key, !AkmcCore.CONFIG.registrationRequired)) {
+        switch (AkmcCore.USERS.unbindKey(player.getPlainTextName(), key, !AkmcCore.CONFIG.registrationRequired)) {
             case SUCCESS -> {
                 reply(context, "Unbound your key!", ChatFormatting.GREEN);
 
@@ -326,7 +320,7 @@ public final class ModCommands {
 
         ServerPlayer player = context.getSource().getPlayer();
 
-        switch (AkmcCore.USER_KEYS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
+        switch (AkmcCore.USERS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
             case SUCCESS -> {
                 reply(context, "Bound this key to %s!".formatted(username), ChatFormatting.GREEN);
 
@@ -388,7 +382,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        switch (AkmcCore.USER_KEYS.unbindKey(username, key, true)) {
+        switch (AkmcCore.USERS.unbindKey(username, key, true)) {
             case SUCCESS -> {
                 reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
 
@@ -437,7 +431,7 @@ public final class ModCommands {
     }
 
     private static int playerInfo(CommandContext<CommandSourceStack> context, String username) {
-        List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(username);
+        List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(username);
 
         if (keys == null || keys.isEmpty()) {
             fail(context, "No such user on record.");
@@ -458,6 +452,7 @@ public final class ModCommands {
         int i = 1;
         for (UserKeys.UserKey key : keys) {
             message.append("\n  %s. ".formatted(i));
+        for (Users.UserKey key : keys) {
 
             String keyString = key.key().toString();
             message.append(Component.literal(keyString)
@@ -467,97 +462,18 @@ public final class ModCommands {
                             .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
 
             if (key.issuingPlayer() != null) {
-                message.append("\n    └ Issued by: ");
+                message.append("\n      └ Issued by: ");
                 message.append(Component.literal(key.issuingPlayer()).withStyle(ChatFormatting.YELLOW));
             } else {
-                message.append("\n    └ Issued via server console.");
+                message.append("\n      └ Issued via server console.");
             }
 
-            message.append("\n    └ Added at: ");
+            message.append("\n      └ Added at: ");
             message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
                             key.registrationTime().atOffset(ZoneOffset.UTC)))
                     .withStyle(ChatFormatting.GRAY));
 
             i++;
-        }
-
-        reply(context, message);
-
-        return SUCCESS;
-    }
-
-    private static int listAliases(CommandContext<CommandSourceStack> context) {
-        Set<String> names = AkmcCore.USER_ALIASES.getAliasedUsernames();
-        int len = names.size();
-
-        MutableComponent message = Component.empty();
-        if (len == 1) {
-            message.append("There is ");
-        } else {
-            message.append("There are ");
-        }
-        message.append(Component.literal(String.valueOf(len)).withStyle(ChatFormatting.AQUA));
-        if (len == 1) {
-            message.append(" alias rule:");
-        } else {
-            message.append(" alias rules:");
-        }
-
-        int i = 1;
-        for (String name : names) {
-            message.append("\n  %s. ".formatted(i));
-            message.append(Component.literal(name)
-                    .withStyle(Style.EMPTY
-                            .withColor(ChatFormatting.YELLOW)
-                            .withUnderlined(true)
-                            .withClickEvent(new ClickEvent.SuggestCommand("/akmc alias info %s".formatted(name)))));
-
-            i++;
-        }
-
-        reply(context, message);
-
-        return SUCCESS;
-    }
-
-    private static int aliasInfo(CommandContext<CommandSourceStack> context) {
-        String username = StringArgumentType.getString(context, "original username");
-
-        Optional<UsernameAliases.Alias> maybeAlias = AkmcCore.USER_ALIASES.getAlias(username);
-        if (maybeAlias.isEmpty()) {
-            fail(context, "No such alias exists.");
-
-            return ERROR;
-        }
-
-        UsernameAliases.Alias alias = maybeAlias.get();
-        String idStr = alias.id().toString();
-
-        MutableComponent message = Component.empty()
-                .append("The username ")
-                .append(Component.literal(username).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" maps to the UUID:\n"))
-                .append(Component.literal(idStr)
-                        .withStyle(Style.EMPTY
-                                .withColor(ChatFormatting.GOLD)
-                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy UUID.")))
-                                .withClickEvent(new ClickEvent.CopyToClipboard(idStr))));
-
-        if (alias.issuer() != null) {
-            message.append("\n └ Issued by: ");
-            message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
-        } else {
-            message.append("\n └ Issued via server console.");
-        }
-
-        message.append("\n └ Added at: ");
-        message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
-                        alias.creationTime().atOffset(ZoneOffset.UTC)))
-                .withStyle(ChatFormatting.GRAY));
-
-        if (alias.reason() != null) {
-            message.append("\n └ Reason: ");
-            message.append(Component.literal(alias.reason()).withStyle(ChatFormatting.GREEN));
         }
 
         reply(context, message);
@@ -578,7 +494,7 @@ public final class ModCommands {
 
         ServerPlayer issuer = context.getSource().getPlayer();
 
-        boolean wasAdded = AkmcCore.USER_ALIASES.link(
+        boolean wasAdded = AkmcCore.USERS.linkAlias(
                 username,
                 id,
                 issuer != null ? issuer.getPlainTextName() : null,
@@ -634,7 +550,7 @@ public final class ModCommands {
     private static int unlink(CommandContext<CommandSourceStack> context) {
         String username = StringArgumentType.getString(context, "original username");
 
-        Optional<UUID> oldId = AkmcCore.USER_ALIASES.unlink(username);
+        Optional<UUID> oldId = AkmcCore.USERS.unlinkAlias(username);
 
         if (oldId.isEmpty()) {
             fail(context, "No such alias rule.");

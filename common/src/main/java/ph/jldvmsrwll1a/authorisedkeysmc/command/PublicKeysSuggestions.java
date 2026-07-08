@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
-import ph.jldvmsrwll1a.authorisedkeysmc.UserKeys;
+import ph.jldvmsrwll1a.authorisedkeysmc.Users;
 
 public sealed interface PublicKeysSuggestions extends SuggestionProvider<CommandSourceStack> {
     final class Self implements PublicKeysSuggestions {
@@ -23,7 +23,7 @@ public sealed interface PublicKeysSuggestions extends SuggestionProvider<Command
                 return builder.buildFuture();
             }
 
-            List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(player.getPlainTextName());
+            List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(player.getPlainTextName());
             if (keys == null || keys.isEmpty()) {
                 return builder.buildFuture();
             }
@@ -40,7 +40,7 @@ public sealed interface PublicKeysSuggestions extends SuggestionProvider<Command
                 CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
             String username = StringArgumentType.getString(context, "username");
 
-            List<UserKeys.UserKey> keys = AkmcCore.USER_KEYS.getUserKeys(username);
+            List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(username);
 
             if (keys == null || keys.isEmpty()) {
                 return builder.buildFuture();

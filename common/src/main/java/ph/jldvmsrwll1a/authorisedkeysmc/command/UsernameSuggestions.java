@@ -13,7 +13,7 @@ public final class UsernameSuggestions implements SuggestionProvider<CommandSour
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        Set<String> usernames = new HashSet<>(AkmcCore.USER_KEYS.getUsernames());
+        Set<String> usernames = new HashSet<>(AkmcCore.USERS.getUsernames());
 
         context.getSource()
                 .getServer()
@@ -22,7 +22,7 @@ public final class UsernameSuggestions implements SuggestionProvider<CommandSour
                 .forEach(player -> usernames.add(player.getPlainTextName()));
 
         usernames.forEach(username -> {
-            if (!AkmcCore.USER_KEYS.userHasAnyKeys(username)) {
+            if (!AkmcCore.USERS.userHasAnyKeys(username)) {
                 return;
             }
 

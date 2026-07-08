@@ -12,7 +12,7 @@ public class AliasedUsernameSuggestions implements SuggestionProvider<CommandSou
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        AkmcCore.USER_ALIASES.getAliasedUsernames().forEach(builder::suggest);
+        AkmcCore.USERS.getAliasedUsernames().forEachRemaining(builder::suggest);
 
         return builder.buildFuture();
     }

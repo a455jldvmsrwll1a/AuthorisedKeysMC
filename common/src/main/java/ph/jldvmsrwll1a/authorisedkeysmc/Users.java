@@ -14,11 +14,13 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.time.Instant;
 import java.util.*;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 
-public class UserKeys {
+@NullMarked
+public class Users {
     private static final GsonBuilder GSON_BUILDER = new GsonBuilder()
             .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
             .registerTypeAdapter(AkPublicKey.class, new AkPublicKeyTypeAdapter())
@@ -27,6 +29,7 @@ public class UserKeys {
     private static final Object WRITE_LOCK = new Object();
 
     private HashMap<String, User> users = new HashMap<>();
+    private HashSet<String> aliasedUsernames = new HashSet<>();
 
     public synchronized boolean userHasAnyKeys(String username) {
         User user = users.get(username);
@@ -55,8 +58,61 @@ public class UserKeys {
         return user.keys;
     }
 
+    public synchronized Optional<Alias> getUserAlias(String username) {
+        User user = users.get(username);
+        if (user == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(user.alias);
+    }
+
     public synchronized Set<String> getUsernames() {
         return users.keySet();
+    }
+
+    public Iterator<String> getAliasedUsernames() {
+        return aliasedUsernames.iterator();
+    }
+
+    public synchronized boolean linkAlias(
+            String username, UUID replacementId, @Nullable String issuer, @Nullable String reason) {
+        User user = users.computeIfAbsent(username, k -> new User());
+
+        if (user.alias != null) {
+            return false;
+        }
+
+        user.alias = new Alias(replacementId, Instant.now(), issuer, reason);
+        write();
+        aliasedUsernames.add(username);
+
+        Constants.LOG.info(
+                "AKMC: New alias created for user \"{}\" to ID {}. Issuer: {}; Reason: {}",
+                username,
+                replacementId,
+                issuer != null ? issuer : "<server>",
+                reason != null ? reason : "<none>");
+
+        return true;
+    }
+
+    public synchronized Optional<UUID> unlinkAlias(String username) {
+        User user = users.get(username);
+
+        if (user == null || user.alias == null) {
+            return Optional.empty();
+        }
+
+        UUID id = user.alias.id;
+        user.alias = null;
+
+        write();
+        aliasedUsernames.remove(username);
+
+        Constants.LOG.info("AKMC: Alias for user \"{}\" was removed. (was linked to ID {})", username, id);
+
+        return Optional.of(id);
     }
 
     public synchronized BindResult bindKey(String username, @Nullable String issuer, AkPublicKey key) {
@@ -98,7 +154,7 @@ public class UserKeys {
             return UnbindResult.NO_SUCH_KEY;
         }
 
-        if (user.keys.isEmpty()) {
+        if (user.isEmpty()) {
             users.remove(username);
         }
 
@@ -111,12 +167,13 @@ public class UserKeys {
 
     public void read() {
         HashMap<String, User> newMap = new HashMap<>();
+        HashSet<String> newAliasedUsernames = new HashSet<>();
         List<UserJsonEntry> entries;
 
         try {
             String json;
             synchronized (WRITE_LOCK) {
-                json = Files.readString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
+                json = Files.readString(AkmcCore.FILE_PATHS.USERS_JSON_PATH);
             }
 
             entries = GSON_BUILDER.create().fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
@@ -133,19 +190,24 @@ public class UserKeys {
             throw new RuntimeException("Failed to read user keys.", e);
         }
 
+        // Keep track of usernames with ID aliases.
         entries.forEach(entry -> {
-            if (entry.keys().isEmpty()) {
-                return;
-            }
-
             User user = new User();
+            user.alias = entry.alias;
             user.keys = new ArrayList<>(entry.keys);
 
-            newMap.put(entry.user, user);
+            if (!user.isEmpty()) {
+                newMap.put(entry.user, user);
+
+                if (user.alias != null) {
+                    newAliasedUsernames.add(entry.user);
+                }
+            }
         });
 
         synchronized (this) {
             users = newMap;
+            aliasedUsernames = newAliasedUsernames;
         }
 
         Constants.LOG.debug("Read {} user entries from disk.", users.size());
@@ -157,11 +219,9 @@ public class UserKeys {
             for (Map.Entry<String, User> entry : users.entrySet()) {
                 User user = entry.getValue();
 
-                if (user.keys.isEmpty()) {
-                    continue;
+                if (!user.isEmpty()) {
+                    out.add(new UserJsonEntry(entry.getKey(), user.alias, user.keys));
                 }
-
-                out.add(new UserJsonEntry(entry.getKey(), user.keys));
             }
         }
 
@@ -170,7 +230,7 @@ public class UserKeys {
         try {
             synchronized (WRITE_LOCK) {
                 Files.createDirectories(AkmcCore.FILE_PATHS.MOD_DIR);
-                WriteUtil.writeString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH, json);
+                WriteUtil.writeString(AkmcCore.FILE_PATHS.USERS_JSON_PATH, json);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -192,16 +252,31 @@ public class UserKeys {
         CANNOT_BE_EMPTY,
     }
 
+    public record Alias(
+            @SerializedName("replacement_id") UUID id,
+            @SerializedName("time_added") Instant creationTime,
+            @SerializedName("issued_by") @Nullable String issuer,
+            @SerializedName("reason") @Nullable String reason) {}
+
     public record UserKey(
-            AkPublicKey key,
+            @SerializedName("key") AkPublicKey key,
             @SerializedName("issued_by") @Nullable String issuingPlayer,
             @SerializedName("time_added") Instant registrationTime) {}
 
     private static final class User {
+        public @Nullable Alias alias;
         public ArrayList<UserKey> keys = new ArrayList<>();
+
+        /// Whether this User is empty and can be removed from the database.
+        public boolean isEmpty() {
+            return alias == null && keys.isEmpty();
+        }
     }
 
-    private record UserJsonEntry(String user, List<UserKey> keys) {}
+    private record UserJsonEntry(
+            @SerializedName("user") String user,
+            @SerializedName("alias") @Nullable Alias alias,
+            @SerializedName("keys") ArrayList<UserKey> keys) {}
 
     private static final class AkPublicKeyTypeAdapter extends TypeAdapter<AkPublicKey> {
 
