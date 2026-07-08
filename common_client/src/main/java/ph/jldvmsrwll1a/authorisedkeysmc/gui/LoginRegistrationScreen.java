@@ -90,9 +90,12 @@ public final class LoginRegistrationScreen extends BaseScreen {
 
         Button noBtn = buttonLayout.addChild(Button.builder(CommonComponents.GUI_NO, button -> onNoClicked())
                 .width(WIDTH)
-                .tooltip(MANDATORY_TOOLTIP)
                 .build());
-        noBtn.active = !registrationRequired;
+
+        if (registrationRequired) {
+            noBtn.setTooltip(MANDATORY_TOOLTIP);
+            noBtn.active = false;
+        }
 
         buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onCancelClicked())
                 .width(WIDTH)
