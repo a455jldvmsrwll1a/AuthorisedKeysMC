@@ -115,15 +115,15 @@ public class Users {
         return Optional.of(id);
     }
 
-    public synchronized BindResult bindKey(String username, @Nullable String issuer, AkPublicKey key) {
+    public synchronized BindPublicKeyResult bindKey(String username, @Nullable String issuer, AkPublicKey key) {
         User user = users.computeIfAbsent(username, k -> new User());
 
         if (user.keys.size() >= AkmcCore.CONFIG.maxKeyCount) {
-            return BindResult.TOO_MANY;
+            return BindPublicKeyResult.TOO_MANY;
         }
 
         if (user.keys.stream().anyMatch(entry -> entry.key.equals(key))) {
-            return BindResult.ALREADY_EXISTS;
+            return BindPublicKeyResult.ALREADY_EXISTS;
         }
 
         user.keys.add(new UserKey(key, issuer, Instant.now()));
@@ -136,22 +136,22 @@ public class Users {
 
         write();
 
-        return BindResult.SUCCESS;
+        return BindPublicKeyResult.SUCCESS;
     }
 
-    public synchronized UnbindResult unbindKey(String username, AkPublicKey key, boolean allowEmpty) {
+    public synchronized UnbindPublicKeyResult unbindKey(String username, AkPublicKey key, boolean allowEmpty) {
         User user = users.get(username);
 
         if (user == null) {
-            return UnbindResult.NO_SUCH_USER;
+            return UnbindPublicKeyResult.NO_SUCH_USER;
         }
 
         if (!allowEmpty && user.keys.size() == 1) {
-            return UnbindResult.CANNOT_BE_EMPTY;
+            return UnbindPublicKeyResult.CANNOT_BE_EMPTY;
         }
 
         if (!user.keys.removeIf(userKey -> userKey.key.equals(key))) {
-            return UnbindResult.NO_SUCH_KEY;
+            return UnbindPublicKeyResult.NO_SUCH_KEY;
         }
 
         if (user.isEmpty()) {
@@ -162,7 +162,7 @@ public class Users {
 
         write();
 
-        return UnbindResult.SUCCESS;
+        return UnbindPublicKeyResult.SUCCESS;
     }
 
     public void read() {
@@ -239,13 +239,13 @@ public class Users {
         Constants.LOG.debug("Wrote {} user entries to disk.", users.size());
     }
 
-    public enum BindResult {
+    public enum BindPublicKeyResult {
         SUCCESS,
         ALREADY_EXISTS,
         TOO_MANY
     }
 
-    public enum UnbindResult {
+    public enum UnbindPublicKeyResult {
         SUCCESS,
         NO_SUCH_KEY,
         NO_SUCH_USER,

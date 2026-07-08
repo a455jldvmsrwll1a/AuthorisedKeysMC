@@ -55,11 +55,11 @@ public final class ModCommands {
                                 .suggests(new UsernameSuggestions())
                                 .executes(ModCommands::usernameInfo)))
                 .then(literal("bind")
-                        .then(argument("public key", StringArgumentType.word()).executes(ModCommands::bind)))
+                        .then(argument("public key", StringArgumentType.word()).executes(ModCommands::selfBind)))
                 .then(literal("unbind")
                         .then(argument("public key", StringArgumentType.word())
                                 .suggests(new PublicKeysSuggestions.Self())
-                                .executes(ModCommands::unbind)))
+                                .executes(ModCommands::selfUnbind)))
                 .then(literal("user")
                         .requires(ModCommands::admin)
                         .then(argument("username", StringArgumentType.word())
@@ -71,21 +71,14 @@ public final class ModCommands {
                                 .then(literal("unbind")
                                         .then(argument("public key", StringArgumentType.word())
                                                 .suggests(new PublicKeysSuggestions.ByUsername())
-                                                .executes(ModCommands::usernameUnbind)))))
-                .then(literal("alias")
-                        .requires(ModCommands::admin)
-                        .then(literal("link")
-                                .then(argument("original username", StringArgumentType.word())
-                                        .suggests(new UsernameSuggestions())
+                                                .executes(ModCommands::usernameUnbind)))
+                                .then(literal("alias")
                                         .then(argument("replacement uuid", UuidArgument.uuid())
                                                 .suggests(new KnownUuidSuggestions())
-                                                .executes(ModCommands::link)
+                                                .executes(ModCommands::makeAlias)
                                                 .then(argument("reason", StringArgumentType.greedyString())
-                                                        .executes(ModCommands::link)))))
-                        .then(literal("unlink")
-                                .then(argument("original username", StringArgumentType.word())
-                                        .suggests(new AliasedUsernameSuggestions())
-                                        .executes(ModCommands::unlink)))));
+                                                        .executes(ModCommands::makeAlias))))
+                                .then(literal("unalias").executes(ModCommands::removeAlias)))));
     }
 
     private static int hello(CommandContext<CommandSourceStack> context) {
@@ -211,12 +204,12 @@ public final class ModCommands {
         return SUCCESS;
     }
 
-    private static int bind(CommandContext<CommandSourceStack> context) {
+    private static int selfBind(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = context.getSource().getPlayer();
         if (player == null) {
             fail(
                     context,
-                    "Must be executed by a player! To bind a key to a specific user, use: /akmc user <username> bind <public key>");
+                    "Must be executed by a player! To bind a key to a specific user, use: /akmc user <username> bind key <public key>");
 
             return ERROR;
         }
@@ -252,12 +245,12 @@ public final class ModCommands {
         }
     }
 
-    private static int unbind(CommandContext<CommandSourceStack> context) {
+    private static int selfUnbind(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = context.getSource().getPlayer();
         if (player == null) {
             fail(
                     context,
-                    "Must be executed by a player! To unbind a key from a specific user, use: /akmc user <username> unbind <public key>");
+                    "Must be executed by a player! To unbind a key from a specific user, use: /akmc user <username> unbind key <public key>");
 
             return ERROR;
         }
@@ -279,7 +272,7 @@ public final class ModCommands {
 
                 return SUCCESS;
             }
-            case NO_SUCH_KEY -> {
+            case NO_SUCH_USER, NO_SUCH_KEY -> {
                 fail(context, "You have no such key.");
 
                 return ERROR;
@@ -297,7 +290,7 @@ public final class ModCommands {
 
     private static int selfInfo(CommandContext<CommandSourceStack> context) {
         if (context.getSource().getPlayer() == null) {
-            fail(context, "Must be executed by a player! To query a specific user, use: /akmc user <username> info");
+            fail(context, "Must be executed by a player! To query a specific user, use: /akmc user <username>");
 
             return ERROR;
         }
@@ -459,7 +452,6 @@ public final class ModCommands {
                             .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy UUID.")))
                             .withClickEvent(new ClickEvent.CopyToClipboard(idStr))));
 
-
             if (alias.issuer() != null) {
                 message.append("\n   Issued by: ");
                 message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
@@ -517,8 +509,8 @@ public final class ModCommands {
         return SUCCESS;
     }
 
-    private static int link(CommandContext<CommandSourceStack> context) {
-        String username = StringArgumentType.getString(context, "original username");
+    private static int makeAlias(CommandContext<CommandSourceStack> context) {
+        String username = StringArgumentType.getString(context, "username");
         UUID id = UuidArgument.getUuid(context, "replacement uuid");
 
         String reason;
@@ -583,8 +575,8 @@ public final class ModCommands {
         return SUCCESS;
     }
 
-    private static int unlink(CommandContext<CommandSourceStack> context) {
-        String username = StringArgumentType.getString(context, "original username");
+    private static int removeAlias(CommandContext<CommandSourceStack> context) {
+        String username = StringArgumentType.getString(context, "username");
 
         Optional<UUID> oldId = AkmcCore.USERS.unlinkAlias(username);
 
