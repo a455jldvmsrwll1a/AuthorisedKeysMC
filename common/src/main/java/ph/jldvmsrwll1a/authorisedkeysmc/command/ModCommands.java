@@ -6,6 +6,8 @@ import static net.minecraft.commands.Commands.literal;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -32,6 +34,9 @@ public final class ModCommands {
     private static final int SUCCESS = 1;
     private static final int ERROR = -1;
 
+    private static final URI MOD_URL;
+    private static final URI DEV_URL;
+
     private ModCommands() {}
 
     public static void register(
@@ -43,7 +48,8 @@ public final class ModCommands {
         }
 
         dispatcher.register(literal("akmc")
-                .then(literal("status").executes(ModCommands::hello))
+                .executes(ModCommands::hello)
+                .then(literal("status").executes(ModCommands::status))
                 .then(literal("reload").requires(ModCommands::admin).executes(ModCommands::reload))
                 .then(literal("enable").requires(ModCommands::admin).executes(ModCommands::enable))
                 .then(literal("disable").requires(ModCommands::admin).executes(ModCommands::disable))
@@ -83,8 +89,79 @@ public final class ModCommands {
 
     private static int hello(CommandContext<CommandSourceStack> context) {
         MutableComponent message = Component.empty()
-                .append(Component.literal("== AuthorisedKeysMC ==").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
+                .append(Component.literal("== AuthorisedKeysMC ==\n")
+                        .withStyle(Style.EMPTY
+                                .withColor(ChatFormatting.AQUA)
+                                .withBold(true)
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click for mod info.")))
+                                .withClickEvent(new ClickEvent.OpenUrl(MOD_URL))))
+                .append(Component.literal("By a455jldvmsrwll1a.")
+                        .withStyle(Style.EMPTY
+                                .withColor(ChatFormatting.AQUA)
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click for developer info.")))
+                                .withClickEvent(new ClickEvent.OpenUrl(DEV_URL))))
                 .append(Component.literal("\n\nStatus: "));
+
+        if (AkmcCore.CONFIG.enforcing) {
+            message.append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+        } else {
+            message.append(Component.literal("ON STANDBY").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+        }
+
+        if (admin(context.getSource())) {
+            Set<String> names = AkmcCore.USERS.getUsernames();
+            int len = names.size();
+
+            if (len == 1) {
+                message.append("\nThere is ");
+            } else {
+                message.append("\nThere are ");
+            }
+            message.append(Component.literal(String.valueOf(len)).withStyle(ChatFormatting.AQUA));
+            if (len == 1) {
+                message.append(" user on record.\n\n");
+            } else {
+                message.append(" users on record.\n\n");
+            }
+        }
+
+        ServerPlayer player = context.getSource().getPlayer();
+        if (player != null) {
+            String name = context.getSource().getPlayer().nameAndId().name();
+            List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(name);
+            int numKeys = keys != null ? keys.size() : 0;
+
+            message.append(Component.literal(name)
+                    .withStyle(Style.EMPTY
+                            .withColor(ChatFormatting.YELLOW)
+                            .withUnderlined(true)
+                            .withClickEvent(new ClickEvent.SuggestCommand("/akmc info"))));
+            message.append(": ");
+
+            if (AkmcCore.USERS.getUserAlias(name).isPresent()) {
+                message.append(Component.literal("[ID aliased] ").withStyle(ChatFormatting.LIGHT_PURPLE));
+            }
+
+            message.append(Component.literal(String.valueOf(numKeys)).withStyle(ChatFormatting.AQUA));
+            if (numKeys == 1) {
+                message.append(" key.");
+            } else {
+                message.append(" keys.");
+            }
+        }
+
+        message.append(Component.literal("\n\nTo view available commands, run \"/help akmc\"")
+                .setStyle(Style.EMPTY
+                        .withColor(ChatFormatting.GRAY)
+                        .withClickEvent(new ClickEvent.SuggestCommand("/help akmc"))));
+
+        reply(context, message);
+
+        return SUCCESS;
+    }
+
+    private static int status(CommandContext<CommandSourceStack> context) {
+        MutableComponent message = Component.empty().append(Component.literal("Status: "));
 
         if (AkmcCore.CONFIG.enforcing) {
             message.append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
@@ -633,5 +710,14 @@ public final class ModCommands {
 
     private static void fail(CommandContext<CommandSourceStack> context, String message) {
         context.getSource().sendFailure(Component.literal(message));
+    }
+
+    static {
+        try {
+            MOD_URL = new URI("https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC");
+            DEV_URL = new URI("https://github.com/a455jldvmsrwll1a");
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
