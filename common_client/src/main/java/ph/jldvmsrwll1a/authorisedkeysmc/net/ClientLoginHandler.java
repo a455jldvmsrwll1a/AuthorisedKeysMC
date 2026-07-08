@@ -210,8 +210,12 @@ public final class ClientLoginHandler {
         Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected registration request.");
 
         transition(Phase.AWAIT_REGISTRATION_DECISION);
-        showScreen(LoginRegistrationScreen.create(
-                originalScreen, usingVanillaAuthentication, this::onRegistrationAction, this::cancelLogin));
+        showScreen(new LoginRegistrationScreen(
+                originalScreen,
+                usingVanillaAuthentication,
+                payload.registrationRequired(),
+                this::onRegistrationAction,
+                this::cancelLogin));
     }
 
     private void handleChallenge(S2CChallengePayload payload) {
