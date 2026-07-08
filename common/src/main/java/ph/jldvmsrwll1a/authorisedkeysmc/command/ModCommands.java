@@ -119,9 +119,9 @@ public final class ModCommands {
             }
             message.append(Component.literal(String.valueOf(len)).withStyle(ChatFormatting.AQUA));
             if (len == 1) {
-                message.append(" user on record.\n\n");
+                message.append(" user on record.");
             } else {
-                message.append(" users on record.\n\n");
+                message.append(" users on record.");
             }
         }
 
@@ -131,6 +131,7 @@ public final class ModCommands {
             List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(name);
             int numKeys = keys != null ? keys.size() : 0;
 
+            message.append("\n\n");
             message.append(Component.literal(name)
                     .withStyle(Style.EMPTY
                             .withColor(ChatFormatting.YELLOW)
