@@ -13,7 +13,7 @@ public final class UsernameSuggestions implements SuggestionProvider<CommandSour
     @Override
     public CompletableFuture<Suggestions> getSuggestions(
             CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        Set<String> usernames = new HashSet<>(AkmcCore.USER_KEYS.getUsers());
+        Set<String> usernames = new HashSet<>(AkmcCore.USER_KEYS.getUsernames());
 
         context.getSource()
                 .getServer()

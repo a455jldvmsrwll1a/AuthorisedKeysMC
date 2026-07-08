@@ -167,7 +167,7 @@ public final class ModCommands {
     }
 
     private static int listUsers(CommandContext<CommandSourceStack> context) {
-        Set<String> names = AkmcCore.USER_KEYS.getUsers();
+        Set<String> names = AkmcCore.USER_KEYS.getUsernames();
         int len = names.size();
 
         MutableComponent message = Component.empty();
@@ -459,23 +459,23 @@ public final class ModCommands {
         for (UserKeys.UserKey key : keys) {
             message.append("\n  %s. ".formatted(i));
 
-            String keyString = key.key.toString();
+            String keyString = key.key().toString();
             message.append(Component.literal(keyString)
                     .withStyle(ChatFormatting.GOLD)
                     .withStyle(Style.EMPTY
                             .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy.")))
                             .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
 
-            if (key.issuingPlayer != null) {
+            if (key.issuingPlayer() != null) {
                 message.append("\n    └ Issued by: ");
-                message.append(Component.literal(key.issuingPlayer).withStyle(ChatFormatting.YELLOW));
+                message.append(Component.literal(key.issuingPlayer()).withStyle(ChatFormatting.YELLOW));
             } else {
                 message.append("\n    └ Issued via server console.");
             }
 
             message.append("\n    └ Added at: ");
-            message.append(Component.literal(
-                            DateTimeFormatter.RFC_1123_DATE_TIME.format(key.registrationTime.atOffset(ZoneOffset.UTC)))
+            message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                            key.registrationTime().atOffset(ZoneOffset.UTC)))
                     .withStyle(ChatFormatting.GRAY));
 
             i++;

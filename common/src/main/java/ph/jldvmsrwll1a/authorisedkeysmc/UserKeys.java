@@ -1,9 +1,12 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.mojang.util.InstantTypeAdapter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,56 +16,61 @@ import java.time.Instant;
 import java.util.*;
 import org.jspecify.annotations.Nullable;
 import ph.jldvmsrwll1a.authorisedkeysmc.crypto.AkPublicKey;
-import ph.jldvmsrwll1a.authorisedkeysmc.util.Base64Util;
 import ph.jldvmsrwll1a.authorisedkeysmc.util.WriteUtil;
 
 public class UserKeys {
+    private static final GsonBuilder GSON_BUILDER = new GsonBuilder()
+            .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
+            .registerTypeAdapter(AkPublicKey.class, new AkPublicKeyTypeAdapter())
+            .setPrettyPrinting();
+
     private static final Object WRITE_LOCK = new Object();
 
-    private HashMap<String, ArrayList<UserKey>> userKeysMap = new HashMap<>();
+    private HashMap<String, User> users = new HashMap<>();
 
     public synchronized boolean userHasAnyKeys(String username) {
-        List<UserKey> userKeys = userKeysMap.get(username);
-        if (userKeys == null) {
+        User user = users.get(username);
+        if (user == null) {
             return false;
         }
 
-        return !userKeys.isEmpty();
+        return !user.keys.isEmpty();
     }
 
     public synchronized boolean userHasKey(String username, AkPublicKey key) {
-        List<UserKey> userKeys = userKeysMap.get(username);
-        if (userKeys == null) {
+        User user = users.get(username);
+        if (user == null) {
             return false;
         }
 
-        return userKeys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
+        return user.keys.stream().anyMatch(userKey -> AkPublicKey.nullableEqual(userKey.key, key));
     }
 
     public synchronized @Nullable List<UserKey> getUserKeys(String username) {
-        return userKeysMap.get(username);
+        User user = users.get(username);
+        if (user == null) {
+            return null;
+        }
+
+        return user.keys;
     }
 
-    public synchronized Set<String> getUsers() {
-        return userKeysMap.keySet();
+    public synchronized Set<String> getUsernames() {
+        return users.keySet();
     }
 
     public synchronized BindResult bindKey(String username, @Nullable String issuer, AkPublicKey key) {
-        ArrayList<UserKey> keys = userKeysMap.computeIfAbsent(username, k -> new ArrayList<>(1));
+        User user = users.computeIfAbsent(username, k -> new User());
 
-        if (keys.size() >= AkmcCore.CONFIG.maxKeyCount) {
+        if (user.keys.size() >= AkmcCore.CONFIG.maxKeyCount) {
             return BindResult.TOO_MANY;
         }
 
-        if (keys.stream().anyMatch(entry -> entry.key.equals(key))) {
+        if (user.keys.stream().anyMatch(entry -> entry.key.equals(key))) {
             return BindResult.ALREADY_EXISTS;
         }
 
-        UserKey newKey = new UserKey();
-        newKey.key = key;
-        newKey.issuingPlayer = issuer;
-        newKey.registrationTime = Instant.now();
-        keys.add(newKey);
+        user.keys.add(new UserKey(key, issuer, Instant.now()));
 
         if (issuer == null) {
             Constants.LOG.info("Key {} has been bound to {}.", key, username);
@@ -76,18 +84,22 @@ public class UserKeys {
     }
 
     public synchronized UnbindResult unbindKey(String username, AkPublicKey key, boolean allowEmpty) {
-        ArrayList<UserKey> keys = userKeysMap.get(username);
+        User user = users.get(username);
 
-        if (keys == null || keys.isEmpty()) {
+        if (user == null) {
             return UnbindResult.NO_SUCH_USER;
         }
 
-        if (!allowEmpty && keys.size() == 1) {
+        if (!allowEmpty && user.keys.size() == 1) {
             return UnbindResult.CANNOT_BE_EMPTY;
         }
 
-        if (!keys.removeIf(userKey -> userKey.key.equals(key))) {
+        if (!user.keys.removeIf(userKey -> userKey.key.equals(key))) {
             return UnbindResult.NO_SUCH_KEY;
+        }
+
+        if (user.keys.isEmpty()) {
+            users.remove(username);
         }
 
         Constants.LOG.info("AKMC: The public key {} has been unbound from {}.", key, username);
@@ -98,7 +110,7 @@ public class UserKeys {
     }
 
     public void read() {
-        HashMap<String, ArrayList<UserKey>> newMap = new HashMap<>();
+        HashMap<String, User> newMap = new HashMap<>();
         List<UserJsonEntry> entries;
 
         try {
@@ -107,14 +119,11 @@ public class UserKeys {
                 json = Files.readString(AkmcCore.FILE_PATHS.AUTHORISED_KEYS_PATH);
             }
 
-            Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
-                    .create();
-            entries = gson.fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
+            entries = GSON_BUILDER.create().fromJson(json, new TypeToken<List<UserJsonEntry>>() {}.getType());
         } catch (FileNotFoundException | NoSuchFileException ignored) {
             // Default to an empty map.
             synchronized (this) {
-                userKeysMap = new HashMap<>();
+                users = new HashMap<>();
             }
 
             return;
@@ -129,53 +138,34 @@ public class UserKeys {
                 return;
             }
 
-            List<UserKey> keys = entry.keys.stream()
-                    .map(jsonEntry -> {
-                        UserKey userKey = new UserKey();
-                        userKey.key = new AkPublicKey(jsonEntry.key);
-                        userKey.issuingPlayer = jsonEntry.issued_by;
-                        userKey.registrationTime = jsonEntry.time_added;
+            User user = new User();
+            user.keys = new ArrayList<>(entry.keys);
 
-                        return userKey;
-                    })
-                    .toList();
-
-            newMap.put(entry.user, new ArrayList<>(keys));
+            newMap.put(entry.user, user);
         });
 
         synchronized (this) {
-            userKeysMap = newMap;
+            users = newMap;
         }
 
-        Constants.LOG.debug("Read {} user entries from disk.", userKeysMap.size());
+        Constants.LOG.debug("Read {} user entries from disk.", users.size());
     }
 
     public void write() {
         List<UserJsonEntry> out = new ArrayList<>();
         synchronized (this) {
-            for (var entry : userKeysMap.entrySet()) {
-                List<UserKey> keys = entry.getValue();
+            for (Map.Entry<String, User> entry : users.entrySet()) {
+                User user = entry.getValue();
 
-                if (keys.isEmpty()) {
+                if (user.keys.isEmpty()) {
                     continue;
                 }
 
-                out.add(new UserJsonEntry(
-                        entry.getKey(),
-                        keys.stream()
-                                .map(key -> new UserKeyJsonEntry(
-                                        Base64Util.encode(key.key.getEncoded()),
-                                        key.issuingPlayer,
-                                        key.registrationTime))
-                                .toList()));
+                out.add(new UserJsonEntry(entry.getKey(), user.keys));
             }
         }
 
-        String json = new GsonBuilder()
-                .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
-                .setPrettyPrinting()
-                .create()
-                .toJson(out);
+        String json = GSON_BUILDER.create().toJson(out);
 
         try {
             synchronized (WRITE_LOCK) {
@@ -186,7 +176,7 @@ public class UserKeys {
             throw new RuntimeException(e);
         }
 
-        Constants.LOG.debug("Wrote {} user entries to disk.", userKeysMap.size());
+        Constants.LOG.debug("Wrote {} user entries to disk.", users.size());
     }
 
     public enum BindResult {
@@ -202,13 +192,27 @@ public class UserKeys {
         CANNOT_BE_EMPTY,
     }
 
-    public static class UserKey {
-        public AkPublicKey key;
-        public @Nullable String issuingPlayer;
-        public Instant registrationTime;
+    public record UserKey(
+            AkPublicKey key,
+            @SerializedName("issued_by") @Nullable String issuingPlayer,
+            @SerializedName("time_added") Instant registrationTime) {}
+
+    private static final class User {
+        public ArrayList<UserKey> keys = new ArrayList<>();
     }
 
-    private record UserJsonEntry(String user, List<UserKeyJsonEntry> keys) {}
+    private record UserJsonEntry(String user, List<UserKey> keys) {}
 
-    private record UserKeyJsonEntry(String key, @Nullable String issued_by, Instant time_added) {}
+    private static final class AkPublicKeyTypeAdapter extends TypeAdapter<AkPublicKey> {
+
+        @Override
+        public void write(JsonWriter out, AkPublicKey value) throws IOException {
+            out.value(value.toString());
+        }
+
+        @Override
+        public AkPublicKey read(JsonReader in) throws IOException {
+            return new AkPublicKey(in.nextString());
+        }
+    }
 }

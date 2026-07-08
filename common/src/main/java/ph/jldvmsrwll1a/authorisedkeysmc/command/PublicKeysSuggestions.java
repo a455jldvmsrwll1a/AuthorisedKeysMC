@@ -28,7 +28,7 @@ public sealed interface PublicKeysSuggestions extends SuggestionProvider<Command
                 return builder.buildFuture();
             }
 
-            keys.forEach(key -> builder.suggest(key.key.toString()));
+            keys.forEach(key -> builder.suggest(key.key().toString()));
 
             return builder.buildFuture();
         }
@@ -46,7 +46,7 @@ public sealed interface PublicKeysSuggestions extends SuggestionProvider<Command
                 return builder.buildFuture();
             }
 
-            keys.forEach(key -> builder.suggest(key.key.toString()));
+            keys.forEach(key -> builder.suggest(key.key().toString()));
 
             return builder.buildFuture();
         }
