@@ -107,6 +107,10 @@ public class Users {
         UUID id = user.alias.id;
         user.alias = null;
 
+        if (user.isEmpty()) {
+            users.remove(username);
+        }
+
         write();
         aliasedUsernames.remove(username);
 
