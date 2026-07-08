@@ -440,19 +440,50 @@ public final class ModCommands {
         }
 
         MutableComponent message = Component.empty();
+        message.append("Info for username ");
         message.append(Component.literal(username).withStyle(ChatFormatting.YELLOW));
-        message.append(" has ");
+        message.append(":");
+
+        AkmcCore.USERS.getUserAlias(username).ifPresent(alias -> {
+            String idStr = alias.id().toString();
+
+            message.append("\n└ Aliased to ID: ");
+            message.append(Component.literal(idStr)
+                    .withStyle(Style.EMPTY
+                            .withColor(ChatFormatting.DARK_AQUA)
+                            .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy UUID.")))
+                            .withClickEvent(new ClickEvent.CopyToClipboard(idStr))));
+
+
+            if (alias.issuer() != null) {
+                message.append("\n   └ Issued by: ");
+                message.append(Component.literal(alias.issuer()).withStyle(ChatFormatting.YELLOW));
+            } else {
+                message.append("\n   └ Issued via server console.");
+            }
+
+            message.append("\n   └ Added at: ");
+            message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                            alias.creationTime().atOffset(ZoneOffset.UTC)))
+                    .withStyle(ChatFormatting.GRAY));
+
+            if (alias.reason() != null) {
+                message.append("\n   └ Reason: ");
+                message.append(Component.literal(alias.reason()).withStyle(ChatFormatting.GREEN));
+            }
+        });
+
+        message.append("\n└ ");
         message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
-        if (keys.size() == 1) {
-            message.append(" key bound:");
-        } else {
-            message.append(" keys bound:");
+        switch (keys.size()) {
+            case 0 -> message.append(" keys bound.");
+            case 1 -> message.append(" key bound:");
+            default -> message.append(" keys bound:");
         }
 
         int i = 1;
-        for (UserKeys.UserKey key : keys) {
-            message.append("\n  %s. ".formatted(i));
         for (Users.UserKey key : keys) {
+            message.append("\n   └ %s. ".formatted(i));
 
             String keyString = key.key().toString();
             message.append(Component.literal(keyString)
