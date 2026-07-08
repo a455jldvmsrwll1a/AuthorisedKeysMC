@@ -12,9 +12,6 @@ public class FilePaths {
     public final Path CONFIG_PATH;
 
     public final Path USERS_JSON_PATH;
-    public final Path BYPASS_LIST_PATH;
-    public final Path ALIASES_PATH;
-    public final Path HISTORY_PATH;
     public final Path SERVER_SECRET_PATH;
 
     public FilePaths(IPlatformHelper platform) {
@@ -24,9 +21,6 @@ public class FilePaths {
         CONFIG_PATH = CONFIG_DIR.resolve("server.properties");
 
         USERS_JSON_PATH = MOD_DIR.resolve("users.json");
-        BYPASS_LIST_PATH = MOD_DIR.resolve("bypass.json");
-        ALIASES_PATH = MOD_DIR.resolve("aliases.json");
-        HISTORY_PATH = MOD_DIR.resolve("history.json");
         SERVER_SECRET_PATH = MOD_DIR.resolve("server_secret%s".formatted(Constants.KEY_PAIR_EXTENSION));
     }
 }
