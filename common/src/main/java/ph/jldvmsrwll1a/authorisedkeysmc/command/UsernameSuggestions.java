@@ -21,13 +21,7 @@ public final class UsernameSuggestions implements SuggestionProvider<CommandSour
                 .getPlayers()
                 .forEach(player -> usernames.add(player.getPlainTextName()));
 
-        usernames.forEach(username -> {
-            if (!AkmcCore.USERS.userHasAnyKeys(username)) {
-                return;
-            }
-
-            builder.suggest(username);
-        });
+        usernames.forEach(builder::suggest);
 
         return builder.buildFuture();
     }

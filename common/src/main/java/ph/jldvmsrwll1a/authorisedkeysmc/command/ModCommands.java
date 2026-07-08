@@ -175,7 +175,7 @@ public final class ModCommands {
             i++;
 
             List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(name);
-            if (keys == null || keys.isEmpty()) {
+            if (keys == null) {
                 continue;
             }
 
@@ -431,12 +431,6 @@ public final class ModCommands {
     private static int playerInfo(CommandContext<CommandSourceStack> context, String username) {
         List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(username);
 
-        if (keys == null || keys.isEmpty()) {
-            fail(context, "No such user on record.");
-
-            return ERROR;
-        }
-
         MutableComponent message = Component.empty();
         message.append("Info for username ");
         message.append(Component.literal(username).withStyle(ChatFormatting.YELLOW));
@@ -470,39 +464,46 @@ public final class ModCommands {
             }
         });
 
-        message.append("\n└ ");
-        message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
-        switch (keys.size()) {
-            case 0 -> message.append(" keys bound.");
-            case 1 -> message.append(" key bound:");
-            default -> message.append(" keys bound:");
-        }
-
-        int i = 1;
-        for (Users.UserKey key : keys) {
-            message.append("\n   └ %s. ".formatted(i));
-
-            String keyString = key.key().toString();
-            message.append(Component.literal(keyString)
-                    .withStyle(ChatFormatting.GOLD)
-                    .withStyle(Style.EMPTY
-                            .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                            .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
-
-            if (key.issuingPlayer() != null) {
-                message.append("\n      Issued by: ");
-                message.append(Component.literal(key.issuingPlayer()).withStyle(ChatFormatting.YELLOW));
-            } else {
-                message.append("\n      Issued via server console.");
+        if (keys != null && !keys.isEmpty()) {
+            message.append("\n└ ");
+            message.append(Component.literal(String.valueOf(keys.size())).withStyle(ChatFormatting.AQUA));
+            switch (keys.size()) {
+                case 0 -> message.append(" keys bound.");
+                case 1 -> message.append(" key bound:");
+                default -> message.append(" keys bound:");
             }
 
-            message.append("\n      Added at: ");
-            message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
-                            key.registrationTime().atOffset(ZoneOffset.UTC)))
-                    .withStyle(ChatFormatting.GRAY));
+            int i = 1;
+            for (Users.UserKey key : keys) {
+                message.append("\n   └ %s. ".formatted(i));
 
-            i++;
+                String keyString = key.key().toString();
+                message.append(Component.literal(keyString)
+                        .withStyle(ChatFormatting.GOLD)
+                        .withStyle(Style.EMPTY
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy.")))
+                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString))));
+
+                if (key.issuingPlayer() != null) {
+                    message.append("\n      Issued by: ");
+                    message.append(Component.literal(key.issuingPlayer()).withStyle(ChatFormatting.YELLOW));
+                } else {
+                    message.append("\n      Issued via server console.");
+                }
+
+                message.append("\n      Added at: ");
+                message.append(Component.literal(DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                                key.registrationTime().atOffset(ZoneOffset.UTC)))
+                        .withStyle(ChatFormatting.GRAY));
+
+                i++;
+            }
+        } else {
+            message.append("\n└ ");
+            message.append(Component.literal("No keys bound.").withStyle(ChatFormatting.RED));
         }
+
+
 
         reply(context, message);
 
