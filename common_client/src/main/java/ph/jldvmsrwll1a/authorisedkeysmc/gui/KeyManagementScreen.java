@@ -37,7 +37,6 @@ public final class KeyManagementScreen extends BaseScreen {
     private static final Component EMPTY_LIST_LABEL =
             Component.translatable("authorisedkeysmc.screen.config.keys.empty-list-message");
     private static final SystemToast.SystemToastId KEY_COPIED_TOAST = new SystemToast.SystemToastId(2000);
-    private static final SystemToast.SystemToastId WIP_TOAST = new SystemToast.SystemToastId(1500);
 
     private final Screen parent;
     private final HeaderAndFooterLayout rootLayout;
@@ -320,9 +319,7 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onBackupButtonPressed(Button ignored) {
-        Constants.LOG.warn("Backing up not implemented!");
-
-        SystemToast.addOrUpdate(minecraft.getToastManager(), WIP_TOAST, Component.literal("Work in progress."), null);
+        minecraft.setScreen(new KeyExportPortalScreen(this, currentKeypair));
     }
 
     private void onPasswordButtonPressed(Button ignored) {
