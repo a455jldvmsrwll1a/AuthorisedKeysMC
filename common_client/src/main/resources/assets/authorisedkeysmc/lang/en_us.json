@@ -85,7 +85,7 @@
   "authorisedkeysmc.screen.select-key.no-keys": "Select a key pair to view its properties.\n\nIf you do not have any, create one in the \"Manage Keys\" section.",
   "authorisedkeysmc.screen.select-key.prompt": "Select a key pair to use for this server.",
   "authorisedkeysmc.screen.select-key.title": "Select key pair",
-  "authorisedkeysmc.screen.server.host-key": "Host's public key",
+  "authorisedkeysmc.screen.server.host-key": "Server key",
   "authorisedkeysmc.screen.server.key-missing": "(missing)",
   "authorisedkeysmc.screen.server.key-unreadable": "(unreadable or corrupted)",
   "authorisedkeysmc.screen.server.no-used-key": "No key pair assigned!",

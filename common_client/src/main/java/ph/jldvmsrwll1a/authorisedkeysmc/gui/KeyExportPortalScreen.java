@@ -47,7 +47,7 @@ public class KeyExportPortalScreen extends BaseScreen {
                 Button.builder(BROWSE_LABEL, button -> Util.getPlatform().openPath(AkmcClient.FILE_PATHS.KEY_PAIRS_DIR))
                         .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre + STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build());
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
+        addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, button -> onClose())
                 .bounds(width / 2 - BUTTON_WIDTH / 2, height - BUTTON_HEIGHT - 20, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
     }
