@@ -36,12 +36,12 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
     public void onClose() {
         callback.accept(Optional.ofNullable(successful ? keypair : null));
 
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override
     protected void decryptKey() {
-        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
+        minecraft.gui.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
@@ -53,7 +53,7 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
                 minecraft.execute(() -> {
                     errorText.visible = true;
                     passwordEdit.setValue("");
-                    minecraft.setScreen(this);
+                    minecraft.gui.setScreen(this);
                 });
 
                 throw e;
@@ -67,7 +67,7 @@ public final class PasswordConfirmPromptScreen extends PasswordPromptScreen {
                 } else {
                     errorText.visible = true;
                     passwordEdit.setValue("");
-                    minecraft.setScreen(this);
+                    minecraft.gui.setScreen(this);
                 }
             });
         });

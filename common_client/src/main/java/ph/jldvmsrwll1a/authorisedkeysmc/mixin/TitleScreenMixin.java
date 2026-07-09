@@ -3,6 +3,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
@@ -32,8 +33,8 @@ public abstract class TitleScreenMixin extends Screen {
     @Inject(method = "createNormalMenuOptions", at = @At("RETURN"))
     private void addModButton(int y, int spacingY, CallbackInfoReturnable<Integer> ci) {
         IconButton button = IconButton.builder(Constants.modId("widget/main_menu"), btn -> {
-                    if (!AkmcClient.maybeShowFirstRunScreen(minecraft, new PortalScreen(minecraft.screen))) {
-                        minecraft.setScreen(new PortalScreen(minecraft.screen));
+                    if (!AkmcClient.maybeShowFirstRunScreen(minecraft, new PortalScreen(minecraft.gui.screen()))) {
+                        minecraft.gui.setScreen(new PortalScreen(minecraft.gui.screen()));
                     }
                 })
                 .pos(width / 2 - 100 - spacingY, y)
@@ -47,20 +48,20 @@ public abstract class TitleScreenMixin extends Screen {
     /// Redirect "Multiplayer" button in the title screen.
     @WrapOperation(
             require = 0,
-            method = "lambda$createNormalMenuOptions$10",
+            method = "lambda$createNormalMenuOptions$4",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
-    private void redirectToFirstRunScreen(Minecraft instance, Screen guiScreen, Operation<Void> original) {
-        if (!AkmcClient.maybeShowFirstRunScreen(instance, guiScreen)) {
-            original.call(instance, guiScreen);
+                                    "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"))
+    private void redirectToFirstRunScreen(Gui instance, Screen screen, Operation<Void> original) {
+        if (!AkmcClient.maybeShowFirstRunScreen(Minecraft.getInstance(), screen)) {
+            original.call(instance, screen);
         }
     }
 
     @WrapOperation(
-            method = "render",
+            method = "extractRenderState",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/TitleScreen;fadeWidgets(F)V"))
     private void extractCurrentFade(TitleScreen instance, float fade, Operation<Void> original) {
         original.call(instance, fade);

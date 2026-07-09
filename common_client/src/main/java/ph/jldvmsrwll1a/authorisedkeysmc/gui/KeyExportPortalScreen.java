@@ -54,6 +54,6 @@ public class KeyExportPortalScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

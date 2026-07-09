@@ -32,7 +32,7 @@ public abstract class ManageServerScreenMixin extends Screen {
 
         addRenderableWidget(IconButton.builder(
                         Constants.modId("widget/main_menu"),
-                        button -> minecraft.setScreen(new ServerInfoScreen(this, serverData)))
+                        button -> minecraft.gui.setScreen(new ServerInfoScreen(this, serverData)))
                 .pos(width / 2 - 124, height / 4 + 72)
                 .size(20, 20)
                 .padding(2)

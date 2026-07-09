@@ -3,7 +3,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.input.KeyEvent;
@@ -72,7 +72,7 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
     }
 
     @Override
-    protected void renderSelection(GuiGraphics gui, StringEntry entry, int colour) {
+    protected void extractSelection(GuiGraphicsExtractor gui, StringEntry entry, int colour) {
         int cappedWidth = Math.min(width - 8, entry.getWidth());
 
         int centreX = entry.getX() + entry.getWidth() / 2;
@@ -87,27 +87,27 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
     }
 
     @Override
-    public void renderWidget(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
-        super.renderWidget(gui, mouseX, mouseY, partialTick);
+    public void extractWidgetRenderState(@NonNull GuiGraphicsExtractor gui, int mouseX, int mouseY, float partialTick) {
+        super.extractWidgetRenderState(gui, mouseX, mouseY, partialTick);
 
         if (listIsEmpty) {
             int x = getX() + getWidth() / 2;
             int y = getY() + getHeight() / 2;
-            gui.drawCenteredString(minecraft.font, emptyListLabel, x, y, 0xFFFFFFFF);
+            gui.centeredText(minecraft.font, emptyListLabel, x, y, 0xFFFFFFFF);
         }
     }
 
     @Override
-    protected void renderListBackground(@NonNull GuiGraphics gui) {
+    protected void extractListBackground(@NonNull GuiGraphicsExtractor gui) {
         if (!borderless) {
-            super.renderListBackground(gui);
+            super.extractListBackground(gui);
         }
     }
 
     @Override
-    protected void renderListSeparators(@NonNull GuiGraphics gui) {
+    protected void extractListSeparators(@NonNull GuiGraphicsExtractor gui) {
         if (!borderless) {
-            super.renderListSeparators(gui);
+            super.extractListSeparators(gui);
         }
     }
 
@@ -155,12 +155,12 @@ public final class GenericStringSelectionList extends ObjectSelectionList<Generi
         }
 
         @Override
-        public void renderContent(
-                @NonNull GuiGraphics gui, int mouseX, int mouseY, boolean hovering, float partialTick) {
+        public void extractContent(
+                @NonNull GuiGraphicsExtractor gui, int mouseX, int mouseY, boolean hovering, float partialTick) {
             stringWidget.setPosition(
                     getContentXMiddle() - stringWidget.getWidth() / 2,
                     getContentYMiddle() - stringWidget.getHeight() / 2);
-            stringWidget.render(gui, mouseX, mouseY, partialTick);
+            stringWidget.extractRenderState(gui, mouseX, mouseY, partialTick);
         }
     }
 }

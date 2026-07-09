@@ -166,7 +166,7 @@ public class PasswordPromptScreen extends BaseScreen {
     public void onClose() {
         callback.accept(Optional.ofNullable(decryptedKey));
 
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     protected Component getPrompt() {
@@ -200,7 +200,7 @@ public class PasswordPromptScreen extends BaseScreen {
     }
 
     protected void decryptKey() {
-        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
+        minecraft.gui.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
@@ -210,7 +210,7 @@ public class PasswordPromptScreen extends BaseScreen {
                 minecraft.execute(() -> {
                     errorText.visible = true;
                     passwordEdit.setValue("");
-                    minecraft.setScreen(this);
+                    minecraft.gui.setScreen(this);
                 });
 
                 throw e;
@@ -228,7 +228,7 @@ public class PasswordPromptScreen extends BaseScreen {
                 } else {
                     errorText.visible = true;
                     passwordEdit.setValue("");
-                    minecraft.setScreen(this);
+                    minecraft.gui.setScreen(this);
                 }
             });
         });

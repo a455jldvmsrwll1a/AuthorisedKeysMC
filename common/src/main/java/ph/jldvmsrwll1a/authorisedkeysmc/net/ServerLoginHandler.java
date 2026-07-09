@@ -37,8 +37,6 @@ public final class ServerLoginHandler {
             @NotNull Connection connection,
             @NotNull GameProfile profile,
             byte @NotNull [] sessionHash) {
-        Validate.isTrue(connection.isEncrypted(), "Connection must already be encrypted before AKMC auth may proceed!");
-
         this.listener = listener;
         this.connection = connection;
         this.profile = profile;

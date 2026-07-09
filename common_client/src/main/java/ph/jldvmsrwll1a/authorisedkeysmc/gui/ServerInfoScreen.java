@@ -120,7 +120,7 @@ public final class ServerInfoScreen extends BaseScreen {
         buttonLayout.addChild(Button.builder(CommonComponents.GUI_DONE, this::onDoneButtonPressed)
                 .width(BUTTON_WIDTH)
                 .build());
-        buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> minecraft.setScreen(parent))
+        buttonLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> minecraft.gui.setScreen(parent))
                 .width(BUTTON_WIDTH)
                 .build());
 
@@ -181,7 +181,7 @@ public final class ServerInfoScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onHostKeyFieldPressed(Button button) {
@@ -203,11 +203,11 @@ public final class ServerInfoScreen extends BaseScreen {
             AkmcClient.KNOWN_HOSTS.clearHostKey(serverAddress);
         }
 
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onSelectButtonPressed(Button button) {
-        minecraft.setScreen(new KeySelectionScreen(this, this::onKeySelected));
+        minecraft.gui.setScreen(new KeySelectionScreen(this, this::onKeySelected));
     }
 
     private void onForgetHostKeyButtonPressed(Button button) {

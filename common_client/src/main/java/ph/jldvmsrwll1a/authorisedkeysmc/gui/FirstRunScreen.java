@@ -77,14 +77,14 @@ public class FirstRunScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onProceedButtonPressed(Button button) {
         cooldown = COOLDOWN_TICKS;
 
         if (onSecondPart) {
-            minecraft.setScreen(new KeyCreationScreen(parent, name -> {}));
+            minecraft.gui.setScreen(new KeyCreationScreen(parent, name -> {}));
         } else {
             onSecondPart = true;
             bodyText.setMessage(BODY_2_LABEL);

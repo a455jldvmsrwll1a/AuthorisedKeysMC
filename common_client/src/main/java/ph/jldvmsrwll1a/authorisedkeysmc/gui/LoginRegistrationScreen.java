@@ -130,7 +130,7 @@ public final class LoginRegistrationScreen extends BaseScreen {
         if (cancelCallback != null) {
             cancelCallback.run();
         } else {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 }

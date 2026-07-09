@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.*;
@@ -174,11 +174,11 @@ public final class KeyManagementScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override
-    public void render(@NonNull GuiGraphics gui, int cursor_x, int cursor_y, float partialTick) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor gui, int cursor_x, int cursor_y, float partialTick) {
         gui.blit(
                 RenderPipelines.GUI_TEXTURED,
                 Screen.MENU_BACKGROUND,
@@ -193,7 +193,7 @@ public final class KeyManagementScreen extends BaseScreen {
 
         recalculateLayoutIfNeeded();
 
-        super.render(gui, cursor_x, cursor_y, partialTick);
+        super.extractRenderState(gui, cursor_x, cursor_y, partialTick);
 
         gui.blit(
                 RenderPipelines.GUI_TEXTURED,
@@ -296,7 +296,7 @@ public final class KeyManagementScreen extends BaseScreen {
         if (currentKeypair != null) {
             minecraft.keyboardHandler.setClipboard(currentKeypair.getTextualPublic());
             SystemToast.addOrUpdate(
-                    minecraft.getToastManager(),
+                    minecraft.gui.toastManager(),
                     KEY_COPIED_TOAST,
                     Component.translatable("authorisedkeysmc.toast.key-shared"),
                     null);
@@ -304,7 +304,7 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onAddKeyButtonPressed(Button ignored) {
-        minecraft.setScreen(new KeyAddScreen(
+        minecraft.gui.setScreen(new KeyAddScreen(
                 KeyManagementScreen.this, keyPair -> keyPair.ifPresent(kp -> onNewKeyCreated((AkKeyPair) kp))));
     }
 
@@ -319,13 +319,13 @@ public final class KeyManagementScreen extends BaseScreen {
     }
 
     private void onBackupButtonPressed(Button ignored) {
-        minecraft.setScreen(new KeyExportPortalScreen(this, currentKeypair));
+        minecraft.gui.setScreen(new KeyExportPortalScreen(this, currentKeypair));
     }
 
     private void onPasswordButtonPressed(Button ignored) {
         switch (currentKeypair) {
             case AkKeyPair.Plain plain ->
-                minecraft.setScreen(new PasswordCreationScreen(
+                minecraft.gui.setScreen(new PasswordCreationScreen(
                         this,
                         plain,
                         encrypted -> encrypted.ifPresent(keyPair -> {
@@ -338,13 +338,13 @@ public final class KeyManagementScreen extends BaseScreen {
                             } catch (IOException e) {
                                 Constants.LOG.error("Unable to delete unencrypted backup file: {}", e.getMessage());
 
-                                minecraft.setScreen(new ErrorScreen(
+                                minecraft.gui.setScreen(new ErrorScreen(
                                         Component.translatable("authorisedkeysmc.error.error"),
                                         Component.translatable("authorisedkeysmc.error.delete-fail")));
                             }
                         })));
             case AkKeyPair.Encrypted encrypted ->
-                minecraft.setScreen(new PasswordUpdateScreen(
+                minecraft.gui.setScreen(new PasswordUpdateScreen(
                         this,
                         encrypted,
                         kp -> kp.ifPresent(keyPair -> {
@@ -357,7 +357,7 @@ public final class KeyManagementScreen extends BaseScreen {
                             } catch (IOException e) {
                                 Constants.LOG.error("Unable to delete encrypted backup file: {}", e.getMessage());
 
-                                minecraft.setScreen(new ErrorScreen(
+                                minecraft.gui.setScreen(new ErrorScreen(
                                         Component.translatable("authorisedkeysmc.error.error"),
                                         Component.translatable("authorisedkeysmc.error.delete-fail")));
                             }
@@ -384,13 +384,13 @@ public final class KeyManagementScreen extends BaseScreen {
                         reloadKeys();
                     }
 
-                    minecraft.setScreen(KeyManagementScreen.this);
+                    minecraft.gui.setScreen(KeyManagementScreen.this);
                 },
                 Component.translatable("authorisedkeysmc.screen.delete-key.title")
                         .withStyle(ChatFormatting.RED),
                 Component.translatable("authorisedkeysmc.screen.delete-key.prompt"));
 
-        minecraft.setScreen(screen);
+        minecraft.gui.setScreen(screen);
     }
 
     public void reloadKeys() {

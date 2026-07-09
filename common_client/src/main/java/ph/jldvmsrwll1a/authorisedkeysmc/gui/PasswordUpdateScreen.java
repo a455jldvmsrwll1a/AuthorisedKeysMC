@@ -179,7 +179,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onCurrentPasswordChanged(String password) {
@@ -232,7 +232,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
 
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
-                minecraft.execute(() -> minecraft.setScreen(new GenericMessageScreen(WAIT_DECRYPT_LABEL)));
+                minecraft.execute(() -> minecraft.gui.setScreen(new GenericMessageScreen(WAIT_DECRYPT_LABEL)));
 
                 Optional<AkKeyPair.Plain> decrypted = keypair.decrypt(currentPassword);
 
@@ -240,7 +240,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
                     minecraft.execute(() -> {
                         errorText.visible = true;
                         currentPasswordEdit.setValue("");
-                        minecraft.setScreen(this);
+                        minecraft.gui.setScreen(this);
                     });
 
                     return;
@@ -250,7 +250,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
                     minecraft.execute(() -> {
                         AkKeyPair.Plain kp = decrypted.get();
 
-                        minecraft.setScreen(new ConfirmScreen(
+                        minecraft.gui.setScreen(new ConfirmScreen(
                                 confirmed -> {
                                     callback.accept(confirmed ? Optional.of(kp) : Optional.empty());
                                     onClose();
@@ -262,11 +262,11 @@ public final class PasswordUpdateScreen extends BaseScreen {
                     return;
                 }
 
-                minecraft.execute(() -> minecraft.setScreen(new GenericMessageScreen(WAIT_ENCRYPT_LABEL)));
+                minecraft.execute(() -> minecraft.gui.setScreen(new GenericMessageScreen(WAIT_ENCRYPT_LABEL)));
 
                 AkKeyPair.Encrypted reencrypted = decrypted.get().encrypt(newPassword);
 
-                minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(
+                minecraft.execute(() -> minecraft.gui.setScreen(new PasswordConfirmPromptScreen(
                         parent,
                         reencrypted,
                         encrypted -> encrypted.ifPresentOrElse(
@@ -275,7 +275,7 @@ public final class PasswordUpdateScreen extends BaseScreen {
                 minecraft.execute(() -> {
                     errorText.visible = true;
                     currentPasswordEdit.setValue("");
-                    minecraft.setScreen(this);
+                    minecraft.gui.setScreen(this);
                 });
 
                 throw e;

@@ -1,6 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
@@ -15,10 +15,10 @@ public abstract class BaseScreen extends Screen {
     }
 
     @Override
-    public void render(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
-        super.render(gui, mouseX, mouseY, partialTick);
+    public void extractRenderState(@NonNull GuiGraphicsExtractor gui, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(gui, mouseX, mouseY, partialTick);
 
         int colour = AkmcClient.PLATFORM.isDevelopmentEnvironment() ? 0xFFFF00FF : 0xFF7F7F7F;
-        gui.drawString(font, LABEL, 2, height - font.lineHeight - 1, colour, true);
+        gui.text(font, LABEL, 2, height - font.lineHeight - 1, colour, true);
     }
 }

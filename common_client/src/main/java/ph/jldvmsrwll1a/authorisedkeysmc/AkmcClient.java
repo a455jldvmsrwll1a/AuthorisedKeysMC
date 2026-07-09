@@ -97,7 +97,7 @@ public class AkmcClient {
             hasShownFirstRunScreen = true;
 
             minecraft.execute(
-                    () -> minecraft.setScreen(new FirstRunScreen(parent != null ? parent : new TitleScreen())));
+                    () -> minecraft.gui.setScreen(new FirstRunScreen(parent != null ? parent : new TitleScreen())));
             return true;
         }
 

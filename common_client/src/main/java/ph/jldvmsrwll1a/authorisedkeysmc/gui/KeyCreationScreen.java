@@ -149,7 +149,7 @@ public class KeyCreationScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onNameChanged(String name) {
@@ -199,14 +199,14 @@ public class KeyCreationScreen extends BaseScreen {
             return;
         }
 
-        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
+        minecraft.gui.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
             try {
                 AkKeyPair.Plain keyPair = AkKeyPair.generate(SecureRandom.getInstanceStrong(), currentName);
 
                 if (passwordCheckbox.selected()) {
-                    minecraft.execute(() -> minecraft.setScreen(new PasswordCreationScreen(
+                    minecraft.execute(() -> minecraft.gui.setScreen(new PasswordCreationScreen(
                             parent,
                             keyPair,
                             encrypted -> encrypted.ifPresentOrElse(
@@ -219,7 +219,7 @@ public class KeyCreationScreen extends BaseScreen {
                 }
             } catch (Exception e) {
                 Constants.LOG.error("Failed to generate keypair: {}", e.getMessage());
-                minecraft.execute(() -> minecraft.setScreen(new ErrorScreen(
+                minecraft.execute(() -> minecraft.gui.setScreen(new ErrorScreen(
                         Component.translatable("authorisedkeysmc.error.generation-fail"),
                         Component.literal(e.getMessage()))));
             }

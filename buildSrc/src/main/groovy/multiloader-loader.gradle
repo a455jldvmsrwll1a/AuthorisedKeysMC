@@ -4,10 +4,10 @@ plugins {
 }
 
 configurations {
-    commonJava{
+    commonJava {
         canBeResolved = true
     }
-    commonResources{
+    commonResources {
         canBeResolved = true
     }
 
@@ -29,6 +29,7 @@ dependencies {
             attribute(loaderAttribute, 'common')
         }
     }
+
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
 

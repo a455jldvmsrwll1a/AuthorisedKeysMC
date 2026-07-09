@@ -3,7 +3,7 @@ package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 import java.util.ArrayList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -96,11 +96,11 @@ public class ServerManagementScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override
-    public void render(@NonNull GuiGraphics gui, int cursor_x, int cursor_y, float partialTick) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor gui, int cursor_x, int cursor_y, float partialTick) {
         gui.blit(
                 RenderPipelines.GUI_TEXTURED,
                 Screen.MENU_BACKGROUND,
@@ -115,7 +115,7 @@ public class ServerManagementScreen extends BaseScreen {
 
         recalculateLayoutIfNeeded();
 
-        super.render(gui, cursor_x, cursor_y, partialTick);
+        super.extractRenderState(gui, cursor_x, cursor_y, partialTick);
 
         gui.blit(
                 RenderPipelines.GUI_TEXTURED,
@@ -160,7 +160,7 @@ public class ServerManagementScreen extends BaseScreen {
             data = serverList.get(i);
 
             if (data.name.equals(serverName)) {
-                minecraft.setScreen(new ServerInfoScreen(this, data));
+                minecraft.gui.setScreen(new ServerInfoScreen(this, data));
 
                 return;
             }
@@ -173,7 +173,7 @@ public class ServerManagementScreen extends BaseScreen {
             data = serverList.get(i);
 
             if (data.name.equals(selectedServer)) {
-                minecraft.setScreen(new ServerInfoScreen(this, data));
+                minecraft.gui.setScreen(new ServerInfoScreen(this, data));
 
                 return;
             }

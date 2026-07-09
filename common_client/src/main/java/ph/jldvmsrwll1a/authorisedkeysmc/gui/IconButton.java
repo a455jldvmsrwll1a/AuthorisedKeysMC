@@ -1,6 +1,6 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -43,13 +43,13 @@ public final class IconButton extends Button {
     }
 
     @Override
-    protected void renderContents(@NonNull GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(@NonNull GuiGraphicsExtractor gui, int mouseX, int mouseY, float partialTick) {
         int spriteX = getX() + padding;
         int spriteY = getY() + padding;
         int spriteW = getWidth() - padding * 2;
         int spriteH = getHeight() - padding * 2;
 
-        renderDefaultSprite(gui);
+        extractDefaultSprite(gui);
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, spriteX, spriteY, spriteW, spriteH, fade);
     }
 

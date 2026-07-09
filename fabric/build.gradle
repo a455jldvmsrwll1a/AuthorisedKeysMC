@@ -1,7 +1,7 @@
 plugins {
     id 'multiloader-loader'
-    id 'fabric-loom'
-    id 'com.gradleup.shadow' version '9.2.2'
+    id 'net.fabricmc.fabric-loom'
+    id 'com.gradleup.shadow' version '9.5.1'
     id 'com.diffplug.spotless' version '8.1.0'
 }
 
@@ -22,14 +22,10 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${parchment_minecraft}:${parchment_version}@zip")
-    }
-    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
-    modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
+    api "com.terraformersmc:modmenu:${project.modmenu_version}"
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
     implementation "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"
@@ -62,7 +58,7 @@ loom {
 
 // Implement mcgradleconventions loader attribute
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
-['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'modCompileClasspath'].each { variant ->
     configurations.named("$variant") {
         attributes {
             attribute(loaderAttribute, 'fabric')
@@ -78,20 +74,18 @@ sourceSets.configureEach {
         }
     }
 }
-loom.remapConfigurations.configureEach {
-    configurations.named(it.name) {
-        attributes {
-            attribute(loaderAttribute, 'fabric')
-        }
-    }
-}
 
 shadowJar {
     archiveClassifier.set('shadow')
 }
 
-remapJar {
+jar {
     dependsOn 'shadowJar'
 
-    inputFile.set(shadowJar.archiveFile.get())
 }
+//
+//tasks.named("remapJar") {
+//    dependsOn 'shadowJar'
+//
+//    inputFile.set(shadowJar.archiveFile.get())
+//}

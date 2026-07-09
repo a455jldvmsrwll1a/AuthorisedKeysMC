@@ -135,7 +135,7 @@ public final class PasswordCreationScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onPasswordChanged(String password) {
@@ -162,7 +162,7 @@ public final class PasswordCreationScreen extends BaseScreen {
             return;
         }
 
-        minecraft.setScreen(new GenericMessageScreen(WAITING_LABEL));
+        minecraft.gui.setScreen(new GenericMessageScreen(WAITING_LABEL));
 
         char[] password = passwordEdit.getValue().toCharArray();
         AkmcClient.WORKER_EXECUTOR.execute(() -> {
@@ -171,14 +171,14 @@ public final class PasswordCreationScreen extends BaseScreen {
                 encrypted = keypair.encrypt(password);
             } catch (RuntimeException e) {
                 minecraft.execute(
-                        () -> minecraft.setScreen(new ErrorScreen(ERROR_LABEL, Component.literal(e.getMessage()))));
+                        () -> minecraft.gui.setScreen(new ErrorScreen(ERROR_LABEL, Component.literal(e.getMessage()))));
 
                 throw e;
             } finally {
                 Arrays.fill(password, '\0');
             }
 
-            minecraft.execute(() -> minecraft.setScreen(new PasswordConfirmPromptScreen(parent, encrypted, callback)));
+            minecraft.execute(() -> minecraft.gui.setScreen(new PasswordConfirmPromptScreen(parent, encrypted, callback)));
         });
     }
 

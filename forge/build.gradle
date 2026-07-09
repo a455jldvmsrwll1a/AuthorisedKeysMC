@@ -1,8 +1,8 @@
 plugins {
     id 'multiloader-loader'
-    id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
-    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
-    id 'com.gradleup.shadow' version '9.2.2'
+    id 'net.minecraftforge.gradle' version '[7.0.31,8)'
+    id 'org.spongepowered.mixin' version '0.8-SNAPSHOT'
+    id 'com.gradleup.shadow' version '9.5.1'
     id 'idea'
     id 'com.diffplug.spotless' version '8.1.0'
 }
@@ -86,7 +86,7 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    annotationProcessor("org.spongepowered:mixin:0.8.7:processor")
 
     // Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
     implementation "org.bouncycastle:bcprov-jdk18on:${bouncycastle_version}"

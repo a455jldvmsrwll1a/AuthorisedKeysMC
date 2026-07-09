@@ -45,11 +45,11 @@ public class PortalScreen extends BaseScreen {
         header.setPosition(width / 2 - header.getWidth() / 2, 40);
 
         addRenderableWidget(header);
-        addRenderableWidget(Button.builder(KEYS_LABEL, button -> minecraft.setScreen(new KeyManagementScreen(this)))
+        addRenderableWidget(Button.builder(KEYS_LABEL, button -> minecraft.gui.setScreen(new KeyManagementScreen(this)))
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre - STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
         addRenderableWidget(
-                Button.builder(SERVERS_LABEL, button -> minecraft.setScreen(new ServerManagementScreen(this)))
+                Button.builder(SERVERS_LABEL, button -> minecraft.gui.setScreen(new ServerManagementScreen(this)))
                         .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre, BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build());
         Button configBtn = addRenderableWidget(Button.builder(CONFIG_LABEL, button -> {})
@@ -69,12 +69,12 @@ public class PortalScreen extends BaseScreen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void onReloadButtonPressed(Button button) {
         AkmcClient.readFiles();
 
-        SystemToast.addOrUpdate(minecraft.getToastManager(), RELOADED_TOAST, RELOADED_LABEL, null);
+        SystemToast.addOrUpdate(minecraft.gui.toastManager(), RELOADED_TOAST, RELOADED_LABEL, null);
     }
 }

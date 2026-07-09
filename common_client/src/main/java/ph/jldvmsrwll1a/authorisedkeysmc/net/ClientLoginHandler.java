@@ -55,7 +55,7 @@ public final class ClientLoginHandler {
             Connection connection,
             Consumer<Component> updateStatus) {
         this.minecraft = minecraft;
-        this.originalScreen = minecraft.screen;
+        this.originalScreen = minecraft.gui.screen();
         this.connection = connection;
         this.nettyLoop =
                 ((ConnectionAccessorMixin) connection).getNettyChannel().eventLoop();
@@ -194,7 +194,7 @@ public final class ClientLoginHandler {
     }
 
     private void handleAuthenticationRequest(S2CAuthenticationRequestPayload payload) {
-        Validate.validState(connection.isEncrypted(), "Encryption must be enabled.");
+        Validate.validState(sessionHash != null, "Encryption must be enabled.");
         Validate.validState(phase == Phase.AWAIT_REQUEST, "Received unexpected authentication request.");
 
         if (!loadSavedKeyPair()) {
@@ -232,7 +232,7 @@ public final class ClientLoginHandler {
         }
 
         if (keypair instanceof AkKeyPair.Encrypted encrypted) {
-            showScreen(new PasswordPromptScreen(minecraft.screen, encrypted, decrypted -> {
+            showScreen(new PasswordPromptScreen(minecraft.gui.screen(), encrypted, decrypted -> {
                 if (decrypted.isPresent()) {
                     onPrivateKeyDecrypted(decrypted.get());
                 } else {
@@ -398,7 +398,7 @@ public final class ClientLoginHandler {
     }
 
     private void resetScreen() {
-        if (minecraft.screen != originalScreen) {
+        if (minecraft.gui.screen() != originalScreen) {
             showScreen(originalScreen);
         }
     }
@@ -428,7 +428,7 @@ public final class ClientLoginHandler {
     }
 
     private void showScreen(@Nullable Screen screen) {
-        minecraft.executeBlocking(() -> minecraft.setScreen(screen));
+        minecraft.executeBlocking(() -> minecraft.gui.setScreen(screen));
     }
 
     private void transition(Phase next) {
