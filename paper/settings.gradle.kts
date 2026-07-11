@@ -1,1 +1,1 @@
-rootProject.name = "authorisedkeysmc-paper"
+rootProject.name = "paper"

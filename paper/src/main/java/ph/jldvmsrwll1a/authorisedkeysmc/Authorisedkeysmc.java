@@ -1,16 +1,30 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
+
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.java.JavaPlugin;
+import ph.jldvmsrwll1a.authorisedkeysmc.platform.PaperPlatformHelper;
 
 public final class Authorisedkeysmc extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
+        Constants.LOG.info("Hello world! AuthorisedKeysMC");
+
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, this::registerCommands);
+
+        AkmcCore.init(new PaperPlatformHelper(this));
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        Constants.LOG.info("Bye.");
+    }
+
+    private void registerCommands(ReloadableRegistrarEvent<Commands> commandsReloadableRegistrarEvent) {
+        var registrar = commandsReloadableRegistrarEvent.registrar();
+
     }
 }
