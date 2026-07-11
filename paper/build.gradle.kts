@@ -3,6 +3,15 @@ plugins {
     id("com.gradleup.shadow") version "9.5.1"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("io.papermc.paperweight.userdev") version "2.0.0-SNAPSHOT"
+    id ("com.diffplug.spotless") version "8.1.0"
+}
+
+spotless {
+    setEnforceCheck(false)
+
+    java {
+        palantirJavaFormat()
+    }
 }
 
 repositories {

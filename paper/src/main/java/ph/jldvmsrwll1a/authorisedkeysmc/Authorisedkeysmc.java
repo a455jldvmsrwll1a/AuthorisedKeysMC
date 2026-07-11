@@ -1,10 +1,10 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
-
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.java.JavaPlugin;
+import ph.jldvmsrwll1a.authorisedkeysmc.command.ModCommands;
 import ph.jldvmsrwll1a.authorisedkeysmc.platform.PaperPlatformHelper;
 
 public final class Authorisedkeysmc extends JavaPlugin {
@@ -24,7 +24,6 @@ public final class Authorisedkeysmc extends JavaPlugin {
     }
 
     private void registerCommands(ReloadableRegistrarEvent<Commands> commandsReloadableRegistrarEvent) {
-        var registrar = commandsReloadableRegistrarEvent.registrar();
-
+        ModCommands.register(commandsReloadableRegistrarEvent.registrar());
     }
 }

@@ -1,11 +1,16 @@
 package ph.jldvmsrwll1a.authorisedkeysmc.command;
 
-import static net.minecraft.commands.Commands.argument;
-import static net.minecraft.commands.Commands.literal;
+import static io.papermc.paper.command.brigadier.Commands.argument;
+import static io.papermc.paper.command.brigadier.Commands.literal;
+import static org.bukkit.Server.BROADCAST_CHANNEL_ADMINISTRATIVE;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.papermc.paper.adventure.PaperAdventure;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.ZoneOffset;
@@ -15,16 +20,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.*;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
-import net.minecraft.server.players.NameAndId;
-import net.minecraft.server.players.PlayerList;
+import org.bukkit.Server;
+import org.bukkit.entity.Player;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
 import ph.jldvmsrwll1a.authorisedkeysmc.Users;
@@ -39,15 +37,8 @@ public final class ModCommands {
 
     private ModCommands() {}
 
-    public static void register(
-            CommandDispatcher<CommandSourceStack> dispatcher,
-            CommandBuildContext context,
-            Commands.CommandSelection environment) {
-        if (environment != Commands.CommandSelection.DEDICATED) {
-            return;
-        }
-
-        dispatcher.register(literal("akmc")
+    public static void register(Commands commands) {
+        commands.register(literal("akmc")
                 .executes(ModCommands::hello)
                 .then(literal("status").executes(ModCommands::status))
                 .then(literal("reload").requires(ModCommands::admin).executes(ModCommands::reload))
@@ -64,7 +55,7 @@ public final class ModCommands {
                         .then(argument("public key", StringArgumentType.word()).executes(ModCommands::selfBind)))
                 .then(literal("unbind")
                         .then(argument("public key", StringArgumentType.word())
-                                .suggests(new PublicKeysSuggestions.Self())
+                                .suggests((SuggestionProvider<CommandSourceStack>) new PublicKeysSuggestions.Self())
                                 .executes(ModCommands::selfUnbind)))
                 .then(literal("user")
                         .requires(ModCommands::admin)
@@ -76,15 +67,17 @@ public final class ModCommands {
                                                 .executes(ModCommands::usernameBind)))
                                 .then(literal("unbind")
                                         .then(argument("public key", StringArgumentType.word())
-                                                .suggests(new PublicKeysSuggestions.ByUsername())
+                                                .suggests((SuggestionProvider<CommandSourceStack>)
+                                                        new PublicKeysSuggestions.ByUsername())
                                                 .executes(ModCommands::usernameUnbind)))
                                 .then(literal("alias")
-                                        .then(argument("replacement uuid", UuidArgument.uuid())
+                                        .then(argument("replacement uuid", ArgumentTypes.uuid())
                                                 .suggests(new KnownUuidSuggestions())
                                                 .executes(ModCommands::makeAlias)
                                                 .then(argument("reason", StringArgumentType.greedyString())
                                                         .executes(ModCommands::makeAlias))))
-                                .then(literal("unalias").executes(ModCommands::removeAlias)))));
+                                .then(literal("unalias").executes(ModCommands::removeAlias))))
+                .build());
     }
 
     public static int hello(CommandContext<CommandSourceStack> context) {
@@ -125,9 +118,8 @@ public final class ModCommands {
             }
         }
 
-        ServerPlayer player = context.getSource().getPlayer();
-        if (player != null) {
-            String name = context.getSource().getPlayer().nameAndId().name();
+        if (context.getSource().getSender() instanceof Player player) {
+            String name = player.getName();
             List<Users.UserKey> keys = AkmcCore.USERS.getUserKeys(name);
             int numKeys = keys != null ? keys.size() : 0;
 
@@ -185,8 +177,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        context.getSource()
-                .sendSuccess(() -> Component.literal("AKMC reloaded!").withStyle(ChatFormatting.GREEN), true);
+        sendSuccess(context, Component.literal("AKMC reloaded!").withStyle(ChatFormatting.GREEN));
 
         return SUCCESS;
     }
@@ -201,12 +192,10 @@ public final class ModCommands {
         AkmcCore.CONFIG.enforcing = true;
         AkmcCore.CONFIG.write();
 
-        context.getSource()
-                .sendSuccess(
-                        () -> Component.literal("AKMC is now ")
-                                .append(Component.literal("ENFORCING")
-                                        .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)),
-                        true);
+        sendSuccess(
+                context,
+                Component.literal("AKMC is now ")
+                        .append(Component.literal("ENFORCING").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
 
         return SUCCESS;
     }
@@ -221,12 +210,10 @@ public final class ModCommands {
         AkmcCore.CONFIG.enforcing = false;
         AkmcCore.CONFIG.write();
 
-        context.getSource()
-                .sendSuccess(
-                        () -> Component.literal("AKMC is now ")
-                                .append(Component.literal("ON STANDBY")
-                                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)),
-                        true);
+        sendSuccess(
+                context,
+                Component.literal("AKMC is now ")
+                        .append(Component.literal("ON STANDBY").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
 
         return SUCCESS;
     }
@@ -283,7 +270,7 @@ public final class ModCommands {
     }
 
     public static int selfBind(CommandContext<CommandSourceStack> context) {
-        ServerPlayer player = context.getSource().getPlayer();
+        Player player = getPlayer(context);
         if (player == null) {
             fail(
                     context,
@@ -303,7 +290,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        switch (AkmcCore.USERS.bindKey(player.getPlainTextName(), player.getPlainTextName(), key)) {
+        switch (AkmcCore.USERS.bindKey(player.getName(), player.getName(), key)) {
             case SUCCESS -> {
                 reply(context, "Bound your key!", ChatFormatting.GREEN);
 
@@ -324,7 +311,7 @@ public final class ModCommands {
     }
 
     public static int selfUnbind(CommandContext<CommandSourceStack> context) {
-        ServerPlayer player = context.getSource().getPlayer();
+        Player player = getPlayer(context);
         if (player == null) {
             fail(
                     context,
@@ -344,7 +331,7 @@ public final class ModCommands {
             return ERROR;
         }
 
-        switch (AkmcCore.USERS.unbindKey(player.getPlainTextName(), key, !AkmcCore.CONFIG.registrationRequired)) {
+        switch (AkmcCore.USERS.unbindKey(player.getName(), key, !AkmcCore.CONFIG.registrationRequired)) {
             case SUCCESS -> {
                 reply(context, "Unbound your key!", ChatFormatting.GREEN);
 
@@ -367,13 +354,13 @@ public final class ModCommands {
     }
 
     public static int selfInfo(CommandContext<CommandSourceStack> context) {
-        if (context.getSource().getPlayer() == null) {
+        if (context.getSource().getSender() instanceof Player player) {
+            return playerInfo(context, player.getName());
+        } else {
             fail(context, "Must be executed by a player! To query a specific user, use: /akmc user <username>");
 
             return ERROR;
         }
-
-        return playerInfo(context, context.getSource().getPlayer().getPlainTextName());
     }
 
     public static int usernameInfo(CommandContext<CommandSourceStack> context) {
@@ -394,35 +381,39 @@ public final class ModCommands {
             return ERROR;
         }
 
-        ServerPlayer player = context.getSource().getPlayer();
+        Player player = getPlayer(context);
 
-        switch (AkmcCore.USERS.bindKey(username, player != null ? player.getPlainTextName() : null, key)) {
+        switch (AkmcCore.USERS.bindKey(username, player != null ? player.getName() : null, key)) {
             case SUCCESS -> {
                 reply(context, "Bound this key to %s!".formatted(username), ChatFormatting.GREEN);
 
-                ServerPlayer targetPlayer =
-                        context.getSource().getServer().getPlayerList().getPlayer(username);
+                Player targetPlayer =
+                        context.getSource().getSender().getServer().getPlayer(username);
                 if (targetPlayer != null) {
                     String keyString = key.toString();
 
                     if (player != null) {
-                        targetPlayer.sendSystemMessage(Component.empty()
-                                .append(player.getDisplayName())
-                                .append(" bound a new key to your username: ")
-                                .append(Component.literal(keyString)
-                                        .withStyle(Style.EMPTY
-                                                .withColor(ChatFormatting.GOLD)
-                                                .withHoverEvent(
-                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                        sendMsg(
+                                targetPlayer,
+                                Component.empty()
+                                        .append(player.getName())
+                                        .append(" bound a new key to your username: ")
+                                        .append(Component.literal(keyString)
+                                                .withStyle(Style.EMPTY
+                                                        .withColor(ChatFormatting.GOLD)
+                                                        .withHoverEvent(new HoverEvent.ShowText(
+                                                                Component.literal("Click to copy.")))
+                                                        .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
                     } else {
-                        targetPlayer.sendSystemMessage(Component.literal("A new key has been bound to your username: ")
-                                .append(Component.literal(keyString)
-                                        .withStyle(Style.EMPTY
-                                                .withColor(ChatFormatting.GOLD)
-                                                .withHoverEvent(
-                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                        sendMsg(
+                                targetPlayer,
+                                Component.literal("A new key has been bound to your username: ")
+                                        .append(Component.literal(keyString)
+                                                .withStyle(Style.EMPTY
+                                                        .withColor(ChatFormatting.GOLD)
+                                                        .withHoverEvent(new HoverEvent.ShowText(
+                                                                Component.literal("Click to copy.")))
+                                                        .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
                     }
                 }
 
@@ -462,31 +453,35 @@ public final class ModCommands {
             case SUCCESS -> {
                 reply(context, "Key was successfully unbound!", ChatFormatting.GREEN);
 
-                ServerPlayer player = context.getSource().getPlayer();
-                ServerPlayer targetPlayer =
-                        context.getSource().getServer().getPlayerList().getPlayer(username);
+                Player player = getPlayer(context);
+                Player targetPlayer =
+                        context.getSource().getSender().getServer().getPlayer(username);
 
                 if (targetPlayer != null) {
                     String keyString = key.toString();
 
                     if (player != null) {
-                        targetPlayer.sendSystemMessage(Component.empty()
-                                .append(player.getDisplayName())
-                                .append(" unbound one of your keys: ")
-                                .append(Component.literal(keyString)
-                                        .withStyle(Style.EMPTY
-                                                .withColor(ChatFormatting.GOLD)
-                                                .withHoverEvent(
-                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                        sendMsg(
+                                targetPlayer,
+                                Component.empty()
+                                        .append(player.getName())
+                                        .append(" unbound one of your keys: ")
+                                        .append(Component.literal(keyString)
+                                                .withStyle(Style.EMPTY
+                                                        .withColor(ChatFormatting.GOLD)
+                                                        .withHoverEvent(new HoverEvent.ShowText(
+                                                                Component.literal("Click to copy.")))
+                                                        .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
                     } else {
-                        targetPlayer.sendSystemMessage(Component.literal("One of your keys was unbound: ")
-                                .append(Component.literal(keyString)
-                                        .withStyle(Style.EMPTY
-                                                .withColor(ChatFormatting.GOLD)
-                                                .withHoverEvent(
-                                                        new HoverEvent.ShowText(Component.literal("Click to copy.")))
-                                                .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
+                        sendMsg(
+                                targetPlayer,
+                                Component.literal("One of your keys was unbound: ")
+                                        .append(Component.literal(keyString)
+                                                .withStyle(Style.EMPTY
+                                                        .withColor(ChatFormatting.GOLD)
+                                                        .withHoverEvent(new HoverEvent.ShowText(
+                                                                Component.literal("Click to copy.")))
+                                                        .withClickEvent(new ClickEvent.CopyToClipboard(keyString)))));
                     }
                 }
 
@@ -593,7 +588,7 @@ public final class ModCommands {
 
     public static int makeAlias(CommandContext<CommandSourceStack> context) {
         String username = StringArgumentType.getString(context, "username");
-        UUID id = UuidArgument.getUuid(context, "replacement uuid");
+        UUID id = context.getArgument("replacement uuid", UUID.class);
 
         String reason;
         try {
@@ -602,12 +597,12 @@ public final class ModCommands {
             reason = null;
         }
 
-        ServerPlayer issuer = context.getSource().getPlayer();
+        Player issuer = getPlayer(context);
 
         boolean wasAdded = AkmcCore.USERS.linkAlias(
                 username,
                 id,
-                issuer != null ? issuer.getPlainTextName() : null,
+                issuer != null ? issuer.getName() : null,
                 (reason != null && !reason.isBlank()) ? reason : null);
 
         if (!wasAdded) {
@@ -618,25 +613,28 @@ public final class ModCommands {
 
         reply(context, "Successfully linked!", ChatFormatting.GREEN);
 
-        PlayerList players = context.getSource().getServer().getPlayerList();
-        NameAndId linkedProfile = new NameAndId(id, username);
+        Server server = context.getSource().getSender().getServer();
 
-        if (players.isOp(linkedProfile)) {
+        // FIXME: whether name or ID is compared should depend on mod config match_player_list_by_name.
+
+        if (server.getOperators().stream().anyMatch(offline -> username.equals(offline.getName()))) {
             reply(context, "Caution: the linked profile has operator privileges!", ChatFormatting.GOLD);
         }
 
-        if (players.isUsingWhitelist() && !players.isWhiteListed(linkedProfile)) {
+        if (server.hasWhitelist()
+                && server.getWhitelistedPlayers().stream().noneMatch(offline -> username.equals(offline.getName()))) {
             reply(context, "Note: the whitelist currently prevents the user from joining.");
         }
 
-        if (players.getBans().isBanned(linkedProfile)) {
+        if (server.getBannedPlayers().stream().anyMatch(offline -> username.equals(offline.getName()))) {
             reply(context, "Note: the linked profile cannot join because they are banned.");
         }
 
         // Warn affected player(s) currently in the server.
-        context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> {
-            if (player.getUUID().equals(id)) {
-                player.sendSystemMessage(
+        context.getSource().getSender().getServer().getOnlinePlayers().forEach(player -> {
+            if (player.getUniqueId().equals(id)) {
+                sendMsg(
+                        player,
                         Component.empty()
                                 .append(Component.literal("Warning: ")
                                         .withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
@@ -644,8 +642,9 @@ public final class ModCommands {
                                 .append(Component.literal(username).withStyle(ChatFormatting.YELLOW))
                                 .append(
                                         " has been linked to your current player ID.\n\nFor changes to take effect, reconnect with that username."));
-            } else if (player.getPlainTextName().equals(username)) {
-                player.sendSystemMessage(
+            } else if (player.getName().equals(username)) {
+                sendMsg(
+                        player,
                         Component.empty()
                                 .append(Component.literal("Warning: ")
                                         .withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
@@ -683,10 +682,10 @@ public final class ModCommands {
                                         .withClickEvent(new ClickEvent.CopyToClipboard(idStr)))));
 
         // Warn affected player(s) currently in the server.
-        ServerPlayer affectedPlayer =
-                context.getSource().getServer().getPlayerList().getPlayer(id);
-        if (affectedPlayer != null && affectedPlayer.getPlainTextName().equals(username)) {
-            affectedPlayer.sendSystemMessage(
+        Player affectedPlayer = context.getSource().getSender().getServer().getPlayer(id);
+        if (affectedPlayer != null && affectedPlayer.getName().equals(username)) {
+            sendMsg(
+                    affectedPlayer,
                     Component.empty()
                             .append(Component.literal("Warning: ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
                             .append(
@@ -697,7 +696,7 @@ public final class ModCommands {
     }
 
     public static boolean admin(CommandSourceStack source) {
-        return source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.ADMINS));
+        return source.getSender().isOp();
     }
 
     private static void reply(
@@ -706,11 +705,30 @@ public final class ModCommands {
     }
 
     private static void reply(CommandContext<CommandSourceStack> context, Component message) {
-        context.getSource().sendSystemMessage(message);
+        context.getSource().getSender().sendMessage(PaperAdventure.asAdventure(message));
+    }
+
+    private static void sendMsg(Player player, Component message) {
+        player.sendMessage(PaperAdventure.asAdventure(message));
     }
 
     private static void fail(CommandContext<CommandSourceStack> context, String message) {
-        context.getSource().sendFailure(Component.literal(message));
+        reply(context, Component.literal(message).withStyle(ChatFormatting.RED));
+    }
+
+    private static Player getPlayer(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getSender() instanceof Player player) {
+            return player;
+        } else {
+            return null;
+        }
+    }
+
+    private static void sendSuccess(CommandContext<CommandSourceStack> context, Component message) {
+        context.getSource()
+                .getSender()
+                .getServer()
+                .broadcast(PaperAdventure.asAdventure(message), BROADCAST_CHANNEL_ADMINISTRATIVE);
     }
 
     static {

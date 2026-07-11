@@ -1,0 +1,29 @@
+package ph.jldvmsrwll1a.authorisedkeysmc.command;
+
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
+
+public final class UsernameSuggestions implements SuggestionProvider<CommandSourceStack> {
+    @Override
+    public CompletableFuture<Suggestions> getSuggestions(
+            CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        Set<String> usernames = new HashSet<>(AkmcCore.USERS.getUsernames());
+
+        context.getSource()
+                .getSender()
+                .getServer()
+                .getOnlinePlayers()
+                .forEach(player -> usernames.add(player.getName()));
+
+        usernames.forEach(builder::suggest);
+
+        return builder.buildFuture();
+    }
+}
