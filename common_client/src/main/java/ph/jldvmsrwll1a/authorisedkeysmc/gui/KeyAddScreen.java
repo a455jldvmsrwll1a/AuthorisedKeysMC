@@ -42,10 +42,10 @@ public class KeyAddScreen extends BaseScreen {
         header.setPosition(width / 2 - header.getWidth() / 2, 40);
 
         addRenderableWidget(header);
-        addRenderableWidget(
-                Button.builder(GENERATE_LABEL, button -> minecraft.gui.setScreen(new KeyCreationScreen(parent, callback)))
-                        .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre - STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
-                        .build());
+        addRenderableWidget(Button.builder(
+                        GENERATE_LABEL, button -> minecraft.gui.setScreen(new KeyCreationScreen(parent, callback)))
+                .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre - STRIDE, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .build());
         addRenderableWidget(Button.builder(
                         IMPORT_CODE_LABEL, button -> minecraft.gui.setScreen(new KeyCreationScreen(parent, callback)))
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre, BUTTON_WIDTH, BUTTON_HEIGHT)

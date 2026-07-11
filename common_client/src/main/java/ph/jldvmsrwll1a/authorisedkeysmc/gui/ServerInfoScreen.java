@@ -93,7 +93,7 @@ public final class ServerInfoScreen extends BaseScreen {
         Tooltip hostKeyTooltip = hostKeyIsKnown ? COPY_KEY_TOOLTIP : UNKNOWN_HOST_KEY_TOOLTIP;
         hostKeyField = Button.builder(hostKeyLabel, this::onHostKeyFieldPressed)
                 .tooltip(hostKeyTooltip)
-                .width(elementWidth())
+                .width(280 + 24)
                 .build();
 
         hostKeyRow.addChild(hostKeyField);
@@ -108,7 +108,7 @@ public final class ServerInfoScreen extends BaseScreen {
                 .width(20)
                 .build());
         usedKeyField = usedKeyRow.addChild(Button.builder(NO_USED_KEY_LABEL, this::onUsedKeyNameFieldPressed)
-                .width(elementWidth() - 48)
+                .width(280)
                 .build());
         usedKeyForgetBtn = usedKeyRow.addChild(Button.builder(FORGET_LABEL, this::onForgetUsedKeyButtonPressed)
                 .tooltip(FORGET_TOOLTIP)
@@ -150,8 +150,6 @@ public final class ServerInfoScreen extends BaseScreen {
     @Override
     protected void repositionElements() {
         preambleText.setMaxWidth(elementWidth());
-        hostKeyField.setWidth(elementWidth() - 24);
-        usedKeyField.setWidth(elementWidth() - 48);
 
         rootLayout.arrangeElements();
         FrameLayout.centerInRectangle(rootLayout, getRectangle());

@@ -178,7 +178,8 @@ public final class PasswordCreationScreen extends BaseScreen {
                 Arrays.fill(password, '\0');
             }
 
-            minecraft.execute(() -> minecraft.gui.setScreen(new PasswordConfirmPromptScreen(parent, encrypted, callback)));
+            minecraft.execute(
+                    () -> minecraft.gui.setScreen(new PasswordConfirmPromptScreen(parent, encrypted, callback)));
         });
     }
 

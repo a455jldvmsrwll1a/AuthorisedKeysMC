@@ -39,8 +39,7 @@ public class KeyExportPortalScreen extends BaseScreen {
         header.setPosition(width / 2 - header.getWidth() / 2, 40);
 
         addRenderableWidget(header);
-        addRenderableWidget(Button.builder(
-                        EXPORT_CODE_LABEL, button -> onClose())
+        addRenderableWidget(Button.builder(EXPORT_CODE_LABEL, button -> onClose())
                 .bounds(width / 2 - BUTTON_WIDTH / 2, yCentre, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
         addRenderableWidget(

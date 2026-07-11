@@ -34,6 +34,7 @@ public final class UnknownServerKeyWarningScreen extends BaseScreen {
 
     private MultiLineTextWidget promptWidget;
     private MultiLineTextWidget promptWidget2;
+    private Button serverKeyButton;
 
     private final @Nullable BooleanConsumer actionCallback;
 
@@ -65,9 +66,9 @@ public final class UnknownServerKeyWarningScreen extends BaseScreen {
         layout.addChild(new StringWidget(title, font));
         promptWidget = layout.addChild(
                 new MultiLineTextWidget(promptA, font).setMaxWidth(width - 50).setMaxRows(15));
-        layout.addChild(
+        serverKeyButton = layout.addChild(
                 Button.builder(Component.literal(serverKey).withStyle(ChatFormatting.AQUA), button -> copyServerKey())
-                        .width(width - 50)
+                        .width(280)
                         .tooltip(COPY_TOOLTIP)
                         .build());
         promptWidget2 = layout.addChild(
@@ -90,7 +91,9 @@ public final class UnknownServerKeyWarningScreen extends BaseScreen {
 
     @Override
     protected void repositionElements() {
-        promptWidget.setMaxWidth(Math.min(width - 50, 400));
+        int w = Math.clamp(width - 50, 100, 500);
+        promptWidget.setMaxWidth(w);
+        promptWidget2.setMaxWidth(w);
 
         layout.arrangeElements();
         FrameLayout.centerInRectangle(layout, getRectangle());

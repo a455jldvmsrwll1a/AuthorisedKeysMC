@@ -133,10 +133,10 @@ public final class KeyManagementScreen extends BaseScreen {
                 Button.builder(Component.translatable("authorisedkeysmc.button.reload-keys"), button -> reloadKeys())
                         .size(getWidthLeft(), 20)
                         .build());
-        listButtons.add(Button.builder(
-                        Component.translatable("authorisedkeysmc.button.add-key"), this::onAddKeyButtonPressed)
-                .size(getWidthLeft(), 20)
-                .build());
+        listButtons.add(
+                Button.builder(Component.translatable("authorisedkeysmc.button.add-key"), this::onAddKeyButtonPressed)
+                        .size(getWidthLeft(), 20)
+                        .build());
 
         rowHelper.addChild(keySelectionList);
         rowHelper.addChild(inspectorScroller);

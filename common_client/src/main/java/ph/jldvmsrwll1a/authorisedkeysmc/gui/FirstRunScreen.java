@@ -14,7 +14,7 @@ public class FirstRunScreen extends BaseScreen {
     private static final int BUTTON_WIDTH = 74;
     private static final int HORIZONTAL_SPACE = 60;
     private static final int MAX_WIDTH = 300;
-    private static final int COOLDOWN_TICKS = 40;
+    private static final int COOLDOWN_TICKS = 30;
 
     private static final Component TITLE_LABEL = Component.translatable("authorisedkeysmc.screen.first-run.title")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.AQUA);

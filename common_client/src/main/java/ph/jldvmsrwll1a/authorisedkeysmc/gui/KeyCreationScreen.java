@@ -45,7 +45,6 @@ public class KeyCreationScreen extends BaseScreen {
     private final List<String> existingNames;
     private final LinearLayout rootLayout;
 
-    private ScrollableLayout scrollLayout;
     private MultiLineTextWidget preambleText;
     private MultiLineTextWidget fileLocationText;
     private EditBox nameEdit;
@@ -102,20 +101,18 @@ public class KeyCreationScreen extends BaseScreen {
                 .width(BUTTON_WIDTH)
                 .build());
 
-        LinearLayout scrollContentsLayout = LinearLayout.vertical().spacing(4);
+        LinearLayout contentsLayout = LinearLayout.vertical().spacing(4);
 
-        scrollContentsLayout.addChild(preambleText);
-        scrollContentsLayout.addChild(new SpacerElement(1, font.lineHeight));
-        scrollContentsLayout.addChild(nameLabel);
-        scrollContentsLayout.addChild(nameEdit);
-        scrollContentsLayout.addChild(fileLocationText);
-        scrollContentsLayout.addChild(new SpacerElement(1, font.lineHeight));
-        scrollContentsLayout.addChild(passwordCheckbox);
-
-        scrollLayout = new ScrollableLayout(minecraft, scrollContentsLayout, scrollContentsLayout.getHeight());
+        contentsLayout.addChild(preambleText);
+        contentsLayout.addChild(new SpacerElement(1, font.lineHeight));
+        contentsLayout.addChild(nameLabel);
+        contentsLayout.addChild(nameEdit);
+        contentsLayout.addChild(fileLocationText);
+        contentsLayout.addChild(new SpacerElement(1, font.lineHeight));
+        contentsLayout.addChild(passwordCheckbox);
 
         rootLayout.addChild(new StringWidget(TITLE_LABEL, font));
-        rootLayout.addChild(scrollLayout);
+        rootLayout.addChild(contentsLayout);
         rootLayout.addChild(buttonLayout);
 
         rootLayout.visitWidgets(this::addRenderableWidget);
@@ -133,7 +130,6 @@ public class KeyCreationScreen extends BaseScreen {
 
     @Override
     protected void repositionElements() {
-        scrollLayout.setMaxHeight(height - 100);
         preambleText.setMaxWidth(elementWidth());
         fileLocationText.setMaxWidth(elementWidth());
         nameEdit.setWidth(elementWidth());
