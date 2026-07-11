@@ -1,0 +1,9 @@
+name: authorisedkeysmc
+version: '${version}'
+
+main: ph.jldvmsrwll1a.authorisedkeysmc.Authorisedkeysmc
+api-version: '26.2'
+load: STARTUP
+
+authors: [a455jldvmsrwll1a]
+website: https://github.com/a455jldvmsrwll1a/AuthorisedKeysMC

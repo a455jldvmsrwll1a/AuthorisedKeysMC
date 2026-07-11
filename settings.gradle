@@ -35,6 +35,17 @@ pluginManagement {
                 includeGroupAndSubgroups('net.minecraftforge')
             }
         }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'papermc'
+                    url = uri("https://repo.papermc.io/repository/maven-public/")
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('io.papermc')
+            }
+        }
     }
 }
 
@@ -49,4 +60,4 @@ include('common_client')
 include('fabric')
 include('neoforge')
 //include('forge') // TODO: fix forge bullshit
-
+include('paper')
