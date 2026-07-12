@@ -35,7 +35,8 @@ public final class Authorisedkeysmc extends JavaPlugin implements Listener {
 
             @Override
             public void run() {
-                boolean cleaned = PENDING_LOGINS.entrySet().removeIf(entry -> !entry.getValue().isConnected());
+                boolean cleaned = PENDING_LOGINS.entrySet().removeIf(entry -> !entry.getValue()
+                        .isConnected());
 
                 if (cleaned) {
                     Constants.LOG.warn("Leftover pending login was cleaned up.");

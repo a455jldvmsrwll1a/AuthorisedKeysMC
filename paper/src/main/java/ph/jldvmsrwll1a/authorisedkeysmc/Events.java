@@ -8,7 +8,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.util.Objects;
 import java.util.Optional;
-
 import net.kyori.adventure.text.Component;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.bukkit.event.EventHandler;
