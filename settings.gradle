@@ -59,5 +59,5 @@ include('common')
 include('common_client')
 include('fabric')
 include('neoforge')
-//include('forge') // TODO: fix forge bullshit
+//include('forge') // TODO: try to fix forge bullshit again
 include('paper')
