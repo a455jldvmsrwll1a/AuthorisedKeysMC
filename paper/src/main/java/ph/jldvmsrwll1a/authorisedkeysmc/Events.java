@@ -1,11 +1,14 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent;
+import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.mojang.authlib.GameProfile;
 import io.papermc.paper.connection.PaperPlayerLoginConnection;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.util.Objects;
+import java.util.Optional;
+
 import net.kyori.adventure.text.Component;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.bukkit.event.EventHandler;
@@ -28,9 +31,6 @@ public class Events implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
-        Constants.LOG.info("hello, {}", event.getName());
-        Constants.LOG.info("onPlayerPreJoin: offline profile {}", event.getPlayerProfile());
-
         ServerLoginPacketListenerImpl login = getPLCLoginListener((PaperPlayerLoginConnection) event.getConnection());
         PacketInterceptor interceptor = Authorisedkeysmc.PENDING_LOGINS.remove(login);
         if (interceptor == null) {
@@ -43,6 +43,19 @@ public class Events implements Listener {
 
         GameProfile profile = new GameProfile(
                 event.getPlayerProfile().getId(), event.getPlayerProfile().getName());
+
+        Optional<Users.Alias> alias = AkmcCore.USERS.getUserAlias(profile.name());
+        if (alias.isPresent()) {
+            Constants.LOG.info(
+                    "AKMC: rewrote the UUID of {} to {}, per alias rules.",
+                    profile.name(),
+                    alias.get().id());
+
+            profile = new GameProfile(alias.get().id(), profile.name(), profile.properties());
+        }
+
+        event.setPlayerProfile(new CraftPlayerProfile(profile));
+
         ServerLoginHandler handler =
                 new ServerLoginHandler(login, login.connection, profile, interceptor.getSessionHash());
         interceptor.setMailbox(handler.getSender());
