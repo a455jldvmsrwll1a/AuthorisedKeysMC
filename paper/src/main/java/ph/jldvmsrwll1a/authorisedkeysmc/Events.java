@@ -64,7 +64,6 @@ public class Events implements Listener {
                 event.allow();
                 break;
             } else if (!interceptor.isConnected()) {
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text("??? bye"));
                 break;
             }
 
