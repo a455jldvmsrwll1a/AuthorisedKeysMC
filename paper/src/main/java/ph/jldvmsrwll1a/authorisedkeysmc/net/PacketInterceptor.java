@@ -57,6 +57,10 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
         return sessionHash;
     }
 
+    public boolean isConnected() {
+        return connection.isConnected();
+    }
+
     public void stop() {
         networkProcessor.uninject(channel);
     }

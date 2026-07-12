@@ -1,13 +1,11 @@
 package ph.jldvmsrwll1a.authorisedkeysmc;
 
 import com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent;
-
+import com.mojang.authlib.GameProfile;
+import io.papermc.paper.connection.PaperPlayerLoginConnection;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.util.Objects;
-
-import com.mojang.authlib.GameProfile;
-import io.papermc.paper.connection.PaperPlayerLoginConnection;
 import net.kyori.adventure.text.Component;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.bukkit.event.EventHandler;
@@ -36,20 +34,24 @@ public class Events implements Listener {
         ServerLoginPacketListenerImpl login = getPLCLoginListener((PaperPlayerLoginConnection) event.getConnection());
         PacketInterceptor interceptor = Authorisedkeysmc.PENDING_LOGINS.remove(login);
         if (interceptor == null) {
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text("Internal server login error occured. (AuthorisedKeysMC)"));
+            event.disallow(
+                    AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+                    Component.text("Internal server login error occured. (AuthorisedKeysMC)"));
 
             return;
         }
 
-        GameProfile profile = new GameProfile(event.getPlayerProfile().getId(), event.getPlayerProfile().getName());
-        ServerLoginHandler handler = new ServerLoginHandler(login, login.connection, profile, interceptor.getSessionHash());
+        GameProfile profile = new GameProfile(
+                event.getPlayerProfile().getId(), event.getPlayerProfile().getName());
+        ServerLoginHandler handler =
+                new ServerLoginHandler(login, login.connection, profile, interceptor.getSessionHash());
         interceptor.setMailbox(handler.getSender());
 
-        while(true) {
+        while (true) {
             if (handler.finished()) {
                 event.allow();
                 break;
-            } else if (!login.connection.isConnected()) {
+            } else if (!interceptor.isConnected()) {
                 event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text("??? bye"));
                 break;
             }
