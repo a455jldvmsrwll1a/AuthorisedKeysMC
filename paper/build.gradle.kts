@@ -40,6 +40,7 @@ tasks {
 
     shadowJar {
         archiveBaseName.set("AuthorisedKeysMC-PAPER")
+        archiveClassifier.set("")
 
         addMultiReleaseAttribute = false
 
