@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.papermc.paper.configuration.GlobalConfiguration;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
@@ -22,6 +23,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import net.minecraft.util.Crypt;
 import net.minecraft.util.CryptException;
+import net.minecraft.util.StringUtil;
+import org.apache.commons.lang3.Validate;
 import ph.jldvmsrwll1a.authorisedkeysmc.AkmcCore;
 import ph.jldvmsrwll1a.authorisedkeysmc.Authorisedkeysmc;
 import ph.jldvmsrwll1a.authorisedkeysmc.Constants;
@@ -39,6 +42,7 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
 
     private String username = null;
     private boolean hasClientEverResponded = false;
+    private boolean skipCustomAuth = false;
     private ServerLoginHandler.Sender mailbox = null;
     private byte[] sessionHash = null;
 
@@ -61,6 +65,10 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
         return connection.isConnected();
     }
 
+    public boolean shouldSkipCustomAuth() {
+        return skipCustomAuth;
+    }
+
     public void stop() {
         networkProcessor.uninject(channel);
     }
@@ -76,11 +84,48 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     }
 
     private void onC2SHello(ChannelHandlerContext ctx, ServerboundHelloPacket packet) {
-        username = packet.name();
         ServerLoginPacketListenerImpl login = (ServerLoginPacketListenerImpl) connection.getPacketListener();
+
+        // Replicate functionality of the patched hello handler.
+
+        Validate.validState(login != null, "getPacketListener() is null");
+        Validate.validState(login.state == ServerLoginPacketListenerImpl.State.HELLO, "Unexpected hello packet");
+
+        if (GlobalConfiguration.get().proxies.isProxyOnlineMode()
+                && GlobalConfiguration.get().unsupportedSettings.performUsernameValidation
+                && !login.iKnowThisMayNotBeTheBestIdeaButPleaseDisableUsernameValidation) {
+            Validate.validState(StringUtil.isReasonablePlayerName(packet.name()), "Invalid characters in username");
+        }
+
+        login.requestedUuid = packet.profileId();
+        login.requestedUsername = packet.name();
+        username = packet.name();
+
+        GameProfile spProfile = server.getSingleplayerProfile();
+        if (spProfile != null && login.requestedUsername.equalsIgnoreCase(spProfile.name())) {
+            enqueueLoginData(login, true);
+            GameProfile newProfile =
+                    callLoginListenerPlayerPreLoginEvents(login, UUIDUtil.createOfflineProfile(username));
+            startClientVerification(login, newProfile);
+
+            return;
+        }
+
+        if (GlobalConfiguration.get().proxies.velocity.enabled) {
+            try {
+                // lazy ass hack: just let the original handler handle this case
+                super.channelRead(ctx, packet);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            return;
+        }
+
         byte[] challenge = getLoginListenerChallengeBytes(login);
         byte[] pubkey = server.getKeyPair().getPublic().getEncoded();
 
+        login.state = ServerLoginPacketListenerImpl.State.KEY;
         connection.send(new ClientboundHelloPacket("", pubkey, challenge, server.usesAuthentication()));
     }
 
@@ -100,9 +145,7 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
             throw new IllegalStateException("Received invalid challenge from client.");
         }
 
-        if (Authorisedkeysmc.PENDING_LOGINS.putIfAbsent(login, this) != null) {
-            throw new IllegalStateException("Internal error: login data already exists!");
-        }
+        enqueueLoginData(login, false);
 
         if (server.usesAuthentication()) {
             Constants.LOG.info("use authentication!!!!!!");
@@ -119,10 +162,9 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
                 getLoginListenerAuthenticatorPool(login).execute(() -> {
                     assert login != null;
 
-                    // start client verification (offline mode)
-                    login.authenticatedProfile =
+                    GameProfile newProfile =
                             callLoginListenerPlayerPreLoginEvents(login, UUIDUtil.createOfflineProfile(username));
-                    login.state = ServerLoginPacketListenerImpl.State.VERIFYING;
+                    startClientVerification(login, newProfile);
                 });
             } catch (CryptException e) {
                 throw new RuntimeException(e);
@@ -153,6 +195,8 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
 
                 connection.disconnect(Component.literal(message));
                 Constants.LOG.info("{} does not have AKMC installed.", username);
+
+                return;
             }
 
             try {
@@ -166,6 +210,19 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
 
         hasClientEverResponded = true;
         mailbox.receive(packet.payload());
+    }
+
+    private void startClientVerification(ServerLoginPacketListenerImpl login, GameProfile profile) {
+        login.authenticatedProfile = profile;
+        login.state = ServerLoginPacketListenerImpl.State.VERIFYING;
+    }
+
+    private void enqueueLoginData(ServerLoginPacketListenerImpl login, boolean skip) {
+        skipCustomAuth = skip;
+
+        if (Authorisedkeysmc.PENDING_LOGINS.putIfAbsent(login, this) != null) {
+            throw new IllegalStateException("Internal error: login data already exists!");
+        }
     }
 
     private static byte[] getLoginListenerChallengeBytes(ServerLoginPacketListenerImpl listener) {

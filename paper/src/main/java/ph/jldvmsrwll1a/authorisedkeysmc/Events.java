@@ -55,6 +55,12 @@ public class Events implements Listener {
 
         event.setPlayerProfile(new CraftPlayerProfile(profile));
 
+        if (interceptor.shouldSkipCustomAuth() || !AkmcCore.CONFIG.enforcing) {
+            Constants.LOG.warn("Not verifying {}'s identity because the mod is on standby!", profile.name());
+
+            return;
+        }
+
         ServerLoginHandler handler =
                 new ServerLoginHandler(login, login.connection, profile, interceptor.getSessionHash());
         interceptor.setMailbox(handler.getSender());
@@ -64,6 +70,7 @@ public class Events implements Listener {
                 event.allow();
                 break;
             } else if (!interceptor.isConnected()) {
+                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text("Internal server error."));
                 break;
             }
 
@@ -75,8 +82,6 @@ public class Events implements Listener {
                 // ignore
             }
         }
-
-        interceptor.stop();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
