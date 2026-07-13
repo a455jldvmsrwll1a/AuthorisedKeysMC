@@ -4,9 +4,9 @@
 
 Minecraft authentication mod and plugin using asymmetric key authentication.
 
-Pretty much eliminates the need for passwords, and makes it quite convenient to use.
+Pretty much eliminates the need for punching in passwords when joining, which makes it quite convenient to use.
 
-The downside is that the mod is required on both server and client.
+The downside is that **the mod is required on both server and client**.
 
 Currently, the mod supports Minecraft 26.2 on the following platforms, in order of priority:
 
@@ -19,12 +19,23 @@ Currently, the mod supports Minecraft 26.2 on the following platforms, in order 
 
 - Passwordless authentication
 - Players do not spawn until the full login process is complete.
+- Cross-loader play (i.e., Neoforge client can join Fabric server, provided there are no other conflicts).
 - Create and use multiple key pairs. (optional)
 - Password encryption for private keys (optional)
 - When using encrypted private keys, passwords are neither stored on disk nor sent over the network.
 - Host key verification (via trust-on-first-use)
 - Bind multiple keys to a given username on the server. (configurable max limit)
 - ID aliasing per username, i.e. UUID spoofing. *Use with caution.*
+
+## Compatibility Warning
+
+This mod/plugin is a bit invasive, as the Fabric, Neoforge, and Forge versions make use of several Mixins, particularly in `ServerLoginPacketListenerImpl`.
+
+In the Paper version, a custom handler is inserted into the netty channel pipeline for the duration of the login, and the plugin itself makes use of reflection.
+
+That said, I have found that ViaVersion, ViaFabric, and ViaBackwards somehow work.
+
+Expect things to break if there are also other mods/plugins that touch these areas.
 
 ## Server Configuration
 
