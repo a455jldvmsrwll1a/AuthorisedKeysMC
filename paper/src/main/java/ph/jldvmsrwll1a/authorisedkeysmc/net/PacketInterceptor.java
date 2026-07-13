@@ -20,6 +20,7 @@ import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.network.protocol.login.ServerboundKeyPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerHandshakePacketListenerImpl;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import net.minecraft.util.Crypt;
 import net.minecraft.util.CryptException;
@@ -75,6 +76,11 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (!(connection.getPacketListener() instanceof ServerLoginPacketListenerImpl)
+                && !(connection.getPacketListener() instanceof ServerHandshakePacketListenerImpl)) {
+            stop();
+        }
+
         switch (msg) {
             case ServerboundHelloPacket packet -> onC2SHello(ctx, packet);
             case ServerboundKeyPacket packet -> onC2SKey(ctx, packet);
